@@ -24,6 +24,7 @@ interface AppStore {
   
   // Actions
   setUser: (user: User | null) => void
+  logout: () => void
   navigate: (type: ViewState['type'], params?: ViewState['params']) => void
   updateProgress: (progress: UserProgress) => void
   createDesktopSession: (labId: string) => Promise<DesktopSession>
@@ -36,15 +37,30 @@ export const useAppStore = create<AppStore>()(
   persist(
     (set, get) => ({
       // Initial state
-      user: mockData.users[0], // Default to first user
-      isAuthenticated: true,
-      currentView: { type: 'dashboard' },
+      user: null, // Start with no user to show landing page
+      isAuthenticated: false,
+      currentView: { type: 'landing' },
       appData: mockData,
       userProgress: [],
       desktopSessions: [],
 
       // Actions
       setUser: (user) => set({ user, isAuthenticated: !!user }),
+      
+      logout: () => {
+        set({ user: null, isAuthenticated: false, currentView: { type: 'landing' } })
+        if (typeof window !== 'undefined') {
+          const url = new URL(window.location.href)
+          url.searchParams.set('view', 'landing')
+          // Clear all other params
+          Array.from(url.searchParams.keys()).forEach(key => {
+            if (key !== 'view') {
+              url.searchParams.delete(key)
+            }
+          })
+          window.history.pushState({ view: { type: 'landing' } }, '', url.toString())
+        }
+      },
       
       navigate: (type, params = {}) => {
         const newView: ViewState = { type, params }
@@ -138,7 +154,7 @@ export const useAppStore = create<AppStore>()(
         if (typeof window === 'undefined') return
         
         const url = new URL(window.location.href)
-        const viewType = url.searchParams.get('view') as ViewState['type'] || 'dashboard'
+        const viewType = url.searchParams.get('view') as ViewState['type'] || 'landing'
         
         // Extract parameters from URL and build the params object correctly
         const params: ViewState['params'] = {}

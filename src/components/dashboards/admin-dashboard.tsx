@@ -28,7 +28,35 @@ import {
 
 export function AdminDashboard() {
   const { user, appData } = useApp()
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'infrastructure' | 'security'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'infrastructure' | 'security' | 'approvals'>('overview')
+
+  // Handler functions for instructor approval
+  const handleApproveInstructor = (instructorId: string) => {
+    const instructor = appData.users.find(u => u.id === instructorId)
+    if (instructor) {
+      instructor.isApproved = true
+      instructor.approvalStatus = 'approved'
+      instructor.approvedBy = user?.id
+      instructor.approvedAt = new Date()
+      instructor.levelName = 'Security Expert' // Update level name after approval
+      
+      // In a real app, this would make an API call
+      alert(`Instructor ${instructor.name} has been approved successfully!`)
+    }
+  }
+
+  const handleRejectInstructor = (instructorId: string) => {
+    const instructor = appData.users.find(u => u.id === instructorId)
+    if (instructor) {
+      instructor.isApproved = false
+      instructor.approvalStatus = 'rejected'
+      instructor.approvedBy = user?.id
+      instructor.approvedAt = new Date()
+      
+      // In a real app, this would make an API call
+      alert(`Instructor ${instructor.name} has been rejected.`)
+    }
+  }
 
   const systemStats = {
     totalUsers: 1247,
@@ -147,6 +175,7 @@ export function AdminDashboard() {
           {[
             { key: 'overview', label: 'Overview', icon: Activity },
             { key: 'users', label: 'User Management', icon: Users },
+            { key: 'approvals', label: 'Instructor Approvals', icon: UserPlus },
             { key: 'infrastructure', label: 'Infrastructure', icon: Server },
             { key: 'security', label: 'Security', icon: Shield }
           ].map(({ key, label, icon: Icon }) => (
@@ -168,113 +197,138 @@ export function AdminDashboard() {
 
       {/* Tab Content */}
       {activeTab === 'overview' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* System Health */}
-          <div className="lg:col-span-2 space-y-6">
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                System Health
-              </h3>
-              <div className="space-y-3">
-                {systemHealth.map((service, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-3 h-3 rounded-full ${
-                        service.status === 'healthy' ? 'bg-green-500' :
-                        service.status === 'warning' ? 'bg-yellow-500' : 'bg-red-500'
-                      }`}></div>
-                      <span className="font-medium text-gray-900 dark:text-white">{service.name}</span>
-                      <span className="text-xs text-gray-500 dark:text-gray-400">({service.instances} instances)</span>
-                    </div>
-                    <span className="text-sm text-gray-600 dark:text-gray-400">{service.uptime}</span>
-                  </div>
-                ))}
+        <div className="space-y-6">
+          {/* Pending Approvals Notification */}
+          {appData.users.filter(u => u.role === 'instructor' && u.approvalStatus === 'pending').length > 0 && (
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-xl p-4">
+              <div className="flex items-center gap-3">
+                <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+                <div className="flex-1">
+                  <h4 className="font-medium text-yellow-800 dark:text-yellow-200">
+                    Pending Instructor Approvals
+                  </h4>
+                  <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                    {appData.users.filter(u => u.role === 'instructor' && u.approvalStatus === 'pending').length} instructor account(s) waiting for approval
+                  </p>
+                </div>
+                <button 
+                  onClick={() => setActiveTab('approvals')}
+                  className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                >
+                  Review Now
+                </button>
               </div>
             </div>
+          )}
 
-            {/* Resource Usage */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Resource Usage
-              </h3>
-              <div className="grid grid-cols-2 gap-4">
-                {[
-                  { name: 'CPU', value: resourceUsage.cpu, icon: Cpu, color: 'bg-blue-500' },
-                  { name: 'Memory', value: resourceUsage.memory, icon: Activity, color: 'bg-green-500' },
-                  { name: 'Storage', value: resourceUsage.storage, icon: HardDrive, color: 'bg-yellow-500' },
-                  { name: 'Network', value: resourceUsage.network, icon: Network, color: 'bg-purple-500' }
-                ].map((resource) => {
-                  const Icon = resource.icon
-                  return (
-                    <div key={resource.name} className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Icon className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                          <span className="text-sm font-medium text-gray-900 dark:text-white">{resource.name}</span>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* System Health */}
+            <div className="lg:col-span-2 space-y-6">
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  System Health
+                </h3>
+                <div className="space-y-3">
+                  {systemHealth.map((service, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-3 h-3 rounded-full ${
+                          service.status === 'healthy' ? 'bg-green-500' :
+                          service.status === 'warning' ? 'bg-yellow-500' : 'bg-red-500'
+                        }`}></div>
+                        <span className="font-medium text-gray-900 dark:text-white">{service.name}</span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">({service.instances} instances)</span>
+                      </div>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">{service.uptime}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Resource Usage */}
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  Resource Usage
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  {[
+                    { name: 'CPU', value: resourceUsage.cpu, icon: Cpu, color: 'bg-blue-500' },
+                    { name: 'Memory', value: resourceUsage.memory, icon: Activity, color: 'bg-green-500' },
+                    { name: 'Storage', value: resourceUsage.storage, icon: HardDrive, color: 'bg-yellow-500' },
+                    { name: 'Network', value: resourceUsage.network, icon: Network, color: 'bg-purple-500' }
+                  ].map((resource) => {
+                    const Icon = resource.icon
+                    return (
+                      <div key={resource.name} className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Icon className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                            <span className="text-sm font-medium text-gray-900 dark:text-white">{resource.name}</span>
+                          </div>
+                          <span className="text-sm text-gray-600 dark:text-gray-400">{resource.value}%</span>
                         </div>
-                        <span className="text-sm text-gray-600 dark:text-gray-400">{resource.value}%</span>
+                        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                          <div 
+                            className={`${resource.color} h-2 rounded-full transition-all duration-300`}
+                            style={{ width: `${resource.value}%` }}
+                          ></div>
+                        </div>
                       </div>
-                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                        <div 
-                          className={`${resource.color} h-2 rounded-full transition-all duration-300`}
-                          style={{ width: `${resource.value}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  )
-                })}
+                    )
+                  })}
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Alerts */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Recent Alerts
-              </h3>
-              <div className="space-y-3">
-                {recentAlerts.slice(0, 4).map((alert) => (
-                  <div key={alert.id} className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                    {getAlertIcon(alert.type)}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-gray-900 dark:text-white font-medium">
-                        {alert.message}
-                      </p>
-                      <div className="flex items-center justify-between mt-1">
-                        <span className="text-xs text-gray-500 dark:text-gray-400">{alert.time}</span>
-                        <button className="text-xs text-purple-600 hover:text-purple-700 dark:text-purple-400">
-                          {alert.action}
-                        </button>
+            {/* Sidebar */}
+            <div className="space-y-6">
+              {/* Alerts */}
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  Recent Alerts
+                </h3>
+                <div className="space-y-3">
+                  {recentAlerts.slice(0, 4).map((alert) => (
+                    <div key={alert.id} className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                      {getAlertIcon(alert.type)}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-gray-900 dark:text-white font-medium">
+                          {alert.message}
+                        </p>
+                        <div className="flex items-center justify-between mt-1">
+                          <span className="text-xs text-gray-500 dark:text-gray-400">{alert.time}</span>
+                          <button className="text-xs text-purple-600 hover:text-purple-700 dark:text-purple-400">
+                            {alert.action}
+                          </button>
+                        </div>
                       </div>
                     </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Quick Stats */}
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  Quick Stats
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Active Users</span>
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">{systemStats.activeUsers}</span>
                   </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Quick Stats */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Quick Stats
-              </h3>
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Active Users</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">{systemStats.activeUsers}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Lab Sessions Today</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">127</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Avg Session Time</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">{systemStats.avgSessionTime}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Storage Used</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">{systemStats.storageUsed} / {systemStats.totalStorage}</span>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Lab Sessions Today</span>
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">127</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Avg Session Time</span>
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">{systemStats.avgSessionTime}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Storage Used</span>
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">{systemStats.storageUsed} / {systemStats.totalStorage}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -349,6 +403,93 @@ export function AdminDashboard() {
                       </td>
                     </tr>
                   ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'approvals' && (
+        <div className="space-y-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Instructor Account Approvals
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  Review and approve instructor account requests
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-600 dark:bg-yellow-900 dark:text-yellow-300">
+                  {appData.users.filter(u => u.role === 'instructor' && u.approvalStatus === 'pending').length} Pending
+                </span>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-200 dark:border-gray-700">
+                    <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Name</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Email</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Applied Date</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Status</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {appData.users
+                    .filter(u => u.role === 'instructor')
+                    .map((instructor) => (
+                      <tr key={instructor.id} className="border-b border-gray-100 dark:border-gray-800">
+                        <td className="py-3 px-4 text-gray-900 dark:text-white">{instructor.name}</td>
+                        <td className="py-3 px-4 text-gray-600 dark:text-gray-400">{instructor.email}</td>
+                        <td className="py-3 px-4 text-gray-600 dark:text-gray-400">
+                          {new Date(instructor.joinedAt).toLocaleDateString()}
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            instructor.approvalStatus === 'approved' 
+                              ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300'
+                              : instructor.approvalStatus === 'pending'
+                              ? 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900 dark:text-yellow-300'
+                              : 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300'
+                          }`}>
+                            {instructor.approvalStatus}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="flex gap-2">
+                            {instructor.approvalStatus === 'pending' && (
+                              <>
+                                <button 
+                                  onClick={() => handleApproveInstructor(instructor.id)}
+                                  className="flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs transition-colors"
+                                >
+                                  <CheckCircle className="w-3 h-3" />
+                                  Approve
+                                </button>
+                                <button 
+                                  onClick={() => handleRejectInstructor(instructor.id)}
+                                  className="flex items-center gap-1 bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs transition-colors"
+                                >
+                                  <AlertCircle className="w-3 h-3" />
+                                  Reject
+                                </button>
+                              </>
+                            )}
+                            {instructor.approvalStatus === 'approved' && (
+                              <span className="text-xs text-gray-500 dark:text-gray-400">
+                                Approved {instructor.approvedAt ? new Date(instructor.approvedAt).toLocaleDateString() : ''}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
                 </tbody>
               </table>
             </div>

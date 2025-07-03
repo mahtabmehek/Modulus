@@ -6,7 +6,7 @@ import { Menu, Bell, User, Sun, Moon, Monitor, LogOut } from 'lucide-react'
 import { useTheme } from 'next-themes'
 
 export function Header() {
-  const { user, navigate, switchUserRole } = useApp()
+  const { user, navigate, switchUserRole, logout } = useApp()
   const { theme, setTheme } = useTheme()
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
@@ -190,6 +190,10 @@ export function Header() {
                       Profile Settings
                     </button>
                     <button
+                      onClick={() => {
+                        logout()
+                        setShowUserMenu(false)
+                      }}
                       className="w-full text-left px-2 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded flex items-center"
                     >
                       <LogOut className="w-4 h-4 mr-2" />

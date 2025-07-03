@@ -11,6 +11,10 @@ import { ModuleView } from '@/components/views/module-view'
 import LabView from '@/components/views/lab-view'
 import { DesktopView } from '@/components/views/desktop-view'
 import { ProfileView } from '@/components/views/profile-view'
+import LandingPage from '@/components/views/landing-page'
+import LoginPage from '@/components/views/login-page'
+import RegisterPage from '@/components/views/register-page'
+import ApprovalPendingPage from '@/components/views/approval-pending-page'
 import { Footer } from '@/components/layout/footer'
 
 export default function Home() {
@@ -25,8 +29,10 @@ export default function Home() {
     if (typeof window !== 'undefined' && !window.history.state) {
       const url = new URL(window.location.href)
       if (!url.searchParams.has('view')) {
-        url.searchParams.set('view', 'dashboard')
-        window.history.replaceState({ view: { type: 'dashboard' } }, '', url.toString())
+        // If no user is logged in, show landing page, otherwise dashboard
+        const defaultView = user ? 'dashboard' : 'landing'
+        url.searchParams.set('view', defaultView)
+        window.history.replaceState({ view: { type: defaultView } }, '', url.toString())
       }
     }
     
@@ -40,9 +46,28 @@ export default function Home() {
     return () => {
       window.removeEventListener('popstate', handlePopState)
     }
-  }, [initializeFromUrl])
+  }, [initializeFromUrl, user])
 
   const renderContent = () => {
+    // Public pages (no authentication required)
+    if (currentView.type === 'landing') {
+      return <LandingPage />
+    }
+    if (currentView.type === 'login') {
+      return <LoginPage />
+    }
+    if (currentView.type === 'register') {
+      return <RegisterPage />
+    }
+    if (currentView.type === 'approval-pending') {
+      return <ApprovalPendingPage />
+    }
+
+    // Protected pages (authentication required)
+    if (!user) {
+      return <LandingPage />
+    }
+
     switch (currentView.type) {
       case 'dashboard':
         switch (user?.role) {
@@ -66,8 +91,19 @@ export default function Home() {
       case 'profile':
         return <ProfileView />
       default:
-        return <StudentDashboard />
+        return user ? <StudentDashboard /> : <LandingPage />
     }
+  }
+
+  // Don't show header/footer for public pages
+  const isPublicPage = ['landing', 'login', 'register', 'approval-pending'].includes(currentView.type)
+
+  if (isPublicPage) {
+    return (
+      <div className="min-h-screen">
+        {renderContent()}
+      </div>
+    )
   }
 
   return (

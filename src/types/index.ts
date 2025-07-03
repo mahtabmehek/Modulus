@@ -14,6 +14,10 @@ export interface User {
   joinedAt: Date
   lastActive: Date
   preferences: UserPreferences
+  isApproved?: boolean
+  approvalStatus?: 'pending' | 'approved' | 'rejected'
+  approvedBy?: string
+  approvedAt?: Date
 }
 
 export interface UserPreferences {
@@ -188,7 +192,7 @@ export interface Announcement {
 }
 
 export interface ViewState {
-  type: 'dashboard' | 'path' | 'module' | 'lab' | 'desktop' | 'profile'
+  type: 'landing' | 'login' | 'register' | 'approval-pending' | 'dashboard' | 'path' | 'module' | 'lab' | 'desktop' | 'profile'
   params?: {
     pathId?: string
     moduleId?: string
