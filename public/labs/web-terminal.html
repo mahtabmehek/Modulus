@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modulus Lab Terminal</title>
+    <script src="https://unpkg.com/xterm@5.3.0/lib/xterm.js"></script>
+    <script src="https://unpkg.com/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/xterm@5.3.0/css/xterm.css" />
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+        }
+        #terminal {
+            width: 100%;
+            height: calc(100vh - 40px);
+        }
+        .header {
+            background: #333;
+            color: #fff;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <strong>Modulus Lab Terminal</strong> - Kali Linux Environment
+    </div>
+    <div id="terminal"></div>
+
+    <script>
+        // Initialize xterm.js terminal
+        const terminal = new Terminal({
+            cursorBlink: true,
+            theme: {
+                background: '#000000',
+                foreground: '#00ff00',
+                cursor: '#00ff00'
+            }
+        });
+        
+        const fitAddon = new FitAddon.FitAddon();
+        terminal.loadAddon(fitAddon);
+        terminal.open(document.getElementById('terminal'));
+        fitAddon.fit();
+
+        // Simple command simulation
+        let currentLine = '';
+        let commandHistory = [];
+        let historyIndex = -1;
+
+        terminal.write('Welcome to Modulus Lab Terminal\r\n');
+        terminal.write('Kali Linux - Cybersecurity Learning Environment\r\n');
+        terminal.write('Type "help" for available commands\r\n\r\n');
+        writePrompt();
+
+        function writePrompt() {
+            terminal.write('kali@modulus:~$ ');
+        }
+
+        function executeCommand(command) {
+            const cmd = command.trim().toLowerCase();
+            
+            switch(cmd) {
+                case 'help':
+                    terminal.write('\r\nAvailable commands:\r\n');
+                    terminal.write('  ls       - List directory contents\r\n');
+                    terminal.write('  pwd      - Print working directory\r\n');
+                    terminal.write('  whoami   - Show current user\r\n');
+                    terminal.write('  date     - Show current date\r\n');
+                    terminal.write('  clear    - Clear terminal\r\n');
+                    terminal.write('  nmap     - Network scanner (demo)\r\n');
+                    terminal.write('  help     - Show this help\r\n\r\n');
+                    break;
+                
+                case 'ls':
+                    terminal.write('\r\nDesktop  Documents  Downloads  Pictures  lab-files\r\n\r\n');
+                    break;
+                
+                case 'pwd':
+                    terminal.write('\r\n/home/kali\r\n\r\n');
+                    break;
+                
+                case 'whoami':
+                    terminal.write('\r\nkali\r\n\r\n');
+                    break;
+                
+                case 'date':
+                    terminal.write('\r\n' + new Date().toString() + '\r\n\r\n');
+                    break;
+                
+                case 'clear':
+                    terminal.clear();
+                    terminal.write('Welcome to Modulus Lab Terminal\r\n\r\n');
+                    break;
+                
+                case 'nmap':
+                    terminal.write('\r\nStarting Nmap scan...\r\n');
+                    setTimeout(() => {
+                        terminal.write('Host 192.168.1.1 is up (0.001s latency)\r\n');
+                        terminal.write('PORT     STATE SERVICE\r\n');
+                        terminal.write('22/tcp   open  ssh\r\n');
+                        terminal.write('80/tcp   open  http\r\n');
+                        terminal.write('443/tcp  open  https\r\n\r\n');
+                        writePrompt();
+                    }, 2000);
+                    return; // Don't write prompt immediately
+                
+                case '':
+                    terminal.write('\r\n');
+                    break;
+                
+                default:
+                    terminal.write('\r\nCommand not found: ' + command + '\r\n');
+                    terminal.write('Type "help" for available commands\r\n\r\n');
+                    break;
+            }
+            
+            writePrompt();
+        }
+
+        // Handle terminal input
+        terminal.onData(data => {
+            const code = data.charCodeAt(0);
+            
+            if (code === 13) { // Enter
+                commandHistory.push(currentLine);
+                historyIndex = commandHistory.length;
+                executeCommand(currentLine);
+                currentLine = '';
+            } else if (code === 127) { // Backspace
+                if (currentLine.length > 0) {
+                    currentLine = currentLine.slice(0, -1);
+                    terminal.write('\b \b');
+                }
+            } else if (code === 27) { // Arrow keys
+                // Handle arrow key sequences
+                return;
+            } else if (code >= 32) { // Printable characters
+                currentLine += data;
+                terminal.write(data);
+            }
+        });
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            fitAddon.fit();
+        });
+    </script>
+</body>
+</html>
