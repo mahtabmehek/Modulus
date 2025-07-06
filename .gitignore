@@ -81,8 +81,5 @@ temp/
 *.key
 aws-config/
 deployment-config.env
-terraform.tfstate*
-.terraform/
 
 # Local development
-.vercel

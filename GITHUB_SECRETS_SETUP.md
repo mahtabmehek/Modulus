@@ -1,130 +1,46 @@
-# GitHub Secrets Setup Guide
+# GitHub Secrets Setup for AWS Free Tier
 
-To enable GitHub Actions deployment to AWS, you need to set up the following secrets in your GitHub repository.
+Simple setup for AWS Free Tier deployment.
 
-## How to Add GitHub Secrets
+## Required Secrets (Only 3!)
 
-1. Go to your GitHub repository
-2. Click on **Settings** tab
-3. Click on **Secrets and variables** → **Actions**
-4. Click **New repository secret**
-5. Add each secret below
+| Secret Name | Description | Example |
+|-------------|-------------|---------|
+| `AWS_ACCESS_KEY_ID` | Your AWS access key | `AKIAIOSFODNN7EXAMPLE` |
+| `AWS_SECRET_ACCESS_KEY` | Your AWS secret key | `wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY` |
+| `S3_BUCKET` | S3 bucket name from setup | `modulus-deploy-1234567890` |
 
-## Required Secrets
+## How to Add Secrets
 
-### For All Deployment Methods
-
-| Secret Name | Description | How to Get |
-|-------------|-------------|------------|
-| `AWS_ACCESS_KEY_ID` | AWS access key for programmatic access | AWS IAM Console → Users → Security credentials |
-| `AWS_SECRET_ACCESS_KEY` | AWS secret key for programmatic access | AWS IAM Console → Users → Security credentials |
-
-### For EC2 Deployment (Additional)
-
-| Secret Name | Description | Example Value |
-|-------------|-------------|---------------|
-| `S3_BUCKET` | S3 bucket name for storing deployments | `modulus-deployments-1234567890` |
-| `EC2_INSTANCE_TAG` | EC2 instance tag name | `modulus-app` |
+1. **Go to your GitHub repo**
+2. **Click Settings** → **Secrets and variables** → **Actions**  
+3. **Click "New repository secret"**
+4. **Add each secret** from the table above
 
 ## Getting AWS Credentials
 
-### Option 1: Create IAM User (Recommended)
+### Quick Method (5 minutes):
 
-1. **Go to AWS IAM Console**
-   - Navigate to: https://console.aws.amazon.com/iam/
+1. **Go to AWS Console** → **IAM** → **Users**
+2. **Click "Create user"**
+   - Username: `github-actions`
+   - Access type: ✅ Programmatic access
+3. **Attach policies**:
+   - `AmazonEC2FullAccess`
+   - `AmazonS3FullAccess`  
+   - `AmazonSSMFullAccess`
+4. **Download credentials**
+   - Access Key ID → Use as `AWS_ACCESS_KEY_ID`
+   - Secret Access Key → Use as `AWS_SECRET_ACCESS_KEY`
 
-2. **Create User**
-   ```
-   User name: github-actions-user
-   Access type: Programmatic access
-   ```
-
-3. **Attach Policies**
-   ```
-   - AmazonEC2FullAccess
-   - AmazonS3FullAccess
-   - AmazonECS_FullAccess
-   - ElasticBeanstalkFullAccess
-   - IAMFullAccess
-   - CloudWatchFullAccess
-   ```
-
-4. **Save Credentials**
-   - Copy `Access Key ID` → Use as `AWS_ACCESS_KEY_ID`
-   - Copy `Secret Access Key` → Use as `AWS_SECRET_ACCESS_KEY`
-
-### Option 2: Use Existing User
-
-If you already have an AWS user:
-
-1. Go to **IAM Console** → **Users**
-2. Select your user
-3. Go to **Security credentials** tab
-4. Click **Create access key**
-5. Choose **Command Line Interface (CLI)**
-6. Save the credentials
-
-## Security Best Practices
-
-### 🔒 IAM Policy (Least Privilege)
-
-Instead of using full access policies, create a custom policy:
-
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "ecs:*",
-        "ecr:*",
-        "elasticbeanstalk:*",
-        "ec2:*",
-        "s3:*",
-        "iam:PassRole",
-        "logs:*",
-        "elasticloadbalancing:*"
-      ],
-      "Resource": "*"
-    }
-  ]
-}
-```
-
-### 🛡️ Additional Security
-
-1. **Enable MFA** on your AWS root account
-2. **Use IAM roles** when possible
-3. **Rotate access keys** regularly
-4. **Monitor CloudTrail** for unusual activity
+### Security Note
+These permissions are for the free tier setup. For production, use more restrictive policies.
 
 ## Verification
 
-After adding secrets, you can verify they're set correctly:
+After adding secrets, push to master branch:
+```bash
+git push origin master
+```
 
-1. Go to **Settings** → **Secrets and variables** → **Actions**
-2. You should see your secrets listed (values will be hidden)
-3. Try a test deployment by pushing to master branch
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Invalid credentials**
-   - Double-check access key and secret key
-   - Ensure user has necessary permissions
-
-2. **Resource access denied**
-   - Check IAM policies attached to user
-   - Verify user has permissions for specific AWS services
-
-3. **Secrets not working**
-   - Ensure secret names match exactly (case-sensitive)
-   - Check for extra spaces in secret values
-
-### Getting Help
-
-- Check GitHub Actions logs for detailed error messages
-- Verify AWS CloudTrail for API call failures
-- Test AWS credentials locally with `aws sts get-caller-identity`
+Check GitHub Actions tab to see if deployment starts successfully.

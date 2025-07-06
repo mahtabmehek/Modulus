@@ -1,4 +1,4 @@
-name: Deploy to AWS EC2
+name: Deploy to AWS Free Tier
 
 on:
   push:
@@ -34,17 +34,17 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ env.AWS_REGION }}
 
-    - name: Deploy to EC2
+    - name: Deploy to Free Tier EC2
       run: |
-        # Create deployment package
-        tar -czf modulus-app.tar.gz .next package.json package-lock.json public src
+        # Create simple deployment package
+        tar -czf app.tar.gz .next package.json public
         
-        # Upload to S3
-        aws s3 cp modulus-app.tar.gz s3://${{ secrets.S3_BUCKET }}/deployments/modulus-app-${{ github.sha }}.tar.gz
+        # Upload to S3 (free tier: 5GB)
+        aws s3 cp app.tar.gz s3://${{ secrets.S3_BUCKET }}/app.tar.gz
         
-        # Trigger deployment on EC2 via SSM
+        # Simple deployment via SSM (free tier compatible)
         aws ssm send-command \
           --document-name "AWS-RunShellScript" \
-          --parameters 'commands=["#!/bin/bash","cd /var/www/modulus","aws s3 cp s3://${{ secrets.S3_BUCKET }}/deployments/modulus-app-${{ github.sha }}.tar.gz ./","tar -xzf modulus-app-${{ github.sha }}.tar.gz","npm install --production","pm2 restart modulus-app || pm2 start npm --name modulus-app -- start"]' \
-          --targets "Key=tag:Name,Values=${{ secrets.EC2_INSTANCE_TAG }}" \
+          --parameters 'commands=["cd /home/ec2-user/modulus","aws s3 cp s3://${{ secrets.S3_BUCKET }}/app.tar.gz ./","tar -xzf app.tar.gz","npm start > app.log 2>&1 &"]' \
+          --targets "Key=tag:Name,Values=modulus-app" \
           --region ${{ env.AWS_REGION }}
