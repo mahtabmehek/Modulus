@@ -100,8 +100,8 @@ export function CourseCreationView() {
                 onChange={(e) => handleInputChange('level', e.target.value)}
                 className="w-full px-4 py-3 bg-background border border-border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-foreground"
               >
-                <option value="Bachelor">Bachelor's Degree</option>
-                <option value="Master">Master's Degree</option>
+                <option value="Bachelor">Bachelor&apos;s Degree</option>
+                <option value="Master">Master&apos;s Degree</option>
                 <option value="Doctorate">Doctorate</option>
               </select>
             </div>
@@ -174,7 +174,7 @@ export function CourseCreationView() {
             <h3 className="text-lg font-semibold text-foreground mb-4">Course Structure Guidelines</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
               <div>
-                <h4 className="font-medium text-foreground mb-2">Bachelor's Degree:</h4>
+                <h4 className="font-medium text-foreground mb-2">Bachelor&apos;s Degree:</h4>
                 <ul className="text-muted-foreground space-y-1 list-disc list-inside">
                   <li>Typical duration: 3-4 years</li>
                   <li>Total credits: 300-480</li>
@@ -182,7 +182,7 @@ export function CourseCreationView() {
                 </ul>
               </div>
               <div>
-                <h4 className="font-medium text-foreground mb-2">Master's Degree:</h4>
+                <h4 className="font-medium text-foreground mb-2">Master&apos;s Degree:</h4>
                 <ul className="text-muted-foreground space-y-1 list-disc list-inside">
                   <li>Typical duration: 1-2 years</li>
                   <li>Total credits: 120-240</li>

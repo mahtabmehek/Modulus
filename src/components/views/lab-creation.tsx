@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { useApp } from '@/lib/hooks/use-app'
 import { 
   ArrowLeft, 
@@ -846,7 +847,7 @@ export default function LabCreationView() {
                                 {question.images && question.images.length > 0 && (
                                   <div className="flex flex-wrap gap-1 mt-1">
                                     {question.images.map((img, idx) => (
-                                      <img key={idx} src={img} alt="Question" className="w-12 h-12 object-cover rounded border" />
+                                      <Image key={idx} src={img} alt="Question" width={48} height={48} className="w-12 h-12 object-cover rounded border" />
                                     ))}
                                   </div>
                                 )}
