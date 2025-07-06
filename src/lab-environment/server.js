@@ -1,10 +1,9 @@
-// Lab Environment Server
-// Manages user lab sessions and provides terminal access
+// Web-based Lab Environment Server
+// Simulated Kali Linux environment with cybersecurity tools
 
 const express = require('express');
-const http = require('http');
 const WebSocket = require('ws');
-const pty = require('node-pty');
+const http = require('http');
 const path = require('path');
 
 const app = express();

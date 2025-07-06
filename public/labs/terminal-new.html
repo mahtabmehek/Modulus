@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modulus Lab Terminal</title>
+    <link rel="stylesheet" href="https://unpkg.com/xterm@5.3.0/css/xterm.css" />
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #1a1a1a;
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+        }
+        
+        .terminal-header {
+            background: #2d2d2d;
+            color: #fff;
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #444;
+        }
+        
+        .terminal-title {
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .terminal-controls {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .control-btn {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        
+        .close { background: #ff5f57; }
+        .minimize { background: #ffbd2e; }
+        .maximize { background: #28ca42; }
+        
+        .terminal-container {
+            height: calc(100vh - 40px);
+            background: #000;
+        }
+        
+        .status-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #2d2d2d;
+            color: #fff;
+            padding: 4px 16px;
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .connection-status {
+            color: #28ca42;
+        }
+        
+        .disconnected {
+            color: #ff5f57;
+        }
+    </style>
+</head>
+<body>
+    <div class="terminal-header">
+        <div class="terminal-title">🛡️ Modulus Lab Terminal - Kali Linux</div>
+        <div class="terminal-controls">
+            <div class="control-btn close" onclick="closeTerminal()"></div>
+            <div class="control-btn minimize"></div>
+            <div class="control-btn maximize" onclick="toggleFullscreen()"></div>
+        </div>
+    </div>
+    
+    <div id="terminal" class="terminal-container"></div>
+    
+    <div class="status-bar">
+        <span id="connection-status" class="connection-status">● Connected to Modulus Labs</span>
+        <span>Press Ctrl+C to interrupt | Type 'help' for commands</span>
+    </div>
+
+    <script src="https://unpkg.com/xterm@5.3.0/lib/xterm.js"></script>
+    <script src="https://unpkg.com/@xterm/addon-fit@0.10.0/lib/addon-fit.js"></script>
+    <script src="https://unpkg.com/@xterm/addon-web-links@0.11.0/lib/addon-web-links.js"></script>
+    
+    <script>
+        // Initialize xterm.js terminal
+        const terminal = new Terminal({
+            cursorBlink: true,
+            theme: {
+                background: '#000000',
+                foreground: '#ffffff',
+                cursor: '#ffffff',
+                selection: 'rgba(255, 255, 255, 0.3)',
+                black: '#2e3436',
+                red: '#cc0000',
+                green: '#4e9a06',
+                yellow: '#c4a000',
+                blue: '#3465a4',
+                magenta: '#75507b',
+                cyan: '#06989a',
+                white: '#d3d7cf',
+                brightBlack: '#555753',
+                brightRed: '#ef2929',
+                brightGreen: '#8ae234',
+                brightYellow: '#fce94f',
+                brightBlue: '#729fcf',
+                brightMagenta: '#ad7fa8',
+                brightCyan: '#34e2e2',
+                brightWhite: '#eeeeec'
+            },
+            fontSize: 14,
+            fontFamily: 'Courier New, monospace',
+            rows: 30,
+            cols: 100
+        });
+
+        // Load addons
+        const fitAddon = new FitAddon.FitAddon();
+        const webLinksAddon = new WebLinksAddon.WebLinksAddon();
+        
+        terminal.loadAddon(fitAddon);
+        terminal.loadAddon(webLinksAddon);
+
+        // Open terminal in container
+        terminal.open(document.getElementById('terminal'));
+        fitAddon.fit();
+
+        // WebSocket connection
+        const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//${location.host}`;
+        let socket;
+        
+        function connectWebSocket() {
+            try {
+                socket = new WebSocket(wsUrl);
+                
+                socket.onopen = function() {
+                    console.log('Connected to lab terminal');
+                    updateConnectionStatus('● Connected to Modulus Labs', 'connection-status');
+                };
+                
+                socket.onmessage = function(event) {
+                    terminal.write(event.data);
+                };
+                
+                socket.onclose = function() {
+                    console.log('Disconnected from lab terminal');
+                    updateConnectionStatus('● Disconnected - Attempting to reconnect...', 'disconnected');
+                    
+                    // Auto-reconnect after 3 seconds
+                    setTimeout(() => {
+                        if (socket.readyState === WebSocket.CLOSED) {
+                            connectWebSocket();
+                        }
+                    }, 3000);
+                };
+                
+                socket.onerror = function(error) {
+                    console.error('WebSocket error:', error);
+                    updateConnectionStatus('● Connection Error', 'disconnected');
+                };
+                
+            } catch (error) {
+                console.error('Failed to connect:', error);
+                updateConnectionStatus('● Failed to Connect', 'disconnected');
+            }
+        }
+
+        // Handle terminal input
+        terminal.onData(function(data) {
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(data);
+            }
+        });
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            fitAddon.fit();
+        });
+
+        // Update connection status
+        function updateConnectionStatus(text, className) {
+            const statusElement = document.getElementById('connection-status');
+            statusElement.textContent = text;
+            statusElement.className = className;
+        }
+
+        // Terminal controls
+        function closeTerminal() {
+            if (socket) {
+                socket.close();
+            }
+            if (window.parent) {
+                window.parent.postMessage('closeTerminal', '*');
+            } else {
+                window.close();
+            }
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        // Handle fullscreen changes
+        document.addEventListener('fullscreenchange', () => {
+            setTimeout(() => fitAddon.fit(), 100);
+        });
+
+        // Initialize connection
+        connectWebSocket();
+
+        // Focus terminal on load
+        terminal.focus();
+    </script>
+</body>
+</html>
