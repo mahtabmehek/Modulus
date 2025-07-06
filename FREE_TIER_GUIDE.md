@@ -48,6 +48,28 @@ After deployment completes:
 | Service | Free Tier Limit | Your Usage | Cost |
 |---------|----------------|------------|------|
 | EC2 t2.micro | 750 hours/month | 744 hours | $0 |
+| S3 Storage | 5GB | ~1GB | $0 |
+| Data Transfer | 15GB/month | ~5GB | $0 |
+| ECS Fargate | 20GB-Hours, 10GB storage | Minimal | $0 |
+| RDS PostgreSQL | db.t3.micro 750 hours | 744 hours | $0 |
+| Application Load Balancer | 750 hours | 744 hours | $0 |
+| **Total Monthly Cost** | | | **$0** ✅ |
+
+## 🛡️ Security Features (Free Tier)
+
+- **AWS Shield Standard**: Automatic DDoS protection (free)
+- **VPC Network Isolation**: Private subnets for database
+- **Security Groups**: Firewall rules with minimal port exposure
+- **SSL/TLS**: Free SSL certificates via ACM
+- **Invite-Only Access**: Custom access code protection
+- **CloudWatch Monitoring**: Basic metrics and logs (free tier)
+
+## 🎯 Performance Optimizations
+
+- **Single Instance Deployment**: Minimizes costs while maintaining functionality
+- **Efficient Resource Allocation**: 512 CPU, 1GB RAM per container
+- **CDN Ready**: S3 static assets with CloudFront capability
+- **Database Optimization**: PostgreSQL with 20GB storage
 | S3 Storage | 5GB | ~100MB | $0 |
 | Data Transfer | 15GB/month | ~1GB | $0 |
 | **Total** | | | **$0** |
@@ -69,11 +91,31 @@ After deployment completes:
 ssh -i modulus-key.pem ec2-user@YOUR_IP
 ```
 
-## 📊 Monitoring
+## 📊 Monitoring & Cost Control
 
+### Free Tier Usage Monitoring
+```bash
+# Check your free tier usage weekly
+bash monitor-free-tier.sh
+```
+
+This script monitors:
+- **EC2 Hours**: 750/month limit
+- **RDS Hours**: 750/month limit  
+- **S3 Storage**: 5GB limit
+- **Data Transfer**: 15GB/month limit
+
+### Cost Alerts (Recommended)
+1. **Set up AWS Billing Alerts** in AWS Console
+2. **Create CloudWatch Alarms** for resource usage
+3. **Monitor Weekly** with the monitoring script
+4. **Review Monthly** in AWS Billing Dashboard
+
+### Application Monitoring
 - **GitHub Actions**: Deployment status and logs
 - **AWS Console**: EC2 instance health and S3 usage
-- **Application Logs**: SSH into instance and check `/var/log/modulus.log`
+- **CloudWatch**: Application metrics and logs
+- **Application Health**: Check endpoints regularly
 
 ## 🔄 Updates
 

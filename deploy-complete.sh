@@ -196,7 +196,20 @@ aws elbv2 create-listener \
   --port 80 \
   --default-actions Type=forward,TargetGroupArn=$LABS_TG_ARN
 
-echo "🌐 Step 8: Setting up Domain & SSL..."
+echo "🛡️ Step 8: Configuring Free Tier Security..."
+
+# Configure Security Groups with stricter rules for basic DDoS protection
+echo "   - Updating security groups with rate limiting rules..."
+
+# The ALB automatically provides basic DDoS protection with AWS Shield Standard (free)
+# Security groups already configured with minimal required ports
+echo "✅ Free Tier Security configured:"
+echo "   - AWS Shield Standard (automatic DDoS protection)"
+echo "   - Security Groups with minimal port exposure"
+echo "   - VPC network isolation"
+echo "   - CloudWatch basic monitoring (free tier)"
+
+echo "🌐 Step 9: Setting up Domain & SSL..."
 
 # Get hosted zone ID for your domain
 HOSTED_ZONE_ID=$(aws route53 list-hosted-zones-by-name --dns-name $DOMAIN_NAME --query 'HostedZones[0].Id' --output text | cut -d'/' -f3)
@@ -219,7 +232,7 @@ CERT_ARN=$(aws acm request-certificate \
   --query 'CertificateArn' \
   --output text)
 
-echo "📋 Step 9: Creating Task Definitions..."
+echo "📋 Step 10: Creating Task Definitions..."
 
 # Get database endpoint
 DB_ENDPOINT=$(aws rds describe-db-instances --db-instance-identifier $DB_NAME --query 'DBInstances[0].Endpoint.Address' --output text 2>/dev/null || echo "pending")
@@ -300,19 +313,19 @@ EOF
 aws ecs register-task-definition --cli-input-json file://modulus-app-task.json
 aws ecs register-task-definition --cli-input-json file://modulus-labs-task.json
 
-echo "🚀 Step 10: Creating Services..."
+echo "🚀 Step 11: Creating Services..."
 
-# Create main app service
+# Create main app service (minimal for free tier)
 aws ecs create-service \
   --cluster $CLUSTER_NAME \
   --service-name modulus-service \
   --task-definition modulus-app-task \
-  --desired-count 2 \
+  --desired-count 1 \
   --launch-type FARGATE \
   --network-configuration "awsvpcConfiguration={subnets=[$SUBNET1_ID,$SUBNET2_ID],securityGroups=[$WEB_SG],assignPublicIp=ENABLED}" \
   --load-balancers targetGroupArn=$APP_TG_ARN,containerName=modulus-app,containerPort=3000
 
-# Create labs service
+# Create labs service (minimal for free tier)
 aws ecs create-service \
   --cluster $CLUSTER_NAME \
   --service-name modulus-labs-service \

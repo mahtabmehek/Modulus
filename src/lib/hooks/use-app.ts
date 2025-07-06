@@ -57,35 +57,10 @@ interface AppStore {
 export const useAppStore = create<AppStore>()(
   persist(
     (set, get) => ({
-      // Initial state - temporarily disable invite-only for development
-      user: {
-        id: 'user-1',
-        name: 'Dev User',
-        email: 'dev@modulus.edu',
-        role: 'admin',
-        avatar: '/api/placeholder/40/40',
-        level: 3,
-        levelName: 'Intermediate',
-        badges: ['first-lab', 'week-streak'],
-        streakDays: 5,
-        totalPoints: 2450,
-        joinedAt: new Date('2024-01-15'),
-        lastActive: new Date(),
-        preferences: {
-          theme: 'system',
-          language: 'en',
-          notifications: {
-            email: true,
-            push: true,
-            announcements: true,
-            labUpdates: true
-          }
-        },
-        isApproved: true,
-        approvalStatus: 'approved'
-      },
-      isAuthenticated: true,
-      currentView: { type: 'dashboard' },
+      // Initial state - Enable invite-only mode for security
+      user: null,
+      isAuthenticated: false,
+      currentView: { type: 'invite-landing' },
       appData: mockData,
       userProgress: [],
       desktopSessions: [],
@@ -247,14 +222,14 @@ export const useAppStore = create<AppStore>()(
       validateInviteCode: async (code: string) => {
         console.log('Validating invite code:', code)
         
-        // Temporary development access code
-        if (code === 'mahtabmehek') {
-          console.log('Valid temporary access code detected')
+        // Primary access code for secure access
+        if (code === 'mahtabmehek1337') {
+          console.log('Valid access code detected')
           return {
-            id: 'temp-invite',
-            code: 'mahtabmehek',
-            name: 'Development User',
-            email: 'dev@modulus.edu',
+            id: 'secure-invite',
+            code: 'mahtabmehek1337',
+            name: 'Authorized User',
+            email: 'user@modulus.edu',
             role: 'admin' as const,
             permissions: ['all'],
             createdBy: 'system',
