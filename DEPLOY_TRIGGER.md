@@ -1,18 +1,28 @@
-# 🚀 DEPLOYMENT FIX - Import Issues Resolved
+# 🚀 DEPLOYMENT FIX - Docker Container Runtime Issue
 
-## ✅ Module Import Issues Fixed - Component Restored
+## ✅ ECS Service Stability Issue Fixed - Container Runtime Updated
 
-**Previous Deployment Failed:** Module import errors and empty component file  
-**Current Status:** 🟢 **READY FOR DEPLOYMENT** - All imports working correctly  
-**Solution:** Restored invite-user.tsx component content and verified all imports  
+**Previous Deployment Failed:** ECS service failed to stabilize - containers not starting properly  
+**Root Cause:** Docker configuration using `npm start` instead of `node server.js` for Next.js standalone mode  
+**Current Status:** 🟢 **READY FOR DEPLOYMENT** - Docker runtime fixed  
+**Solution:** Updated Dockerfile to use `node server.js` for Next.js standalone output  
 **Region:** eu-west-2 (London)  
-**Timestamp:** July 6, 2025 - 16:00 UTC
+**Timestamp:** July 6, 2025 - 17:15 UTC
 
 ## 🔧 Issues Fixed
-- ✅ Empty invite-user.tsx file restored with proper content
-- ✅ InviteUserView component properly exported
-- ✅ All import statements in page.tsx working correctly  
-- ✅ Module resolution paths confirmed in tsconfig.jsonOYMENT FIX TRIGGERED - ESLint Errors Resolved
+- ✅ Docker build successful (Next.js compiled correctly)
+- ✅ ECR image push successful  
+- ✅ ECS service created but containers failing health checks
+- ✅ Fixed: Changed CMD from `npm start` to `node server.js`
+- ✅ Next.js standalone mode requires `node server.js` not `npm start`
+
+## 📊 Previous Deployment Analysis
+- ✅ AWS infrastructure setup: SUCCESS
+- ✅ Docker build process: SUCCESS  
+- ✅ ECR image upload: SUCCESS
+- ✅ ECS task definition: SUCCESS
+- ❌ ECS service stability: FAILED (containers not starting)
+- ✅ Root cause identified: Wrong container startup commandOYMENT FIX TRIGGERED - ESLint Errors Resolved
 
 ## ✅ ESLint Issues Fixed and Redeployed
 
