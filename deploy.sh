@@ -146,19 +146,18 @@ WORKDIR /app
 
 # Copy package files and install dependencies
 COPY package*.json ./
-RUN npm ci --legacy-peer-deps --ignore-scripts
+RUN npm ci --legacy-peer-deps
 
 # Copy source code
 COPY . .
 
 # Set environment variables
-ENV AWS_SDK_LOAD_CONFIG=0
-ENV AWS_REGION=eu-west-2
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
+ENV PORT=3000
 
 # Build the application
-RUN npm run build 2>/dev/null || npm run build --verbose || echo "Build completed with warnings"
+RUN npm run build
 
 # Create user for security
 RUN addgroup --system --gid 1001 nodejs
@@ -168,10 +167,9 @@ USER nextjs
 
 # Expose port
 EXPOSE 3000
-ENV PORT=3000
 
-# Start the application
-CMD ["npm", "start"]
+# Start the application (use node server.js since output is standalone)
+CMD ["node", "server.js"]
 EOF
 
 # Build image
