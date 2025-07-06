@@ -1,4 +1,158 @@
-#!/bin/bash# 🚀 Modulus LMS - Ultra Simple Frontend Deployment# Focus: Basic Next.js app on ECS with ALBset -e# Color codes for outputRED='\033[0;31m'GREEN='\033[0;32m'YELLOW='\033[1;33m'BLUE='\033[0;34m'NC='\033[0m' # No Color# ConfigurationAWS_REGION="eu-west-2"APP_NAME="modulus"CLUSTER_NAME="modulus-cluster"SERVICE_NAME="modulus-service"TASK_FAMILY="modulus-task"ECR_REPO="modulus-lms"ALB_NAME="modulus-alb"TARGET_GROUP_NAME="modulus-tg"SECURITY_GROUP_NAME="modulus-sg"# Functions for colored outputlog_info() { echo -e "${BLUE}ℹ️  $1${NC}"; }log_success() { echo -e "${GREEN}✅ $1${NC}"; }log_warning() { echo -e "${YELLOW}⚠️  $1${NC}"; }log_error() { echo -e "${RED}❌ $1${NC}"; }# Error handlingcleanup_on_error() {    log_error "Deployment failed. Check the logs above."    exit 1}trap cleanup_on_error ERRecho "🚀 Modulus LMS - Ultra Simple Frontend Deployment"echo "================================================="# Step 1: Validate AWS Accesslog_info "Step 1: Validating AWS access..."ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text --region $AWS_REGION 2>/dev/null || {    log_error "AWS CLI not configured or no permissions"    exit 1})log_success "AWS Account ID: $ACCOUNT_ID"log_success "Region: $AWS_REGION"# Step 2: Create or validate ecsTaskExecutionRolelog_info "Step 2: Setting up IAM role for ECS..."ROLE_EXISTS=$(aws iam get-role --role-name ecsTaskExecutionRole 2>/dev/null && echo "true" || echo "false")if [ "$ROLE_EXISTS" = "false" ]; then    log_info "Creating ecsTaskExecutionRole..."        # Create trust policy    cat > trust-policy.json << EOF{  "Version": "2012-10-17",  "Statement": [    {      "Effect": "Allow",      "Principal": {        "Service": "ecs-tasks.amazonaws.com"      },      "Action": "sts:AssumeRole"    }  ]}EOF    aws iam create-role --role-name ecsTaskExecutionRole --assume-role-policy-document file://trust-policy.json    aws iam attach-role-policy --role-name ecsTaskExecutionRole --policy-arn arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy        rm trust-policy.json    log_success "Created ecsTaskExecutionRole"else    log_success "Using existing ecsTaskExecutionRole"fi# Step 3: Get VPC and Subnetslog_info "Step 3: Setting up network infrastructure..."VPC_ID=$(aws ec2 describe-vpcs --filters "Name=is-default,Values=true" --query 'Vpcs[0].VpcId' --output text --region $AWS_REGION)if [ "$VPC_ID" = "None" ] || [ -z "$VPC_ID" ]; then    log_error "No default VPC found. Creating one..."    VPC_ID=$(aws ec2 create-default-vpc --query 'Vpc.VpcId' --output text --region $AWS_REGION)filog_success "Using VPC: $VPC_ID"SUBNETS=$(aws ec2 describe-subnets --filters "Name=vpc-id,Values=$VPC_ID" --query 'Subnets[0:2].SubnetId' --output text --region $AWS_REGION)SUBNET1=$(echo $SUBNETS | cut -d' ' -f1)SUBNET2=$(echo $SUBNETS | cut -d' ' -f2)log_success "Using subnets: $SUBNET1, $SUBNET2"# Step 4: Security Grouplog_info "Step 4: Setting up security group..."SECURITY_GROUP_ID=$(aws ec2 describe-security-groups --filters "Name=group-name,Values=$SECURITY_GROUP_NAME" --query 'SecurityGroups[0].GroupId' --output text --region $AWS_REGION 2>/dev/null || echo "None")if [ "$SECURITY_GROUP_ID" = "None" ]; then    log_info "Creating security group..."    SECURITY_GROUP_ID=$(aws ec2 create-security-group \        --group-name $SECURITY_GROUP_NAME \        --description "Modulus LMS Security Group" \        --vpc-id $VPC_ID \        --query 'GroupId' \        --output text \        --region $AWS_REGION)        aws ec2 authorize-security-group-ingress --group-id $SECURITY_GROUP_ID --protocol tcp --port 80 --cidr 0.0.0.0/0 --region $AWS_REGION    aws ec2 authorize-security-group-ingress --group-id $SECURITY_GROUP_ID --protocol tcp --port 443 --cidr 0.0.0.0/0 --region $AWS_REGION    aws ec2 authorize-security-group-ingress --group-id $SECURITY_GROUP_ID --protocol tcp --port 3000 --cidr 0.0.0.0/0 --region $AWS_REGION    log_success "Created security group: $SECURITY_GROUP_ID"else    log_success "Using existing security group: $SECURITY_GROUP_ID"fi# Step 5: ECR Repositorylog_info "Step 5: Setting up container registry..."ECR_EXISTS=$(aws ecr describe-repositories --repository-names $ECR_REPO --region $AWS_REGION 2>/dev/null && echo "true" || echo "false")if [ "$ECR_EXISTS" = "false" ]; then    log_info "Creating ECR repository..."    aws ecr create-repository --repository-name $ECR_REPO --region $AWS_REGION    log_success "Created ECR repository"else    log_success "Using existing ECR repository"fi# Step 6: Build and Push Docker Imagelog_info "Step 6: Building and pushing Docker image..."# Create optimized Dockerfile for Next.jscat > Dockerfile.simple << 'EOF'FROM node:18-alpine AS base# Install dependencies only when neededFROM base AS depsWORKDIR /appCOPY package.json package-lock.json* ./RUN npm ci --only=production --legacy-peer-deps# Rebuild the source code only when neededFROM base AS builderWORKDIR /appCOPY --from=deps /app/node_modules ./node_modulesCOPY . .ENV NEXT_TELEMETRY_DISABLED=1ENV NODE_ENV=productionRUN npm run build# Production imageFROM base AS runnerWORKDIR /appENV NODE_ENV=production
+#!/bin/bash
+
+# 🚀 Modulus LMS - Ultra Simple Frontend Deployment
+# Focus: Basic Next.js app on ECS with ALB
+
+set -e
+
+# Color codes for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Configuration
+AWS_REGION="eu-west-2"
+APP_NAME="modulus"
+CLUSTER_NAME="modulus-cluster"
+SERVICE_NAME="modulus-service"
+TASK_FAMILY="modulus-task"
+ECR_REPO="modulus-lms"
+ALB_NAME="modulus-alb"
+TARGET_GROUP_NAME="modulus-tg"
+SECURITY_GROUP_NAME="modulus-sg"
+
+# Functions for colored output
+log_info() { echo -e "${BLUE}ℹ️  $1${NC}"; }
+log_success() { echo -e "${GREEN}✅ $1${NC}"; }
+log_warning() { echo -e "${YELLOW}⚠️  $1${NC}"; }
+log_error() { echo -e "${RED}❌ $1${NC}"; }
+
+# Error handling
+cleanup_on_error() {
+    log_error "Deployment failed. Check the logs above."
+    exit 1
+}
+trap cleanup_on_error ERR
+
+echo "🚀 Modulus LMS - Ultra Simple Frontend Deployment"
+echo "================================================="
+echo "🔄 Deployment started: $(date)"
+
+# Step 1: Validate AWS Access
+log_info "Step 1: Validating AWS access..."
+ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text --region $AWS_REGION 2>/dev/null || {
+    log_error "AWS CLI not configured or no permissions"
+    exit 1
+})
+log_success "AWS Account ID: $ACCOUNT_ID"
+log_success "Region: $AWS_REGION"
+
+# Step 2: Create or validate ecsTaskExecutionRole
+log_info "Step 2: Setting up IAM role for ECS..."
+ROLE_EXISTS=$(aws iam get-role --role-name ecsTaskExecutionRole 2>/dev/null && echo "true" || echo "false")
+if [ "$ROLE_EXISTS" = "false" ]; then
+    log_info "Creating ecsTaskExecutionRole..."
+    
+    # Create trust policy
+    cat > trust-policy.json << EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "ecs-tasks.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+EOF
+
+    aws iam create-role --role-name ecsTaskExecutionRole --assume-role-policy-document file://trust-policy.json
+    aws iam attach-role-policy --role-name ecsTaskExecutionRole --policy-arn arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+    
+    rm trust-policy.json
+    log_success "Created ecsTaskExecutionRole"
+else
+    log_success "Using existing ecsTaskExecutionRole"
+fi
+
+# Step 3: Get VPC and Subnets
+log_info "Step 3: Setting up network infrastructure..."
+VPC_ID=$(aws ec2 describe-vpcs --filters "Name=is-default,Values=true" --query 'Vpcs[0].VpcId' --output text --region $AWS_REGION)
+if [ "$VPC_ID" = "None" ] || [ -z "$VPC_ID" ]; then
+    log_error "No default VPC found. Creating one..."
+    VPC_ID=$(aws ec2 create-default-vpc --query 'Vpc.VpcId' --output text --region $AWS_REGION)
+fi
+log_success "Using VPC: $VPC_ID"
+
+SUBNETS=$(aws ec2 describe-subnets --filters "Name=vpc-id,Values=$VPC_ID" --query 'Subnets[0:2].SubnetId' --output text --region $AWS_REGION)
+SUBNET1=$(echo $SUBNETS | cut -d' ' -f1)
+SUBNET2=$(echo $SUBNETS | cut -d' ' -f2)
+log_success "Using subnets: $SUBNET1, $SUBNET2"
+
+# Step 4: Security Group
+log_info "Step 4: Setting up security group..."
+SECURITY_GROUP_ID=$(aws ec2 describe-security-groups --filters "Name=group-name,Values=$SECURITY_GROUP_NAME" --query 'SecurityGroups[0].GroupId' --output text --region $AWS_REGION 2>/dev/null || echo "None")
+
+if [ "$SECURITY_GROUP_ID" = "None" ]; then
+    log_info "Creating security group..."
+    SECURITY_GROUP_ID=$(aws ec2 create-security-group \
+        --group-name $SECURITY_GROUP_NAME \
+        --description "Modulus LMS Security Group" \
+        --vpc-id $VPC_ID \
+        --query 'GroupId' \
+        --output text \
+        --region $AWS_REGION)
+    
+    aws ec2 authorize-security-group-ingress --group-id $SECURITY_GROUP_ID --protocol tcp --port 80 --cidr 0.0.0.0/0 --region $AWS_REGION
+    aws ec2 authorize-security-group-ingress --group-id $SECURITY_GROUP_ID --protocol tcp --port 443 --cidr 0.0.0.0/0 --region $AWS_REGION
+    aws ec2 authorize-security-group-ingress --group-id $SECURITY_GROUP_ID --protocol tcp --port 3000 --cidr 0.0.0.0/0 --region $AWS_REGION
+    log_success "Created security group: $SECURITY_GROUP_ID"
+else
+    log_success "Using existing security group: $SECURITY_GROUP_ID"
+fi
+
+# Step 5: ECR Repository
+log_info "Step 5: Setting up container registry..."
+ECR_EXISTS=$(aws ecr describe-repositories --repository-names $ECR_REPO --region $AWS_REGION 2>/dev/null && echo "true" || echo "false")
+if [ "$ECR_EXISTS" = "false" ]; then
+    log_info "Creating ECR repository..."
+    aws ecr create-repository --repository-name $ECR_REPO --region $AWS_REGION
+    log_success "Created ECR repository"
+else
+    log_success "Using existing ECR repository"
+fi
+
+# Step 6: Build and Push Docker Image
+log_info "Step 6: Building and pushing Docker image..."
+
+# Create optimized Dockerfile for Next.js
+cat > Dockerfile.simple << 'EOF'
+FROM node:18-alpine AS base
+
+# Install dependencies only when needed
+FROM base AS deps
+WORKDIR /app
+COPY package.json package-lock.json* ./
+RUN npm ci --only=production --legacy-peer-deps
+
+# Rebuild the source code only when needed
+FROM base AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_ENV=production
+RUN npm run build
+
+# Production image
+FROM base AS runner
+WORKDIR /app
+ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0

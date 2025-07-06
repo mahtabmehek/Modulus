@@ -1,7 +1,7 @@
-# Modulus LMS - Smart Deployment Pipeline
-# Idempotent deployment with zero-downtime updates
+# Modulus LMS - Single Deployment Pipeline
+# ONLY deployment workflow - others disabled
 
-name: 🚀 Deploy Modulus LMS (Smart)
+name: 🚀 Deploy Modulus LMS
 
 on:
   push:
