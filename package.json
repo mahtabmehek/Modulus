@@ -4,11 +4,11 @@
   "description": "Modulus - Interactive Learning Management System",
   "private": true,
   "scripts": {
-    "dev": "npx next dev",
-    "build": "npx next build",
-    "start": "npx next start",
-    "lint": "npx next lint",
-    "type-check": "npx tsc --noEmit",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "type-check": "tsc --noEmit",
     "labs": "node src/lab-environment/server.js"
   },
   "dependencies": {

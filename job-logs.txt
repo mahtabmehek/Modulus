@@ -1,0 +1,586 @@
+﻿2025-07-06T13:46:21.7454339Z Current runner version: '2.325.0'
+2025-07-06T13:46:21.7528257Z ##[group]Operating System
+2025-07-06T13:46:21.7529457Z Ubuntu
+2025-07-06T13:46:21.7530305Z 24.04.2
+2025-07-06T13:46:21.7531157Z LTS
+2025-07-06T13:46:21.7531894Z ##[endgroup]
+2025-07-06T13:46:21.7532728Z ##[group]Runner Image
+2025-07-06T13:46:21.7533862Z Image: ubuntu-24.04
+2025-07-06T13:46:21.7534739Z Version: 20250629.1.0
+2025-07-06T13:46:21.7536503Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20250629.1/images/ubuntu/Ubuntu2404-Readme.md
+2025-07-06T13:46:21.7539427Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20250629.1
+2025-07-06T13:46:21.7541026Z ##[endgroup]
+2025-07-06T13:46:21.7541815Z ##[group]Runner Image Provisioner
+2025-07-06T13:46:21.7542890Z 2.0.449.1
+2025-07-06T13:46:21.7543736Z ##[endgroup]
+2025-07-06T13:46:21.7545503Z ##[group]GITHUB_TOKEN Permissions
+2025-07-06T13:46:21.7568378Z Contents: read
+2025-07-06T13:46:21.7569248Z Metadata: read
+2025-07-06T13:46:21.7570529Z Packages: read
+2025-07-06T13:46:21.7571527Z ##[endgroup]
+2025-07-06T13:46:21.7574540Z Secret source: Actions
+2025-07-06T13:46:21.7575711Z Prepare workflow directory
+2025-07-06T13:46:21.8717971Z Prepare all required actions
+2025-07-06T13:46:21.8814182Z Getting action download info
+2025-07-06T13:46:22.2081117Z ##[group]Download immutable action package 'actions/checkout@v4'
+2025-07-06T13:46:22.2082128Z Version: 4.2.2
+2025-07-06T13:46:22.2083199Z Digest: sha256:ccb2698953eaebd21c7bf6268a94f9c26518a7e38e27e0b83c1fe1ad049819b1
+2025-07-06T13:46:22.2084422Z Source commit SHA: 11bd71901bbe5b1630ceea73d27597364c9af683
+2025-07-06T13:46:22.2085125Z ##[endgroup]
+2025-07-06T13:46:22.3038172Z Download action repository 'aws-actions/configure-aws-credentials@v4' (SHA:e3dd6a429d7300a6a4c196c26e071d42e0343502)
+2025-07-06T13:46:22.5349581Z ##[group]Download immutable action package 'docker/setup-buildx-action@v3'
+2025-07-06T13:46:22.5350478Z Version: 3.11.1
+2025-07-06T13:46:22.5351285Z Digest: sha256:b58e632d2d812e161c8abeba6def9f56b420aa9ae41d825a8408241bcad0f303
+2025-07-06T13:46:22.5352265Z Source commit SHA: e468171a9de216ec08956ac3ada2f0791b6bd435
+2025-07-06T13:46:22.5352985Z ##[endgroup]
+2025-07-06T13:46:22.9230122Z Complete job name: 🚀 Deploy Modulus LMS
+2025-07-06T13:46:22.9899662Z ##[group]Run actions/checkout@v4
+2025-07-06T13:46:22.9900554Z with:
+2025-07-06T13:46:22.9900988Z   repository: mahtabmehek/Modulus
+2025-07-06T13:46:22.9901718Z   token: ***
+2025-07-06T13:46:22.9902126Z   ssh-strict: true
+2025-07-06T13:46:22.9902541Z   ssh-user: git
+2025-07-06T13:46:22.9902973Z   persist-credentials: true
+2025-07-06T13:46:22.9903467Z   clean: true
+2025-07-06T13:46:22.9903884Z   sparse-checkout-cone-mode: true
+2025-07-06T13:46:22.9904427Z   fetch-depth: 1
+2025-07-06T13:46:22.9904849Z   fetch-tags: false
+2025-07-06T13:46:22.9905278Z   show-progress: true
+2025-07-06T13:46:22.9905723Z   lfs: false
+2025-07-06T13:46:22.9906129Z   submodules: false
+2025-07-06T13:46:22.9906564Z   set-safe-directory: true
+2025-07-06T13:46:22.9907239Z env:
+2025-07-06T13:46:22.9907853Z   AWS_REGION: eu-west-2
+2025-07-06T13:46:22.9908309Z ##[endgroup]
+2025-07-06T13:46:23.1856480Z Syncing repository: mahtabmehek/Modulus
+2025-07-06T13:46:23.1860027Z ##[group]Getting Git version info
+2025-07-06T13:46:23.1861764Z Working directory is '/home/runner/work/Modulus/Modulus'
+2025-07-06T13:46:23.1864219Z [command]/usr/bin/git version
+2025-07-06T13:46:23.1934448Z git version 2.49.0
+2025-07-06T13:46:23.1966434Z ##[endgroup]
+2025-07-06T13:46:23.1983206Z Temporarily overriding HOME='/home/runner/work/_temp/2367b68e-e209-4508-9375-f6cf10ceacd4' before making global git config changes
+2025-07-06T13:46:23.1987567Z Adding repository directory to the temporary git global config as a safe directory
+2025-07-06T13:46:23.2001164Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Modulus/Modulus
+2025-07-06T13:46:23.2038859Z Deleting the contents of '/home/runner/work/Modulus/Modulus'
+2025-07-06T13:46:23.2043644Z ##[group]Initializing the repository
+2025-07-06T13:46:23.2049590Z [command]/usr/bin/git init /home/runner/work/Modulus/Modulus
+2025-07-06T13:46:23.2116539Z hint: Using 'master' as the name for the initial branch. This default branch name
+2025-07-06T13:46:23.2120185Z hint: is subject to change. To configure the initial branch name to use in all
+2025-07-06T13:46:23.2124199Z hint: of your new repositories, which will suppress this warning, call:
+2025-07-06T13:46:23.2127919Z hint:
+2025-07-06T13:46:23.2129589Z hint: 	git config --global init.defaultBranch <name>
+2025-07-06T13:46:23.2131559Z hint:
+2025-07-06T13:46:23.2133450Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2025-07-06T13:46:23.2137081Z hint: 'development'. The just-created branch can be renamed via this command:
+2025-07-06T13:46:23.2139881Z hint:
+2025-07-06T13:46:23.2141110Z hint: 	git branch -m <name>
+2025-07-06T13:46:23.2143491Z Initialized empty Git repository in /home/runner/work/Modulus/Modulus/.git/
+2025-07-06T13:46:23.2149841Z [command]/usr/bin/git remote add origin https://github.com/mahtabmehek/Modulus
+2025-07-06T13:46:23.2181753Z ##[endgroup]
+2025-07-06T13:46:23.2184199Z ##[group]Disabling automatic garbage collection
+2025-07-06T13:46:23.2186318Z [command]/usr/bin/git config --local gc.auto 0
+2025-07-06T13:46:23.2217021Z ##[endgroup]
+2025-07-06T13:46:23.2219555Z ##[group]Setting up auth
+2025-07-06T13:46:23.2224441Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2025-07-06T13:46:23.2260387Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2025-07-06T13:46:23.2564843Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2025-07-06T13:46:23.2601531Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2025-07-06T13:46:23.2840355Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2025-07-06T13:46:23.2887299Z ##[endgroup]
+2025-07-06T13:46:23.2890508Z ##[group]Fetching the repository
+2025-07-06T13:46:23.2899755Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +ed9f13f3e1e88a28be255c4de06b19aa1310cfe1:refs/remotes/origin/master
+2025-07-06T13:46:23.6515277Z From https://github.com/mahtabmehek/Modulus
+2025-07-06T13:46:23.6518217Z  * [new ref]         ed9f13f3e1e88a28be255c4de06b19aa1310cfe1 -> origin/master
+2025-07-06T13:46:23.6549232Z ##[endgroup]
+2025-07-06T13:46:23.6551614Z ##[group]Determining the checkout info
+2025-07-06T13:46:23.6556381Z ##[endgroup]
+2025-07-06T13:46:23.6558969Z [command]/usr/bin/git sparse-checkout disable
+2025-07-06T13:46:23.6604378Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2025-07-06T13:46:23.6640150Z ##[group]Checking out the ref
+2025-07-06T13:46:23.6644270Z [command]/usr/bin/git checkout --progress --force -B master refs/remotes/origin/master
+2025-07-06T13:46:23.6840234Z Reset branch 'master'
+2025-07-06T13:46:23.6843845Z branch 'master' set up to track 'origin/master'.
+2025-07-06T13:46:23.6853061Z ##[endgroup]
+2025-07-06T13:46:23.7069885Z [command]/usr/bin/git log -1 --format=%H
+2025-07-06T13:46:23.7072124Z ed9f13f3e1e88a28be255c4de06b19aa1310cfe1
+2025-07-06T13:46:23.7452813Z ##[group]Run aws-actions/configure-aws-credentials@v4
+2025-07-06T13:46:23.7454912Z with:
+2025-07-06T13:46:23.7456662Z   aws-access-key-id: ***
+2025-07-06T13:46:23.7460041Z   aws-secret-access-key: ***
+2025-07-06T13:46:23.7461709Z   aws-region: eu-west-2
+2025-07-06T13:46:23.7463280Z   audience: sts.amazonaws.com
+2025-07-06T13:46:23.7464885Z env:
+2025-07-06T13:46:23.7466114Z   AWS_REGION: eu-west-2
+2025-07-06T13:46:23.7467851Z ##[endgroup]
+2025-07-06T13:46:24.3753279Z Proceeding with IAM user credentials
+2025-07-06T13:46:24.3955400Z ##[group]Run docker/setup-buildx-action@v3
+2025-07-06T13:46:24.3956695Z with:
+2025-07-06T13:46:24.3957718Z   driver: docker-container
+2025-07-06T13:46:24.3958674Z   install: false
+2025-07-06T13:46:24.3959445Z   use: true
+2025-07-06T13:46:24.3960177Z   keep-state: false
+2025-07-06T13:46:24.3960987Z   cache-binary: true
+2025-07-06T13:46:24.3961809Z   cleanup: true
+2025-07-06T13:46:24.3962556Z env:
+2025-07-06T13:46:24.3963268Z   AWS_REGION: eu-west-2
+2025-07-06T13:46:24.3964149Z   AWS_DEFAULT_REGION: eu-west-2
+2025-07-06T13:46:24.3965309Z   AWS_ACCESS_KEY_ID: ***
+2025-07-06T13:46:24.3966509Z   AWS_SECRET_ACCESS_KEY: ***
+2025-07-06T13:46:24.3967543Z ##[endgroup]
+2025-07-06T13:46:24.7571155Z ##[group]Docker info
+2025-07-06T13:46:24.7620314Z [command]/usr/bin/docker version
+2025-07-06T13:46:24.8263239Z Client: Docker Engine - Community
+2025-07-06T13:46:24.8268998Z  Version:           28.0.4
+2025-07-06T13:46:24.8269962Z  API version:       1.48
+2025-07-06T13:46:24.8270684Z  Go version:        go1.23.7
+2025-07-06T13:46:24.8272340Z  Git commit:        b8034c0
+2025-07-06T13:46:24.8272994Z  Built:             Tue Mar 25 15:07:16 2025
+2025-07-06T13:46:24.8273652Z  OS/Arch:           linux/amd64
+2025-07-06T13:46:24.8274252Z  Context:           default
+2025-07-06T13:46:24.8274614Z 
+2025-07-06T13:46:24.8274891Z Server: Docker Engine - Community
+2025-07-06T13:46:24.8275511Z  Engine:
+2025-07-06T13:46:24.8276044Z   Version:          28.0.4
+2025-07-06T13:46:24.8276706Z   API version:      1.48 (minimum version 1.24)
+2025-07-06T13:46:24.8277892Z   Go version:       go1.23.7
+2025-07-06T13:46:24.8278518Z   Git commit:       6430e49
+2025-07-06T13:46:24.8279146Z   Built:            Tue Mar 25 15:07:16 2025
+2025-07-06T13:46:24.8279806Z   OS/Arch:          linux/amd64
+2025-07-06T13:46:24.8392804Z   Experimental:     false
+2025-07-06T13:46:24.8393599Z  containerd:
+2025-07-06T13:46:24.8394181Z   Version:          1.7.27
+2025-07-06T13:46:24.8394883Z   GitCommit:        05044ec0a9a75232cad458027ca83437aae3f4da
+2025-07-06T13:46:24.8395635Z  runc:
+2025-07-06T13:46:24.8396181Z   Version:          1.2.5
+2025-07-06T13:46:24.8396796Z   GitCommit:        v1.2.5-0-g59923ef
+2025-07-06T13:46:24.8397637Z  docker-init:
+2025-07-06T13:46:24.8398211Z   Version:          0.19.0
+2025-07-06T13:46:24.8398832Z   GitCommit:        de40ad0
+2025-07-06T13:46:24.8446705Z [command]/usr/bin/docker info
+2025-07-06T13:46:25.0614943Z Client: Docker Engine - Community
+2025-07-06T13:46:25.0615707Z  Version:    28.0.4
+2025-07-06T13:46:25.0616303Z  Context:    default
+2025-07-06T13:46:25.0616891Z  Debug Mode: false
+2025-07-06T13:46:25.0617668Z  Plugins:
+2025-07-06T13:46:25.0618280Z   buildx: Docker Buildx (Docker Inc.)
+2025-07-06T13:46:25.0618952Z     Version:  v0.25.0
+2025-07-06T13:46:25.0619688Z     Path:     /usr/libexec/docker/cli-plugins/docker-buildx
+2025-07-06T13:46:25.0620490Z   compose: Docker Compose (Docker Inc.)
+2025-07-06T13:46:25.0621197Z     Version:  v2.36.2
+2025-07-06T13:46:25.0621956Z     Path:     /usr/libexec/docker/cli-plugins/docker-compose
+2025-07-06T13:46:25.0622484Z 
+2025-07-06T13:46:25.0622740Z Server:
+2025-07-06T13:46:25.0623277Z  Containers: 0
+2025-07-06T13:46:25.0623826Z   Running: 0
+2025-07-06T13:46:25.0624889Z   Paused: 0
+2025-07-06T13:46:25.0625454Z   Stopped: 0
+2025-07-06T13:46:25.0626036Z  Images: 0
+2025-07-06T13:46:25.0632012Z  Server Version: 28.0.4
+2025-07-06T13:46:25.0632694Z  Storage Driver: overlay2
+2025-07-06T13:46:25.0633371Z   Backing Filesystem: extfs
+2025-07-06T13:46:25.0634065Z   Supports d_type: true
+2025-07-06T13:46:25.0634711Z   Using metacopy: false
+2025-07-06T13:46:25.0635408Z   Native Overlay Diff: false
+2025-07-06T13:46:25.0636158Z   userxattr: false
+2025-07-06T13:46:25.0636784Z  Logging Driver: json-file
+2025-07-06T13:46:25.0637601Z  Cgroup Driver: systemd
+2025-07-06T13:46:25.0638217Z  Cgroup Version: 2
+2025-07-06T13:46:25.0638784Z  Plugins:
+2025-07-06T13:46:25.0639372Z   Volume: local
+2025-07-06T13:46:25.0640096Z   Network: bridge host ipvlan macvlan null overlay
+2025-07-06T13:46:25.0641296Z   Log: awslogs fluentd gcplogs gelf journald json-file local splunk syslog
+2025-07-06T13:46:25.0642421Z  Swarm: inactive
+2025-07-06T13:46:25.0643158Z  Runtimes: io.containerd.runc.v2 runc
+2025-07-06T13:46:25.0643902Z  Default Runtime: runc
+2025-07-06T13:46:25.0644561Z  Init Binary: docker-init
+2025-07-06T13:46:25.0645378Z  containerd version: 05044ec0a9a75232cad458027ca83437aae3f4da
+2025-07-06T13:46:25.0646224Z  runc version: v1.2.5-0-g59923ef
+2025-07-06T13:46:25.0646943Z  init version: de40ad0
+2025-07-06T13:46:25.0648263Z  Security Options:
+2025-07-06T13:46:25.0649294Z   apparmor
+2025-07-06T13:46:25.0649980Z   seccomp
+2025-07-06T13:46:25.0650927Z    Profile: builtin
+2025-07-06T13:46:25.0651869Z   cgroupns
+2025-07-06T13:46:25.0652541Z  Kernel Version: 6.11.0-1015-azure
+2025-07-06T13:46:25.0653346Z  Operating System: Ubuntu 24.04.2 LTS
+2025-07-06T13:46:25.0654100Z  OSType: linux
+2025-07-06T13:46:25.0654770Z  Architecture: x86_64
+2025-07-06T13:46:25.0655441Z  CPUs: 2
+2025-07-06T13:46:25.0656030Z  Total Memory: 7.758GiB
+2025-07-06T13:46:25.0656723Z  Name: fv-az1724-604
+2025-07-06T13:46:25.0658341Z  ID: f3f57c73-cc58-4859-b84c-8d290ada94db
+2025-07-06T13:46:25.0659169Z  Docker Root Dir: /var/lib/docker
+2025-07-06T13:46:25.0659912Z  Debug Mode: false
+2025-07-06T13:46:25.0660600Z  Username: githubactions
+2025-07-06T13:46:25.0661291Z  Experimental: false
+2025-07-06T13:46:25.0661972Z  Insecure Registries:
+2025-07-06T13:46:25.0674477Z   ::1/128
+2025-07-06T13:46:25.0675084Z   127.0.0.0/8
+2025-07-06T13:46:25.0675749Z  Live Restore Enabled: false
+2025-07-06T13:46:25.0676210Z 
+2025-07-06T13:46:25.0677043Z ##[endgroup]
+2025-07-06T13:46:25.1268385Z ##[group]Buildx version
+2025-07-06T13:46:25.1297276Z [command]/usr/bin/docker buildx version
+2025-07-06T13:46:25.1787642Z github.com/docker/buildx v0.25.0 faaea65da4ba0e58a13cd9cadcb950c51cf3b3c9
+2025-07-06T13:46:25.1811694Z ##[endgroup]
+2025-07-06T13:46:25.1978846Z ##[group]Inspecting default docker context
+2025-07-06T13:46:25.2119941Z [
+2025-07-06T13:46:25.2122382Z   {
+2025-07-06T13:46:25.2128358Z     "Name": "default",
+2025-07-06T13:46:25.2129055Z     "Metadata": {},
+2025-07-06T13:46:25.2129694Z     "Endpoints": {
+2025-07-06T13:46:25.2130251Z       "docker": {
+2025-07-06T13:46:25.2130910Z         "Host": "unix:///var/run/docker.sock",
+2025-07-06T13:46:25.2131690Z         "SkipTLSVerify": false
+2025-07-06T13:46:25.2132332Z       }
+2025-07-06T13:46:25.2132868Z     },
+2025-07-06T13:46:25.2133436Z     "TLSMaterial": {},
+2025-07-06T13:46:25.2134047Z     "Storage": {
+2025-07-06T13:46:25.2134682Z       "MetadataPath": "<IN MEMORY>",
+2025-07-06T13:46:25.2135398Z       "TLSPath": "<IN MEMORY>"
+2025-07-06T13:46:25.2136017Z     }
+2025-07-06T13:46:25.2136561Z   }
+2025-07-06T13:46:25.2137068Z ]
+2025-07-06T13:46:25.2138505Z ##[endgroup]
+2025-07-06T13:46:25.2139553Z ##[group]Creating a new builder instance
+2025-07-06T13:46:25.3184809Z [command]/usr/bin/docker buildx create --name builder-486860e2-5020-47f7-928f-0e6c7de64812 --driver docker-container --buildkitd-flags --allow-insecure-entitlement security.insecure --allow-insecure-entitlement network.host --use
+2025-07-06T13:46:25.3681618Z builder-486860e2-5020-47f7-928f-0e6c7de64812
+2025-07-06T13:46:25.3713831Z ##[endgroup]
+2025-07-06T13:46:25.3716202Z ##[group]Booting builder
+2025-07-06T13:46:25.3752580Z [command]/usr/bin/docker buildx inspect --bootstrap --builder builder-486860e2-5020-47f7-928f-0e6c7de64812
+2025-07-06T13:46:25.4361116Z #1 [internal] booting buildkit
+2025-07-06T13:46:25.5868398Z #1 pulling image moby/buildkit:buildx-stable-1
+2025-07-06T13:46:28.5887214Z #1 pulling image moby/buildkit:buildx-stable-1 3.2s done
+2025-07-06T13:46:28.7387253Z #1 creating container buildx_buildkit_builder-486860e2-5020-47f7-928f-0e6c7de648120
+2025-07-06T13:46:29.0260765Z #1 creating container buildx_buildkit_builder-486860e2-5020-47f7-928f-0e6c7de648120 0.4s done
+2025-07-06T13:46:29.0289160Z #1 DONE 3.6s
+2025-07-06T13:46:29.0695183Z Name:          builder-486860e2-5020-47f7-928f-0e6c7de64812
+2025-07-06T13:46:29.0701880Z Driver:        docker-container
+2025-07-06T13:46:29.0703001Z Last Activity: 2025-07-06 13:46:25 +0000 UTC
+2025-07-06T13:46:29.0703541Z 
+2025-07-06T13:46:29.0703663Z Nodes:
+2025-07-06T13:46:29.0704025Z Name:                  builder-486860e2-5020-47f7-928f-0e6c7de648120
+2025-07-06T13:46:29.0704568Z Endpoint:              unix:///var/run/docker.sock
+2025-07-06T13:46:29.0705015Z Status:                running
+2025-07-06T13:46:29.0705780Z BuildKit daemon flags: --allow-insecure-entitlement security.insecure --allow-insecure-entitlement network.host
+2025-07-06T13:46:29.0706569Z BuildKit version:      v0.22.0
+2025-07-06T13:46:29.0707067Z Platforms:             linux/amd64, linux/amd64/v2, linux/amd64/v3, linux/386
+2025-07-06T13:46:29.0707746Z Labels:
+2025-07-06T13:46:29.0708121Z  org.mobyproject.buildkit.worker.executor:         oci
+2025-07-06T13:46:29.0708738Z  org.mobyproject.buildkit.worker.hostname:         9815d8f81ca3
+2025-07-06T13:46:29.0709348Z  org.mobyproject.buildkit.worker.network:          host
+2025-07-06T13:46:29.0709961Z  org.mobyproject.buildkit.worker.oci.process-mode: sandbox
+2025-07-06T13:46:29.0710588Z  org.mobyproject.buildkit.worker.selinux.enabled:  false
+2025-07-06T13:46:29.0711201Z  org.mobyproject.buildkit.worker.snapshotter:      overlayfs
+2025-07-06T13:46:29.0711693Z GC Policy rule#0:
+2025-07-06T13:46:29.0711986Z  All:            false
+2025-07-06T13:46:29.0712479Z  Filters:        type==source.local,type==exec.cachemount,type==source.git.checkout
+2025-07-06T13:46:29.0713051Z  Keep Duration:  48h0m0s
+2025-07-06T13:46:29.0713381Z  Max Used Space: 488.3MiB
+2025-07-06T13:46:29.0713702Z GC Policy rule#1:
+2025-07-06T13:46:29.0713984Z  All:            false
+2025-07-06T13:46:29.0714336Z  Keep Duration:  1440h0m0s
+2025-07-06T13:46:29.0714821Z  Reserved Space: 7.451GiB
+2025-07-06T13:46:29.0715131Z  Max Used Space: 54.02GiB
+2025-07-06T13:46:29.0715450Z  Min Free Space: 13.97GiB
+2025-07-06T13:46:29.0715761Z GC Policy rule#2:
+2025-07-06T13:46:29.0716033Z  All:            false
+2025-07-06T13:46:29.0716337Z  Reserved Space: 7.451GiB
+2025-07-06T13:46:29.0716666Z  Max Used Space: 54.02GiB
+2025-07-06T13:46:29.0716977Z  Min Free Space: 13.97GiB
+2025-07-06T13:46:29.0717292Z GC Policy rule#3:
+2025-07-06T13:46:29.0717787Z  All:            true
+2025-07-06T13:46:29.0718094Z  Reserved Space: 7.451GiB
+2025-07-06T13:46:29.0718424Z  Max Used Space: 54.02GiB
+2025-07-06T13:46:29.0718742Z  Min Free Space: 13.97GiB
+2025-07-06T13:46:29.0799356Z ##[endgroup]
+2025-07-06T13:46:29.1729361Z ##[group]Inspect builder
+2025-07-06T13:46:29.1748336Z {
+2025-07-06T13:46:29.1748635Z   "nodes": [
+2025-07-06T13:46:29.1748916Z     {
+2025-07-06T13:46:29.1749271Z       "name": "builder-486860e2-5020-47f7-928f-0e6c7de648120",
+2025-07-06T13:46:29.1749779Z       "endpoint": "unix:///var/run/docker.sock",
+2025-07-06T13:46:29.1750200Z       "status": "running",
+2025-07-06T13:46:29.1750920Z       "buildkitd-flags": "--allow-insecure-entitlement security.insecure --allow-insecure-entitlement network.host",
+2025-07-06T13:46:29.1751685Z       "buildkit": "v0.22.0",
+2025-07-06T13:46:29.1752205Z       "platforms": "linux/amd64,linux/amd64/v2,linux/amd64/v3,linux/386",
+2025-07-06T13:46:29.1752729Z       "features": {
+2025-07-06T13:46:29.1753180Z         "Automatically load images to the Docker Engine image store": true,
+2025-07-06T13:46:29.1753719Z         "Cache export": true,
+2025-07-06T13:46:29.1754056Z         "Direct push": true,
+2025-07-06T13:46:29.1754410Z         "Docker exporter": true,
+2025-07-06T13:46:29.1754781Z         "Multi-platform build": true,
+2025-07-06T13:46:29.1755154Z         "OCI exporter": true
+2025-07-06T13:46:29.1755476Z       },
+2025-07-06T13:46:29.1755730Z       "labels": {
+2025-07-06T13:46:29.1756109Z         "org.mobyproject.buildkit.worker.executor": "oci",
+2025-07-06T13:46:29.1756695Z         "org.mobyproject.buildkit.worker.hostname": "9815d8f81ca3",
+2025-07-06T13:46:29.1757274Z         "org.mobyproject.buildkit.worker.network": "host",
+2025-07-06T13:46:29.1791983Z         "org.mobyproject.buildkit.worker.oci.process-mode": "sandbox",
+2025-07-06T13:46:29.1792949Z         "org.mobyproject.buildkit.worker.selinux.enabled": "false",
+2025-07-06T13:46:29.1793830Z         "org.mobyproject.buildkit.worker.snapshotter": "overlayfs"
+2025-07-06T13:46:29.1794359Z       },
+2025-07-06T13:46:29.1794604Z       "gcPolicy": [
+2025-07-06T13:46:29.1794907Z         {
+2025-07-06T13:46:29.1795185Z           "all": false,
+2025-07-06T13:46:29.1795466Z           "filter": [
+2025-07-06T13:46:29.1795753Z             "type==source.local",
+2025-07-06T13:46:29.1796130Z             "type==exec.cachemount",
+2025-07-06T13:46:29.1796493Z             "type==source.git.checkout"
+2025-07-06T13:46:29.1796908Z           ],
+2025-07-06T13:46:29.1797177Z           "keepDuration": "48h0m0s",
+2025-07-06T13:46:29.1799880Z           "maxUsedSpace": "488.3MiB"
+2025-07-06T13:46:29.1800276Z         },
+2025-07-06T13:46:29.1800514Z         {
+2025-07-06T13:46:29.1800759Z           "all": false,
+2025-07-06T13:46:29.1801075Z           "keepDuration": "1440h0m0s",
+2025-07-06T13:46:29.1801441Z           "reservedSpace": "7.451GiB",
+2025-07-06T13:46:29.1801806Z           "maxUsedSpace": "54.02GiB",
+2025-07-06T13:46:29.1802167Z           "minFreeSpace": "13.97GiB"
+2025-07-06T13:46:29.1802489Z         },
+2025-07-06T13:46:29.1802716Z         {
+2025-07-06T13:46:29.1802957Z           "all": false,
+2025-07-06T13:46:29.1803253Z           "reservedSpace": "7.451GiB",
+2025-07-06T13:46:29.1803600Z           "maxUsedSpace": "54.02GiB",
+2025-07-06T13:46:29.1803943Z           "minFreeSpace": "13.97GiB"
+2025-07-06T13:46:29.1804257Z         },
+2025-07-06T13:46:29.1804481Z         {
+2025-07-06T13:46:29.1804716Z           "all": true,
+2025-07-06T13:46:29.1805008Z           "reservedSpace": "7.451GiB",
+2025-07-06T13:46:29.1805350Z           "maxUsedSpace": "54.02GiB",
+2025-07-06T13:46:29.1805689Z           "minFreeSpace": "13.97GiB"
+2025-07-06T13:46:29.1806007Z         }
+2025-07-06T13:46:29.1806227Z       ]
+2025-07-06T13:46:29.1806451Z     }
+2025-07-06T13:46:29.1806674Z   ],
+2025-07-06T13:46:29.1806986Z   "name": "builder-486860e2-5020-47f7-928f-0e6c7de64812",
+2025-07-06T13:46:29.1807693Z   "driver": "docker-container",
+2025-07-06T13:46:29.1808062Z   "lastActivity": "2025-07-06T13:46:25.000Z"
+2025-07-06T13:46:29.1808404Z }
+2025-07-06T13:46:29.1808931Z ##[endgroup]
+2025-07-06T13:46:29.1809392Z ##[group]BuildKit version
+2025-07-06T13:46:29.1809768Z builder-486860e2-5020-47f7-928f-0e6c7de648120: v0.22.0
+2025-07-06T13:46:29.1810390Z ##[endgroup]
+2025-07-06T13:46:29.1892653Z ##[group]Run # Make unified deployment script executable
+2025-07-06T13:46:29.1893089Z [36;1m# Make unified deployment script executable[0m
+2025-07-06T13:46:29.1893387Z [36;1mchmod +x ./deploy.sh[0m
+2025-07-06T13:46:29.1893596Z [36;1m[0m
+2025-07-06T13:46:29.1893816Z [36;1m# Run unified deployment (handles everything)[0m
+2025-07-06T13:46:29.1894085Z [36;1m./deploy.sh[0m
+2025-07-06T13:46:29.1990625Z shell: /usr/bin/bash -e {0}
+2025-07-06T13:46:29.1990876Z env:
+2025-07-06T13:46:29.1991067Z   AWS_REGION: eu-west-2
+2025-07-06T13:46:29.1991300Z   AWS_DEFAULT_REGION: eu-west-2
+2025-07-06T13:46:29.1991750Z   AWS_ACCESS_KEY_ID: ***
+2025-07-06T13:46:29.1992138Z   AWS_SECRET_ACCESS_KEY: ***
+2025-07-06T13:46:29.1992370Z ##[endgroup]
+2025-07-06T13:46:29.2121369Z 🚀 Modulus LMS - Unified Deployment Starting...
+2025-07-06T13:46:29.2127684Z ==============================================
+2025-07-06T13:46:29.2128419Z [0;34mℹ️  Step 1: Validating AWS access...[0m
+2025-07-06T13:46:30.5442293Z [0;32m✅ AWS Account ID: 376129881409[0m
+2025-07-06T13:46:30.5443076Z [0;32m✅ Region: eu-west-2[0m
+2025-07-06T13:46:30.5443626Z [0;34mℹ️  Step 2: Setting up AWS infrastructure...[0m
+2025-07-06T13:46:31.8927615Z [0;32m✅ Using VPC: vpc-04d155bb35a9ee8c5[0m
+2025-07-06T13:46:33.1363997Z [0;32m✅ Using subnets: subnet-0cc34cda0d0f7edca, subnet-040a224ccafdbf8e7[0m
+2025-07-06T13:46:33.1365388Z [0;34mℹ️  Creating security group...[0m
+2025-07-06T13:46:34.4190911Z [0;32m✅ Security group: sg-01de8b8641fbd1bc6[0m
+2025-07-06T13:46:34.4192314Z [0;34mℹ️  Step 3: Setting up container registry...[0m
+2025-07-06T13:46:35.5375820Z [1;33m⚠️  ECR repository already exists[0m
+2025-07-06T13:46:35.5384033Z [0;32m✅ ECR repository ready[0m
+2025-07-06T13:46:35.5385052Z [0;34mℹ️  Step 4: Building and pushing Docker image...[0m
+2025-07-06T13:46:35.8457722Z #0 building with "default" instance using docker driver
+2025-07-06T13:46:35.8458338Z 
+2025-07-06T13:46:35.8458688Z #1 [internal] load build definition from Dockerfile.deploy
+2025-07-06T13:46:35.8459527Z #1 transferring dockerfile: 609B done
+2025-07-06T13:46:35.8460126Z #1 DONE 0.0s
+2025-07-06T13:46:35.8460404Z 
+2025-07-06T13:46:35.8460764Z #2 [auth] library/node:pull token for registry-1.docker.io
+2025-07-06T13:46:35.8461463Z #2 DONE 0.0s
+2025-07-06T13:46:35.8461732Z 
+2025-07-06T13:46:35.8462133Z #3 [internal] load metadata for docker.io/library/node:18-alpine
+2025-07-06T13:46:36.0207169Z #3 DONE 0.4s
+2025-07-06T13:46:36.1473687Z 
+2025-07-06T13:46:36.1474227Z #4 [internal] load .dockerignore
+2025-07-06T13:46:36.1474683Z #4 transferring context: 2B done
+2025-07-06T13:46:36.1475039Z #4 DONE 0.0s
+2025-07-06T13:46:36.1475200Z 
+2025-07-06T13:46:36.1475379Z #5 [internal] load build context
+2025-07-06T13:46:36.1475756Z #5 transferring context: 1.95MB 0.0s done
+2025-07-06T13:46:36.1476140Z #5 DONE 0.0s
+2025-07-06T13:46:36.1476297Z 
+2025-07-06T13:46:36.1476889Z #6 [base 1/3] FROM docker.io/library/node:18-alpine@sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e
+2025-07-06T13:46:36.1478275Z #6 resolve docker.io/library/node:18-alpine@sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e done
+2025-07-06T13:46:36.1479368Z #6 sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e 7.67kB / 7.67kB done
+2025-07-06T13:46:36.1480362Z #6 sha256:929b04d7c782f04f615cf785488fed452b6569f87c73ff666ad553a7554f0006 1.72kB / 1.72kB done
+2025-07-06T13:46:36.1481364Z #6 sha256:ee77c6cd7c1886ecc802ad6cedef3a8ec1ea27d1fb96162bf03dd3710839b8da 6.18kB / 6.18kB done
+2025-07-06T13:46:36.1482382Z #6 sha256:dd71dde834b5c203d162902e6b8994cb2309ae049a0eabc4efea161b2b5a3d0e 7.34MB / 40.01MB 0.1s
+2025-07-06T13:46:36.1508992Z #6 sha256:1e5a4c89cee5c0826c540ab06d4b6b491c96eda01837f430bd47f0d26702d6e3 0B / 1.26MB 0.1s
+2025-07-06T13:46:36.1511203Z #6 sha256:25ff2da83641908f65c3a74d80409d6b1b62ccfaab220b9ea70b80df5a2e0549 0B / 446B 0.1s
+2025-07-06T13:46:36.2481957Z #6 sha256:dd71dde834b5c203d162902e6b8994cb2309ae049a0eabc4efea161b2b5a3d0e 27.26MB / 40.01MB 0.2s
+2025-07-06T13:46:36.2483999Z #6 sha256:1e5a4c89cee5c0826c540ab06d4b6b491c96eda01837f430bd47f0d26702d6e3 1.26MB / 1.26MB 0.1s done
+2025-07-06T13:46:36.2485171Z #6 sha256:25ff2da83641908f65c3a74d80409d6b1b62ccfaab220b9ea70b80df5a2e0549 446B / 446B 0.1s done
+2025-07-06T13:46:36.3992883Z #6 sha256:dd71dde834b5c203d162902e6b8994cb2309ae049a0eabc4efea161b2b5a3d0e 40.01MB / 40.01MB 0.3s
+2025-07-06T13:46:36.4000096Z #6 extracting sha256:dd71dde834b5c203d162902e6b8994cb2309ae049a0eabc4efea161b2b5a3d0e
+2025-07-06T13:46:36.5010102Z #6 sha256:dd71dde834b5c203d162902e6b8994cb2309ae049a0eabc4efea161b2b5a3d0e 40.01MB / 40.01MB 0.3s done
+2025-07-06T13:46:37.5188122Z #6 extracting sha256:dd71dde834b5c203d162902e6b8994cb2309ae049a0eabc4efea161b2b5a3d0e 1.1s done
+2025-07-06T13:46:37.9090104Z #6 extracting sha256:1e5a4c89cee5c0826c540ab06d4b6b491c96eda01837f430bd47f0d26702d6e3
+2025-07-06T13:46:38.0114663Z #6 extracting sha256:1e5a4c89cee5c0826c540ab06d4b6b491c96eda01837f430bd47f0d26702d6e3 0.0s done
+2025-07-06T13:46:38.0117545Z #6 extracting sha256:25ff2da83641908f65c3a74d80409d6b1b62ccfaab220b9ea70b80df5a2e0549 done
+2025-07-06T13:46:38.0118490Z #6 DONE 2.0s
+2025-07-06T13:46:38.0118663Z 
+2025-07-06T13:46:38.0118788Z #7 [base 2/3] WORKDIR /app
+2025-07-06T13:46:38.0119041Z #7 DONE 0.0s
+2025-07-06T13:46:38.1874219Z 
+2025-07-06T13:46:38.1875100Z #8 [base 3/3] COPY package*.json ./
+2025-07-06T13:46:38.1875833Z #8 DONE 0.0s
+2025-07-06T13:46:38.1876319Z 
+2025-07-06T13:46:38.1876710Z #9 [builder 1/3] COPY . .
+2025-07-06T13:46:38.1877274Z #9 DONE 0.1s
+2025-07-06T13:46:38.1879516Z 
+2025-07-06T13:46:38.1879841Z #10 [deps 1/1] RUN npm ci --only=production
+2025-07-06T13:46:38.4220187Z #10 ...
+2025-07-06T13:46:38.4230053Z 
+2025-07-06T13:46:38.4239027Z #11 [runner 3/8] RUN addgroup --system --gid 1001 nodejs
+2025-07-06T13:46:38.4241496Z #11 DONE 0.3s
+2025-07-06T13:46:38.5725719Z 
+2025-07-06T13:46:38.5726694Z #12 [runner 4/8] RUN adduser --system --uid 1001 nextjs
+2025-07-06T13:46:38.8553324Z #12 DONE 0.4s
+2025-07-06T13:46:38.8554224Z 
+2025-07-06T13:46:38.8554753Z #10 [deps 1/1] RUN npm ci --only=production
+2025-07-06T13:46:38.8555823Z #10 0.615 npm warn config only Use `--omit=dev` to omit dev dependencies from the install.
+2025-07-06T13:46:46.3370133Z #10 ...
+2025-07-06T13:46:46.3384768Z 
+2025-07-06T13:46:46.3393080Z #13 [builder 2/3] RUN npm ci
+2025-07-06T13:46:46.3393843Z #13 6.796 npm warn deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported
+2025-07-06T13:46:46.3721720Z #13 8.181 npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+2025-07-06T13:46:46.6170092Z #13 8.426 npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+2025-07-06T13:46:49.8903552Z #13 11.70 npm warn deprecated @humanwhocodes/object-schema@2.0.3: Use @eslint/object-schema instead
+2025-07-06T13:46:50.1230885Z #13 11.78 npm warn deprecated @humanwhocodes/config-array@0.13.0: Use @eslint/config-array instead
+2025-07-06T13:46:50.5252358Z #13 ...
+2025-07-06T13:46:50.5256010Z 
+2025-07-06T13:46:50.5258293Z #10 [deps 1/1] RUN npm ci --only=production
+2025-07-06T13:46:50.5261090Z #10 12.47 npm warn deprecated xterm@5.3.0: This package is now deprecated. Move to @xterm/xterm instead.
+2025-07-06T13:46:56.4784563Z #10 ...
+2025-07-06T13:46:56.4785168Z 
+2025-07-06T13:46:56.4785385Z #13 [builder 2/3] RUN npm ci
+2025-07-06T13:46:56.4786214Z #13 18.28 npm warn deprecated xterm@5.3.0: This package is now deprecated. Move to @xterm/xterm instead.
+2025-07-06T13:46:58.0085386Z #13 19.82 npm warn deprecated eslint@8.57.1: This version is no longer supported. Please see https://eslint.org/version-support for other options.
+2025-07-06T13:47:19.4459456Z #13 ...
+2025-07-06T13:47:19.4459803Z 
+2025-07-06T13:47:19.4463650Z #10 [deps 1/1] RUN npm ci --only=production
+2025-07-06T13:47:19.4467030Z #10 41.39 
+2025-07-06T13:47:19.4478539Z #10 41.39 added 367 packages, and audited 368 packages in 41s
+2025-07-06T13:47:19.6014206Z #10 41.39 
+2025-07-06T13:47:19.6015034Z #10 41.39 60 packages are looking for funding
+2025-07-06T13:47:19.6017834Z #10 41.39   run `npm fund` for details
+2025-07-06T13:47:19.6018388Z #10 41.39 
+2025-07-06T13:47:19.6022265Z #10 41.39 found 0 vulnerabilities
+2025-07-06T13:47:19.6022850Z #10 41.39 npm notice
+2025-07-06T13:47:19.6023502Z #10 41.39 npm notice New major version of npm available! 10.8.2 -> 11.4.2
+2025-07-06T13:47:19.6024612Z #10 41.39 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.4.2
+2025-07-06T13:47:19.6028763Z #10 41.39 npm notice To update run: npm install -g npm@11.4.2
+2025-07-06T13:47:19.6031934Z #10 41.39 npm notice
+2025-07-06T13:47:21.1585845Z #10 DONE 43.1s
+2025-07-06T13:47:21.1586789Z 
+2025-07-06T13:47:21.1587316Z #13 [builder 2/3] RUN npm ci
+2025-07-06T13:47:24.2518997Z #13 46.06 
+2025-07-06T13:47:24.2522440Z #13 46.06 added 599 packages, and audited 600 packages in 45s
+2025-07-06T13:47:24.2522955Z #13 46.06 
+2025-07-06T13:47:24.2523321Z #13 46.06 168 packages are looking for funding
+2025-07-06T13:47:24.2523780Z #13 46.06   run `npm fund` for details
+2025-07-06T13:47:24.2524151Z #13 46.06 
+2025-07-06T13:47:24.2524440Z #13 46.06 found 0 vulnerabilities
+2025-07-06T13:47:24.4058338Z #13 46.06 npm notice
+2025-07-06T13:47:24.4059377Z #13 46.06 npm notice New major version of npm available! 10.8.2 -> 11.4.2
+2025-07-06T13:47:24.4060993Z #13 46.06 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.4.2
+2025-07-06T13:47:24.4061701Z #13 46.06 npm notice To update run: npm install -g npm@11.4.2
+2025-07-06T13:47:24.4062179Z #13 46.06 npm notice
+2025-07-06T13:47:24.6888958Z #13 DONE 46.5s
+2025-07-06T13:47:24.7945198Z 
+2025-07-06T13:47:24.7945806Z #14 [builder 3/3] RUN npm run build
+2025-07-06T13:47:25.1647070Z #14 0.446 
+2025-07-06T13:47:25.1647666Z #14 0.446 > modulus-lms@0.1.0 build
+2025-07-06T13:47:25.1648059Z #14 0.446 > npx next build
+2025-07-06T13:47:25.1648357Z #14 0.446 
+2025-07-06T13:47:27.1173597Z #14 2.400 Attention: Next.js now collects completely anonymous telemetry regarding usage.
+2025-07-06T13:47:27.1174853Z #14 2.400 This information is used to shape Next.js' roadmap and prioritize features.
+2025-07-06T13:47:27.1177283Z #14 2.400 You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+2025-07-06T13:47:27.1178463Z #14 2.400 https://nextjs.org/telemetry
+2025-07-06T13:47:27.1178869Z #14 2.400 
+2025-07-06T13:47:27.2220080Z #14 2.504    ▲ Next.js 15.3.4
+2025-07-06T13:47:27.2228291Z #14 2.504 
+2025-07-06T13:47:27.3401026Z #14 2.621    Creating an optimized production build ...
+2025-07-06T13:47:35.6616195Z #14 ...
+2025-07-06T13:47:35.6616469Z 
+2025-07-06T13:47:35.6616777Z #15 [runner 5/8] COPY --from=deps /app/node_modules ./node_modules
+2025-07-06T13:47:35.6617265Z #15 DONE 9.8s
+2025-07-06T13:47:35.8130260Z 
+2025-07-06T13:47:35.8133229Z #14 [builder 3/3] RUN npm run build
+2025-07-06T13:48:08.6449278Z #14 43.93  ✓ Compiled successfully in 36.0s
+2025-07-06T13:48:08.7996422Z #14 43.93    Linting and checking validity of types ...
+2025-07-06T13:48:15.5558390Z #14 50.84 
+2025-07-06T13:48:15.5560034Z #14 50.84 Failed to compile.
+2025-07-06T13:48:15.7090370Z #14 50.84 
+2025-07-06T13:48:15.7091031Z #14 50.84 ./src/components/views/course-creation.tsx
+2025-07-06T13:48:15.7091773Z #14 50.84 103:50  Error: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+2025-07-06T13:48:15.7092623Z #14 50.84 104:46  Error: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+2025-07-06T13:48:15.7093454Z #14 50.84 177:74  Error: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+2025-07-06T13:48:15.7094340Z #14 50.84 185:72  Error: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+2025-07-06T13:48:15.7094931Z #14 50.84 
+2025-07-06T13:48:15.7095602Z #14 50.84 ./src/components/views/lab-creation.tsx
+2025-07-06T13:48:15.7100622Z #14 50.84 849:39  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+2025-07-06T13:48:15.7102469Z #14 50.84 
+2025-07-06T13:48:15.7103200Z #14 50.84 info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules
+2025-07-06T13:48:15.9618613Z #14 ERROR: process "/bin/sh -c npm run build" did not complete successfully: exit code: 1
+2025-07-06T13:48:15.9760866Z ------
+2025-07-06T13:48:15.9764658Z  > [builder 3/3] RUN npm run build:
+2025-07-06T13:48:15.9773636Z 50.84 ./src/components/views/course-creation.tsx
+2025-07-06T13:48:15.9777094Z 50.84 103:50  Error: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+2025-07-06T13:48:15.9782361Z 50.84 104:46  Error: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+2025-07-06T13:48:15.9783257Z 50.84 177:74  Error: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+2025-07-06T13:48:15.9784111Z 50.84 185:72  Error: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+2025-07-06T13:48:15.9784705Z 50.84 
+2025-07-06T13:48:15.9785029Z 50.84 ./src/components/views/lab-creation.tsx
+2025-07-06T13:48:15.9786832Z 50.84 849:39  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+2025-07-06T13:48:15.9789071Z 50.84 
+2025-07-06T13:48:15.9789806Z 50.84 info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules
+2025-07-06T13:48:15.9790587Z ------
+2025-07-06T13:48:15.9790735Z 
+2025-07-06T13:48:15.9791209Z  [33m2 warnings found (use docker --debug to expand):
+2025-07-06T13:48:15.9792137Z [0m - LegacyKeyValueFormat: "ENV key=value" should be used instead of legacy "ENV key value" format (line 15)
+2025-07-06T13:48:15.9793122Z  - LegacyKeyValueFormat: "ENV key=value" should be used instead of legacy "ENV key value" format (line 26)
+2025-07-06T13:48:15.9890522Z Dockerfile.deploy:11
+2025-07-06T13:48:15.9896130Z --------------------
+2025-07-06T13:48:15.9896446Z    9 |     COPY . .
+2025-07-06T13:48:15.9896741Z   10 |     RUN npm ci
+2025-07-06T13:48:15.9899941Z   11 | >>> RUN npm run build
+2025-07-06T13:48:15.9903821Z   12 |     
+2025-07-06T13:48:15.9906252Z   13 |     FROM node:18-alpine AS runner
+2025-07-06T13:48:15.9909118Z --------------------
+2025-07-06T13:48:15.9910964Z ERROR: failed to build: failed to solve: process "/bin/sh -c npm run build" did not complete successfully: exit code: 1
+2025-07-06T13:48:15.9934064Z [0;31m❌ Deployment failed. Cleaning up partial resources...[0m
+2025-07-06T13:48:15.9963567Z ##[error]Process completed with exit code 1.
+2025-07-06T13:48:16.0077749Z Post job cleanup.
+2025-07-06T13:48:16.3087252Z ##[group]Removing builder
+2025-07-06T13:48:16.4358190Z [command]/usr/bin/docker buildx rm builder-486860e2-5020-47f7-928f-0e6c7de64812
+2025-07-06T13:48:16.6349784Z builder-486860e2-5020-47f7-928f-0e6c7de64812 removed
+2025-07-06T13:48:16.6398232Z ##[endgroup]
+2025-07-06T13:48:16.6409318Z ##[group]Cleaning up certificates
+2025-07-06T13:48:16.6415910Z ##[endgroup]
+2025-07-06T13:48:16.6416928Z ##[group]Post cache
+2025-07-06T13:48:16.6419826Z State not set
+2025-07-06T13:48:16.6420721Z ##[endgroup]
+2025-07-06T13:48:16.6589489Z Post job cleanup.
+2025-07-06T13:48:16.7866291Z Post job cleanup.
+2025-07-06T13:48:16.8825104Z [command]/usr/bin/git version
+2025-07-06T13:48:16.8869194Z git version 2.49.0
+2025-07-06T13:48:16.8918711Z Temporarily overriding HOME='/home/runner/work/_temp/1af202f4-f460-427c-8b16-ddfebb2dc106' before making global git config changes
+2025-07-06T13:48:16.8919898Z Adding repository directory to the temporary git global config as a safe directory
+2025-07-06T13:48:16.8927250Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Modulus/Modulus
+2025-07-06T13:48:16.8973192Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2025-07-06T13:48:16.9011040Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2025-07-06T13:48:16.9265779Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2025-07-06T13:48:16.9291514Z http.https://github.com/.extraheader
+2025-07-06T13:48:16.9307067Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2025-07-06T13:48:16.9341805Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2025-07-06T13:48:16.9697554Z Cleaning up orphan processes
