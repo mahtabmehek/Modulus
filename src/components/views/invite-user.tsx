@@ -12,6 +12,35 @@ interface NewInvite {
   message: string
 }
 
+interface PendingInvite {
+  id: string
+  email: string
+  name: string
+  role: UserRole
+  invitedBy: string
+  sentAt: Date
+  expiresAt: Date
+  status: 'pending'
+}
+
+interface UsedInvite {
+  id: string
+  email: string
+  name: string
+  role: UserRole
+  invitedBy: string
+  sentAt: Date
+  usedAt: Date
+  status: 'used'
+}
+
+interface NewInvite {
+  email: string
+  role: UserRole
+  name: string
+  message: string
+}
+
 export function InviteUserView() {
   const { user: currentUser, navigate } = useApp()
   
@@ -24,28 +53,28 @@ export function InviteUserView() {
     name: '',
     message: ''
   })
-  const [pendingInvites] = useState([
+  const [pendingInvites] = useState<PendingInvite[]>([
     {
       id: 'inv-001',
       email: 'john.student@university.edu',
       name: 'John Smith',
-      role: 'student' as const,
+      role: 'student',
       invitedBy: 'Admin',
       sentAt: new Date('2024-01-15'),
       expiresAt: new Date('2024-02-15'),
-      status: 'pending' as const
+      status: 'pending'
     }
   ])
-  const [usedInvites] = useState([
+  const [usedInvites] = useState<UsedInvite[]>([
     {
       id: 'inv-002',
       email: 'sarah.instructor@university.edu',
       name: 'Sarah Johnson',
-      role: 'instructor' as const,
+      role: 'instructor',
       invitedBy: 'Admin',
       sentAt: new Date('2024-01-10'),
       usedAt: new Date('2024-01-12'),
-      status: 'used' as const
+      status: 'used'
     }
   ])
   
