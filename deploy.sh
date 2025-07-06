@@ -219,16 +219,23 @@ RUN apk add --no-cache curl
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Copy necessary files
-COPY --from=builder /app/public ./public
-
 # Copy the standalone output
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+
+# Create a simple health check endpoint
+RUN echo '#!/bin/sh' > /app/healthcheck.sh && \
+    echo 'curl -f http://localhost:3000/ || exit 1' >> /app/healthcheck.sh && \
+    chmod +x /app/healthcheck.sh
 
 USER nextjs
 
 EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD ["/app/healthcheck.sh"]
 
 # Start the application
 CMD ["node", "server.js"]
@@ -321,8 +328,8 @@ cat > task-definition.json << EOF
     "family": "$TASK_FAMILY",
     "networkMode": "awsvpc",
     "requiresCompatibilities": ["FARGATE"],
-    "cpu": "256",
-    "memory": "512",
+    "cpu": "512",
+    "memory": "1024",
     "executionRoleArn": "arn:aws:iam::$ACCOUNT_ID:role/ecsTaskExecutionRole",
     "containerDefinitions": [
         {
@@ -340,7 +347,7 @@ cat > task-definition.json << EOF
                 "interval": 60,
                 "timeout": 30,
                 "retries": 3,
-                "startPeriod": 120
+                "startPeriod": 180
             },
             "logConfiguration": {
                 "logDriver": "awslogs",
@@ -362,8 +369,13 @@ cat > task-definition.json << EOF
                 {
                     "name": "HOSTNAME",
                     "value": "0.0.0.0"
+                },
+                {
+                    "name": "NEXT_TELEMETRY_DISABLED",
+                    "value": "1"
                 }
-            ]
+            ],
+            "stopTimeout": 30
         }
     ]
 }
