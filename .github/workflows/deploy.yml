@@ -1,7 +1,7 @@
-# Modulus LMS - Single Script Deployment
-# Unified deployment using one script for everything
+# Modulus LMS - Smart Deployment Pipeline
+# Idempotent deployment with zero-downtime updates
 
-name: 🚀 Deploy Modulus LMS
+name: 🚀 Deploy Modulus LMS (Smart)
 
 on:
   push:
@@ -13,7 +13,7 @@ env:
 
 jobs:
   deploy:
-    name: 🚀 Deploy Modulus LMS
+    name: 🚀 Smart Deploy Modulus LMS
     runs-on: ubuntu-latest
     
     steps:
@@ -40,26 +40,25 @@ jobs:
       run: |
         npm ci --legacy-peer-deps
         npm run build
-        echo "✅ Local build successful, proceeding with Docker deployment"
+        echo "✅ Local build successful, proceeding with deployment"
 
-    - name: 🚀 Deploy Everything (Single Script)
+    - name: 🚀 Smart Deploy (Zero Downtime)
       run: |
-        # Make unified deployment script executable
+        # Make deployment script executable
         chmod +x ./deploy.sh
         
-        # Run unified deployment (handles everything)
+        # Run smart deployment (checks existing resources)
         ./deploy.sh
 
     - name: 📊 Deployment Summary
       run: |
-        echo "🎉 Deployment completed successfully!"
+        echo "🎉 Smart Deployment completed successfully!"
         echo "🔗 Check AWS Console for ALB DNS name"
         echo "📍 Region: ${{ env.AWS_REGION }}"
         echo "⏱️ Allow 2-3 minutes for health checks to pass"
         echo ""
-        echo "🏗️ Resources created:"
-        echo "  - ECS Cluster: modulus-cluster"
-        echo "  - ECS Service: modulus-service"
-        echo "  - Application Load Balancer: modulus-alb"
-        echo "  - Target Group: modulus-tg"
-        echo "  - ECR Repository: modulus-lms"
+        echo "✨ Smart Features:"
+        echo "  - ♻️  Reuses existing resources"
+        echo "  - 🔄 Zero-downtime service updates"
+        echo "  - 🔍 Checks infrastructure state"
+        echo "  - 💚 Idempotent deployments"
