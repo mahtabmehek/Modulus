@@ -24,7 +24,7 @@ export interface AWSConfig {
 // Environment-based AWS configuration
 export const getAWSConfig = (): AWSConfig => {
   const config: AWSConfig = {
-    region: process.env.NEXT_PUBLIC_AWS_REGION || process.env.AWS_REGION || 'us-east-1'
+    region: process.env.NEXT_PUBLIC_AWS_REGION || process.env.AWS_REGION || 'eu-west-2'
   }
 
   // Only add credentials if running server-side

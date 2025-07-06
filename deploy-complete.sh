@@ -10,7 +10,7 @@ echo "🚀 Starting Complete Modulus LMS Deployment..."
 DOMAIN_NAME="mahtabmehek.tech"
 APP_SUBDOMAIN="modulus"
 LABS_SUBDOMAIN="labs"
-AWS_REGION="us-east-1"
+AWS_REGION="eu-west-2"
 CLUSTER_NAME="modulus-cluster"
 DB_NAME="modulusdb"
 
@@ -20,26 +20,17 @@ echo "📋 AWS Account ID: $ACCOUNT_ID"
 
 echo "🏗️ Step 1: Creating Core Infrastructure..."
 
-# Create VPC and networking
-VPC_ID=$(aws ec2 create-vpc --cidr-block 10.0.0.0/16 --query 'Vpc.VpcId' --output text)
-aws ec2 modify-vpc-attribute --vpc-id $VPC_ID --enable-dns-hostnames
-aws ec2 create-tags --resources $VPC_ID --tags Key=Name,Value=modulus-vpc
+# Use default VPC instead of creating new one (avoids VPC limit)
+VPC_ID=$(aws ec2 describe-vpcs --filters "Name=is-default,Values=true" --query 'Vpcs[0].VpcId' --output text)
+echo "📋 Using default VPC: $VPC_ID"
 
-# Create Internet Gateway
-IGW_ID=$(aws ec2 create-internet-gateway --query 'InternetGateway.InternetGatewayId' --output text)
-aws ec2 attach-internet-gateway --vpc-id $VPC_ID --internet-gateway-id $IGW_ID
+# Get default subnets
+SUBNET1_ID=$(aws ec2 describe-subnets --filters "Name=vpc-id,Values=$VPC_ID" --query 'Subnets[0].SubnetId' --output text)
+SUBNET2_ID=$(aws ec2 describe-subnets --filters "Name=vpc-id,Values=$VPC_ID" --query 'Subnets[1].SubnetId' --output text)
+SUBNET3_ID=$(aws ec2 describe-subnets --filters "Name=vpc-id,Values=$VPC_ID" --query 'Subnets[2].SubnetId' --output text 2>/dev/null || echo $SUBNET1_ID)
+SUBNET4_ID=$(aws ec2 describe-subnets --filters "Name=vpc-id,Values=$VPC_ID" --query 'Subnets[3].SubnetId' --output text 2>/dev/null || echo $SUBNET2_ID)
 
-# Create Subnets
-SUBNET1_ID=$(aws ec2 create-subnet --vpc-id $VPC_ID --cidr-block 10.0.1.0/24 --availability-zone ${AWS_REGION}a --query 'Subnet.SubnetId' --output text)
-SUBNET2_ID=$(aws ec2 create-subnet --vpc-id $VPC_ID --cidr-block 10.0.2.0/24 --availability-zone ${AWS_REGION}b --query 'Subnet.SubnetId' --output text)
-SUBNET3_ID=$(aws ec2 create-subnet --vpc-id $VPC_ID --cidr-block 10.0.3.0/24 --availability-zone ${AWS_REGION}a --query 'Subnet.SubnetId' --output text)
-SUBNET4_ID=$(aws ec2 create-subnet --vpc-id $VPC_ID --cidr-block 10.0.4.0/24 --availability-zone ${AWS_REGION}b --query 'Subnet.SubnetId' --output text)
-
-# Setup routing
-ROUTE_TABLE_ID=$(aws ec2 create-route-table --vpc-id $VPC_ID --query 'RouteTable.RouteTableId' --output text)
-aws ec2 create-route --route-table-id $ROUTE_TABLE_ID --destination-cidr-block 0.0.0.0/0 --gateway-id $IGW_ID
-aws ec2 associate-route-table --subnet-id $SUBNET1_ID --route-table-id $ROUTE_TABLE_ID
-aws ec2 associate-route-table --subnet-id $SUBNET2_ID --route-table-id $ROUTE_TABLE_ID
+echo "📋 Using subnets: $SUBNET1_ID, $SUBNET2_ID"
 
 echo "🔒 Step 2: Creating Security Groups..."
 

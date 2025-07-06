@@ -39,19 +39,6 @@ export function UserCreationView() {
     )
   }
 
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    studentId: '',
-    role: 'student' as UserRole,
-    level: 1,
-    levelName: 'Beginner',
-    department: '',
-    joinedAt: new Date().toISOString().split('T')[0],
-  })
-
-  const [errors, setErrors] = useState<Record<string, string>>({})
-
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({
       ...prev,

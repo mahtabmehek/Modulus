@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 env:
-  AWS_REGION: us-east-1
+  AWS_REGION: eu-west-2
   DOMAIN_NAME: mahtabmehek.tech
   APP_SUBDOMAIN: modulus
   LABS_SUBDOMAIN: labs
@@ -37,17 +37,14 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ env.AWS_REGION }}
 
-    - name: 🏗️ Setup Complete Infrastructure
+    - name: 🏗️ Setup Simple Infrastructure (Default VPC)
       id: setup
       run: |
         # Make setup script executable
-        chmod +x ./deploy-complete.sh
+        chmod +x ./deploy-simple.sh
         
-        # Run complete setup with domain
-        ./deploy-complete.sh
-        
-        # Output URLs
-        echo "app-url=https://${{ env.APP_SUBDOMAIN }}.${{ env.DOMAIN_NAME }}" >> $GITHUB_OUTPUT
+        # Run simple setup using default VPC
+        ./deploy-simple.sh
         echo "labs-url=https://${{ env.LABS_SUBDOMAIN }}.${{ env.DOMAIN_NAME }}" >> $GITHUB_OUTPUT
 
   build-and-deploy:

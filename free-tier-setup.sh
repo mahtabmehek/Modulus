@@ -5,7 +5,7 @@ echo "🚀 Setting up AWS Free Tier for Modulus LMS..."
 
 # Variables
 BUCKET_NAME="modulus-deploy-$(date +%s)"
-REGION="us-east-1"
+REGION="eu-west-2"
 KEY_NAME="modulus-key"
 
 echo "📋 Creating AWS resources (Free Tier)..."

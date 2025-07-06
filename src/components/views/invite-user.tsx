@@ -91,19 +91,6 @@ export function InviteUserView() {
     }
   ]
 
-  const [usedInvites] = useState([
-    {
-      id: 'inv-003',
-      email: 'used.student@university.edu',
-      name: 'Alice Johnson',
-      role: 'student' as UserRole,
-      code: 'STU-DEF456',
-      createdAt: new Date('2025-06-20'),
-      usedAt: new Date('2025-06-22'),
-      isUsed: true
-    }
-  ])
-
   const handleCreateInvite = () => {
     if (!newInvite.email || !newInvite.name) return
 

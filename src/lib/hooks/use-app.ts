@@ -57,10 +57,35 @@ interface AppStore {
 export const useAppStore = create<AppStore>()(
   persist(
     (set, get) => ({
-      // Initial state - Enable invite-only mode for security
-      user: null,
-      isAuthenticated: false,
-      currentView: { type: 'invite-landing' },
+      // Initial state - Disable invite-only mode for development
+      user: {
+        id: 'dev-user-1',
+        name: 'Development User',
+        email: 'dev@modulus.edu',
+        role: 'admin',
+        avatar: '/api/placeholder/40/40',
+        level: 1,
+        levelName: 'Admin',
+        badges: [],
+        streakDays: 0,
+        totalPoints: 0,
+        joinedAt: new Date(),
+        lastActive: new Date(),
+        preferences: {
+          theme: 'dark',
+          language: 'en',
+          notifications: {
+            email: true,
+            push: true,
+            announcements: true,
+            labUpdates: true
+          }
+        },
+        isApproved: true,
+        approvalStatus: 'approved'
+      },
+      isAuthenticated: true,
+      currentView: { type: 'dashboard' },
       appData: mockData,
       userProgress: [],
       desktopSessions: [],
@@ -71,9 +96,9 @@ export const useAppStore = create<AppStore>()(
       // Actions
       setUser: (user) => {
         set({ user, isAuthenticated: !!user })
-        // If logging out, immediately redirect to invite landing page
+        // If logging out, redirect to dashboard (invite-only disabled)
         if (!user) {
-          set({ currentView: { type: 'invite-landing' } })
+          set({ currentView: { type: 'dashboard' } })
         }
       },
       
