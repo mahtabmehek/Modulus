@@ -8,13 +8,26 @@ import { UserRole } from '@/types'
 export function UserCreationView() {
   const { navigate, user: currentUser } = useApp()
   
-  // Check if user has permission to create users
+  // All hooks must be called at the top level
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    studentId: '',
+    role: 'student' as UserRole,
+    level: 1,
+    levelName: 'Beginner',
+    department: '',
+    joinedAt: new Date().toISOString().split('T')[0],
+  })
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  
+  // Check if user has permission to create users (after hooks)
   if (!currentUser || !['admin', 'staff'].includes(currentUser.role)) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-xl font-semibold text-foreground mb-2">Access Denied</h2>
-          <p className="text-muted-foreground mb-4">You don't have permission to create users.</p>
+          <p className="text-muted-foreground mb-4">You don&apos;t have permission to create users.</p>
           <button
             onClick={() => navigate('dashboard')}
             className="text-red-600 hover:text-red-700 transition-colors"
@@ -25,8 +38,6 @@ export function UserCreationView() {
       </div>
     )
   }
-  
-  const [formData, setFormData] = useState({
     name: '',
     email: '',
     studentId: '',

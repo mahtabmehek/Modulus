@@ -15,13 +15,47 @@ interface NewInvite {
 export function InviteUserView() {
   const { user: currentUser, navigate } = useApp()
   
-  // Check if user has permission to manage invites
+  // All hooks must be called at the top level
+  const [activeTab, setActiveTab] = useState<'create' | 'pending' | 'used'>('create')
+  const [showCreateForm, setShowCreateForm] = useState(false)
+  const [newInvite, setNewInvite] = useState<NewInvite>({
+    email: '',
+    role: 'student',
+    name: '',
+    message: ''
+  })
+  const [pendingInvites] = useState([
+    {
+      id: 'inv-001',
+      email: 'john.student@university.edu',
+      name: 'John Smith',
+      role: 'student' as const,
+      invitedBy: 'Admin',
+      sentAt: new Date('2024-01-15'),
+      expiresAt: new Date('2024-02-15'),
+      status: 'pending' as const
+    }
+  ])
+  const [usedInvites] = useState([
+    {
+      id: 'inv-002',
+      email: 'sarah.instructor@university.edu',
+      name: 'Sarah Johnson',
+      role: 'instructor' as const,
+      invitedBy: 'Admin',
+      sentAt: new Date('2024-01-10'),
+      usedAt: new Date('2024-01-12'),
+      status: 'used' as const
+    }
+  ])
+  
+  // Check if user has permission to manage invites (after hooks)
   if (!currentUser || !['admin', 'staff'].includes(currentUser.role)) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-xl font-semibold text-foreground mb-2">Access Denied</h2>
-          <p className="text-muted-foreground mb-4">You don't have permission to manage invites.</p>
+          <p className="text-muted-foreground mb-4">You don&apos;t have permission to manage invites.</p>
           <button
             onClick={() => navigate('dashboard')}
             className="text-red-600 hover:text-red-700 transition-colors"
@@ -32,18 +66,6 @@ export function InviteUserView() {
       </div>
     )
   }
-  
-  const [activeTab, setActiveTab] = useState<'create' | 'pending' | 'used'>('create')
-  const [showCreateForm, setShowCreateForm] = useState(false)
-  const [newInvite, setNewInvite] = useState<NewInvite>({
-    email: '',
-    role: 'student',
-    name: '',
-    message: ''
-  })
-
-  // Mock data for demonstration
-  const [pendingInvites] = useState([
     {
       id: 'inv-001',
       email: 'john.student@university.edu',
