@@ -2,6 +2,31 @@
 
 Modulus is a comprehensive Learning Management System (LMS) designed specifically for cybersecurity education, combining the interactive features of TryHackMe with the course management capabilities of Moodle.
 
+## 🚀 Quick Start
+
+### Deployment
+```bash
+# Deploy to AWS (unified script)
+./deploy.sh
+
+# Or use GitHub Actions (push to main branch)
+git push origin main
+```
+
+### AWS Management
+```powershell
+# Scan resources
+.\aws-manager.ps1 scan
+
+# Verify deployment
+.\aws-manager.ps1 verify
+
+# Clean up when done
+.\aws-manager.ps1 cleanup
+```
+
+📖 **Full deployment guide**: See [DEPLOYMENT_UNIFIED.md](../DEPLOYMENT_UNIFIED.md)
+
 ## 🚀 Features
 
 ### Core Functionality

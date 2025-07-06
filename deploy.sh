@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# 🚀 Modulus LMS - Single Smart Deployment Script
-# IDEMPOTENT: Checks existing resources and only creates what's needed
-# ZERO-DOWNTIME: Updates services instead of recreating them
+# 🚀 Modulus LMS - UNIFIED Deployment Script
+# FEATURES: Idempotent, Zero-downtime, Cost-optimized, EU-optimized
+# SUPPORTS: ECS, RDS, S3, ALB, Route 53, Free Tier optimized
 
 set -e
 
@@ -11,6 +11,8 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+PURPLE='\033[0;35m'
+CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Configuration
@@ -23,6 +25,14 @@ ECR_REPO="modulus-lms"
 ALB_NAME="modulus-alb"
 TARGET_GROUP_NAME="modulus-tg"
 SECURITY_GROUP_NAME="modulus-sg"
+
+# Deployment options
+ENABLE_RDS=${ENABLE_RDS:-false}
+ENABLE_ROUTE53=${ENABLE_ROUTE53:-false}
+INSTANCE_TYPE=${INSTANCE_TYPE:-t3.micro}
+MIN_CAPACITY=${MIN_CAPACITY:-1}
+MAX_CAPACITY=${MAX_CAPACITY:-2}
+DESIRED_CAPACITY=${DESIRED_CAPACITY:-1}
 
 # Functions for colored output
 log_info() { echo -e "${BLUE}ℹ️  $1${NC}"; }

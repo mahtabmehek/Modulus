@@ -1,0 +1,53 @@
+# Modulus LMS - Single Script Deployment
+# Unified deployment using one script for everything
+
+name: 🚀 Deploy Modulus LMS
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+env:
+  AWS_REGION: eu-west-2
+
+jobs:
+  deploy:
+    name: 🚀 Deploy Modulus LMS
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+
+    - name: ⚙️ Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: 🐳 Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: 🚀 Deploy Everything (Single Script)
+      run: |
+        # Make unified deployment script executable
+        chmod +x ./deploy.sh
+        
+        # Run unified deployment (handles everything)
+        ./deploy.sh
+
+    - name: 📊 Deployment Summary
+      run: |
+        echo "🎉 Deployment completed successfully!"
+        echo "🔗 Check AWS Console for ALB DNS name"
+        echo "📍 Region: ${{ env.AWS_REGION }}"
+        echo "⏱️ Allow 2-3 minutes for health checks to pass"
+        echo ""
+        echo "🏗️ Resources created:"
+        echo "  - ECS Cluster: modulus-cluster"
+        echo "  - ECS Service: modulus-service"
+        echo "  - Application Load Balancer: modulus-alb"
+        echo "  - Target Group: modulus-tg"
+        echo "  - ECR Repository: modulus-lms"
