@@ -66,6 +66,9 @@ export function InviteUserView() {
       </div>
     )
   }
+
+  // Mock data for existing invites
+  const mockInvites = [
     {
       id: 'inv-001',
       email: 'john.student@university.edu',
@@ -86,7 +89,7 @@ export function InviteUserView() {
       expiresAt: new Date('2025-07-17'),
       isUsed: false
     }
-  ])
+  ]
 
   const [usedInvites] = useState([
     {

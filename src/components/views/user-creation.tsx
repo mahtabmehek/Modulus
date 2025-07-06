@@ -38,6 +38,8 @@ export function UserCreationView() {
       </div>
     )
   }
+
+  const [formData, setFormData] = useState({
     name: '',
     email: '',
     studentId: '',
