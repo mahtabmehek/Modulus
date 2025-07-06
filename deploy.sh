@@ -8,8 +8,37 @@ set -e
 
 # Color codes for output
 RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
+GREEN='\03if [ "$TARGET_GROUP_ARN" = "None" ]; then
+    log_info "Creating target group..."
+    TARGET_GROUP_ARN=$(aws elbv2 create-target-group \
+        --name $TARGET_GROUP_NAME \
+        --protocol HTTP \
+        --port 3000 \
+        --vpc-id $VPC_ID \
+        --target-type ip \
+        --health-check-path / \
+        --health-check-interval-seconds 60 \
+        --health-check-timeout-seconds 10 \
+        --healthy-threshold-count 2 \
+        --unhealthy-threshold-count 5 \
+        --matcher HttpCode=200,301,302 \
+        --query 'TargetGroups[0].TargetGroupArn' \
+        --output text \
+        --region $AWS_REGION)
+    log_success "Created target group: $TARGET_GROUP_ARN"
+else
+    log_skip "Using existing target group: $TARGET_GROUP_ARN"
+    # Update health check settings for existing target group
+    aws elbv2 modify-target-group \
+        --target-group-arn $TARGET_GROUP_ARN \
+        --health-check-interval-seconds 60 \
+        --health-check-timeout-seconds 10 \
+        --healthy-threshold-count 2 \
+        --unhealthy-threshold-count 5 \
+        --matcher HttpCode=200,301,302 \
+        --region $AWS_REGION >/dev/null 2>&1
+    log_success "Updated target group health check settings"
+fi3[1;33m'
 BLUE='\033[0;34m'
 PURPLE='\033[0;35m'
 CYAN='\033[0;36m'
@@ -151,34 +180,57 @@ log_info "Step 5: Building and pushing Docker image..."
 
 # Create optimized Dockerfile
 cat > Dockerfile.deploy << 'EOF'
-FROM node:18-alpine
+FROM node:18-alpine AS base
+
+# Install dependencies only when needed
+FROM base AS deps
 WORKDIR /app
 
-# Copy package files and install dependencies
-COPY package*.json ./
+# Install dependencies based on the preferred package manager
+COPY package.json package-lock.json* ./
 RUN npm ci --legacy-peer-deps
 
-# Copy source code
+# Rebuild the source code only when needed
+FROM base AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # Set environment variables
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
-ENV PORT=3000
 
 # Build the application
 RUN npm run build
 
+# Production image, copy all the files and run next
+FROM base AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
+
+# Install curl for health checks
+RUN apk add --no-cache curl
+
 # Create user for security
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
-RUN chown -R nextjs:nodejs /app
+
+# Copy necessary files
+COPY --from=builder /app/public ./public
+
+# Copy the standalone output
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
 USER nextjs
 
-# Expose port
 EXPOSE 3000
 
-# Start the application (use node server.js since output is standalone)
+# Start the application
 CMD ["node", "server.js"]
 EOF
 
@@ -232,10 +284,10 @@ if [ "$TARGET_GROUP_ARN" = "None" ]; then
         --vpc-id $VPC_ID \
         --target-type ip \
         --health-check-path / \
-        --health-check-interval-seconds 30 \
-        --health-check-timeout-seconds 5 \
+        --health-check-interval-seconds 60 \
+        --health-check-timeout-seconds 30 \
         --healthy-threshold-count 2 \
-        --unhealthy-threshold-count 3 \
+        --unhealthy-threshold-count 5 \
         --query 'TargetGroups[0].TargetGroupArn' \
         --output text \
         --region $AWS_REGION)
@@ -283,6 +335,13 @@ cat > task-definition.json << EOF
                 }
             ],
             "essential": true,
+            "healthCheck": {
+                "command": ["CMD-SHELL", "curl -f http://localhost:3000/ || exit 1"],
+                "interval": 60,
+                "timeout": 30,
+                "retries": 3,
+                "startPeriod": 120
+            },
             "logConfiguration": {
                 "logDriver": "awslogs",
                 "options": {
@@ -299,6 +358,10 @@ cat > task-definition.json << EOF
                 {
                     "name": "PORT",
                     "value": "3000"
+                },
+                {
+                    "name": "HOSTNAME",
+                    "value": "0.0.0.0"
                 }
             ]
         }
@@ -340,7 +403,38 @@ fi
 
 # Step 9: Wait for deployment
 log_info "Step 9: Waiting for deployment to complete..."
-aws ecs wait services-stable --cluster $CLUSTER_NAME --services $SERVICE_NAME --region $AWS_REGION
+log_info "This may take 5-10 minutes for containers to start and pass health checks..."
+
+# Custom wait with better timeout handling
+max_attempts=20
+attempt=0
+while [ $attempt -lt $max_attempts ]; do
+    attempt=$((attempt + 1))
+    log_info "Checking deployment status (attempt $attempt/$max_attempts)..."
+    
+    # Check service status
+    service_status=$(aws ecs describe-services --cluster $CLUSTER_NAME --services $SERVICE_NAME --region $AWS_REGION --query 'services[0].deployments[0].status' --output text 2>/dev/null || echo "UNKNOWN")
+    running_count=$(aws ecs describe-services --cluster $CLUSTER_NAME --services $SERVICE_NAME --region $AWS_REGION --query 'services[0].runningCount' --output text 2>/dev/null || echo "0")
+    desired_count=$(aws ecs describe-services --cluster $CLUSTER_NAME --services $SERVICE_NAME --region $AWS_REGION --query 'services[0].desiredCount' --output text 2>/dev/null || echo "1")
+    
+    log_info "Service status: $service_status, Running: $running_count/$desired_count"
+    
+    if [ "$service_status" = "PRIMARY" ] && [ "$running_count" = "$desired_count" ]; then
+        log_success "Deployment completed successfully!"
+        break
+    elif [ "$service_status" = "FAILED" ]; then
+        log_error "Deployment failed!"
+        break
+    else
+        log_info "Waiting 30 seconds before next check..."
+        sleep 30
+    fi
+done
+
+if [ $attempt -eq $max_attempts ]; then
+    log_warning "Deployment check timed out, but service may still be starting..."
+    log_info "Check AWS Console for detailed status"
+fi
 
 # Get ALB DNS name
 ALB_DNS=$(aws elbv2 describe-load-balancers --load-balancer-arns $ALB_ARN --query 'LoadBalancers[0].DNSName' --output text --region $AWS_REGION)
