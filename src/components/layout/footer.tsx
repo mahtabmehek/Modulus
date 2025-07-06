@@ -10,7 +10,7 @@ export function Footer() {
               <span className="text-white font-bold text-sm">M</span>
             </div>
             <span className="text-gray-600 dark:text-gray-400">
-              © 2024 Modulus by mahtabmehek. All rights reserved.
+              © 2024 Modulus. All rights reserved.
             </span>
           </div>
           <div className="flex space-x-6 mt-4 md:mt-0">

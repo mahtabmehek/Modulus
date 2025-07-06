@@ -1,9 +1,10 @@
-export type UserRole = 'student' | 'instructor' | 'admin'
+export type UserRole = 'student' | 'instructor' | 'staff' | 'admin'
 
 export interface User {
   id: string
   email: string
   name: string
+  studentId?: string
   role: UserRole
   avatar?: string
   level: number
@@ -31,8 +32,24 @@ export interface UserPreferences {
   }
 }
 
+export interface Course {
+  id: string
+  title: string
+  description: string
+  code: string // e.g., "BSC-IT", "MSC-CS"
+  level: 'Bachelor' | 'Master' | 'Doctorate'
+  duration: number // in years
+  totalCredits: number
+  department: string
+  isActive: boolean
+  createdBy: string
+  createdAt: Date
+  updatedAt: Date
+}
+
 export interface LearningPath {
   id: string
+  courseId: string
   title: string
   description: string
   category: string
@@ -76,6 +93,7 @@ export interface Lab {
   tasks: Task[]
   resources: Resource[]
   questions: Question[]
+  deadline?: Date
   createdBy: string
   createdAt: Date
   updatedAt: Date
@@ -88,17 +106,28 @@ export interface Task {
   order: number
   questions: Question[]
   documents: Document[]
+  isCompleted?: boolean
+  completedQuestions?: string[] // IDs of completed questions
+  completedFlags?: string[] // Submitted flags for this task
+  totalFlags?: number // Total expected flags for this task
+  hasFlags?: boolean // Whether this task requires flags
 }
 
 export interface Question {
   id: string
   text: string
-  type: 'text' | 'multiple-choice' | 'code' | 'file-upload'
-  answer: string | string[]
+  type: 'text' | 'multiple-choice' | 'code' | 'file-upload' | 'flag'
+  answer: string | string[] // Can be multiple flags
   hint?: string
   points: number
   explanation?: string
   options?: string[] // for multiple-choice
+  isRequired?: boolean // Some questions might be optional
+  isCompleted?: boolean
+  submittedAnswer?: string
+  flags?: string[] // For challenges with multiple flags
+  flagCount?: number // Expected number of flags
+  acceptsPartialFlags?: boolean // Whether partial flag submission is allowed
 }
 
 export interface Resource {
@@ -159,6 +188,20 @@ export interface DesktopSession {
   ssh_port?: number
 }
 
+export interface LabSession {
+  id: string
+  userId: string
+  labId: string
+  labName: string
+  startTime: Date
+  endTime: Date
+  lastInteraction: Date
+  remainingMinutes: number
+  isActive: boolean
+  canExtend: boolean
+  vmIP?: string
+}
+
 export interface Badge {
   id: string
   name: string
@@ -192,18 +235,22 @@ export interface Announcement {
 }
 
 export interface ViewState {
-  type: 'landing' | 'login' | 'register' | 'approval-pending' | 'dashboard' | 'path' | 'module' | 'lab' | 'desktop' | 'profile'
+  type: 'invite-landing' | 'password-setup' | 'dashboard' | 'path' | 'module' | 'lab' | 'desktop' | 'profile' | 'login-existing' | 'lab-creation' | 'course-creation' | 'course-edit' | 'course-overview' | 'user-creation' | 'user-edit' | 'user-overview' | 'invite-management' | 'user-profile'
   params?: {
     pathId?: string
     moduleId?: string
     labId?: string
     sessionId?: string
+    inviteCode?: string
+    courseId?: string
+    userId?: string
     [key: string]: any
   }
 }
 
 export interface AppData {
   users: User[]
+  courses: Course[]
   learningPaths: LearningPath[]
   modules: Module[]
   labs: Lab[]
@@ -220,4 +267,49 @@ export interface CompletionStats {
   badges: number
   currentStreak: number
   totalPoints: number
+}
+
+export interface InviteCode {
+  id: string
+  code: string
+  email: string
+  name: string
+  studentId?: string
+  role: UserRole
+  permissions: string[]
+  createdBy: string
+  createdAt: Date
+  expiresAt: Date
+  isUsed: boolean
+  usedAt?: Date
+  usedBy?: string
+}
+
+export interface InviteSetupData {
+  name: string
+  email: string
+  studentId?: string
+  role: UserRole
+  password: string
+  inviteCode: string
+}
+
+export interface UserPermissions {
+  canEditUserData: boolean
+  canCreateUsers: boolean
+  canCreateCourses: boolean
+  canCreateLearningPaths: boolean
+  canCreateModules: boolean
+  canCreateLabs: boolean
+  canManageInvites: boolean
+  canResetOwnPassword: boolean
+  canEditOwnProfile: boolean
+  canAccessDashboard: boolean
+}
+
+export interface RolePermissions {
+  student: UserPermissions
+  instructor: UserPermissions
+  staff: UserPermissions
+  admin: UserPermissions
 }

@@ -1,4 +1,4 @@
-import { AppData, User, LearningPath, Module, Lab, Badge, Announcement } from '@/types'
+import { AppData, User, Course, LearningPath, Module, Lab, Badge, Announcement } from '@/types'
 
 export const mockUsers: User[] = [
   {
@@ -129,11 +129,83 @@ export const mockUsers: User[] = [
       },
     },
   },
+  // Staff user for managing courses and user data
+  {
+    id: 'user-6',
+    email: 'staff@modulus.edu',
+    name: 'Jennifer Williams',
+    role: 'staff',
+    level: 5,
+    levelName: 'Academic Staff',
+    badges: ['staff-member', 'course-creator', 'user-manager'],
+    streakDays: 12,
+    totalPoints: 2500,
+    joinedAt: new Date('2023-09-01'),
+    lastActive: new Date(),
+    isApproved: true,
+    approvalStatus: 'approved',
+    preferences: {
+      theme: 'light',
+      language: 'en',
+      notifications: {
+        email: true,
+        push: true,
+        announcements: true,
+        labUpdates: false,
+      },
+    },
+  },
+]
+
+export const mockCourses: Course[] = [
+  {
+    id: 'course-1',
+    title: 'Bachelor of Science in Computer Science',
+    description: 'A comprehensive undergraduate program covering fundamental and advanced topics in computer science, including cybersecurity, software development, and systems administration.',
+    code: 'BSC-CS',
+    level: 'Bachelor',
+    duration: 3,
+    totalCredits: 360,
+    department: 'School of Computing',
+    isActive: true,
+    createdBy: 'user-6',
+    createdAt: new Date('2023-01-15'),
+    updatedAt: new Date('2024-08-01'),
+  },
+  {
+    id: 'course-2',
+    title: 'Master of Science in Cybersecurity',
+    description: 'An advanced graduate program focusing on cybersecurity, threat analysis, digital forensics, and advanced network security.',
+    code: 'MSC-CS',
+    level: 'Master',
+    duration: 1,
+    totalCredits: 180,
+    department: 'School of Computing',
+    isActive: true,
+    createdBy: 'user-6',
+    createdAt: new Date('2023-02-01'),
+    updatedAt: new Date('2024-08-01'),
+  },
+  {
+    id: 'course-3',
+    title: 'Bachelor of Science in Information Technology',
+    description: 'A practical undergraduate program focusing on information systems, network administration, and business technology solutions.',
+    code: 'BSC-IT',
+    level: 'Bachelor',
+    duration: 3,
+    totalCredits: 360,
+    department: 'School of Information Technology',
+    isActive: true,
+    createdBy: 'user-6',
+    createdAt: new Date('2023-03-01'),
+    updatedAt: new Date('2024-08-01'),
+  },
 ]
 
 export const mockPaths: LearningPath[] = [
   {
     id: 'path-1',
+    courseId: 'course-1',
     title: 'BSc Computer Science - Cybersecurity',
     description: 'Comprehensive cybersecurity training with hands-on labs and real-world scenarios.',
     category: 'cybersecurity',
@@ -174,21 +246,7 @@ In this lab, you will learn how to:
 - Familiarity with Linux command line
 
 ## Lab Environment
-You will be working with a Ubuntu 22.04 virtual machine with iptables pre-installed.
-
-## Tasks
-
-### Task 1: Basic Firewall Setup
-Configure basic INPUT, OUTPUT, and FORWARD policies.
-
-### Task 2: Service-Specific Rules
-Create rules for SSH, HTTP, and HTTPS services.
-
-### Task 3: Traffic Monitoring
-Use netstat and ss commands to monitor connections.
-
-### Task 4: Advanced Rules
-Implement rate limiting and connection tracking.`,
+You will be working with a Ubuntu 22.04 virtual machine with iptables pre-installed.`,
             type: 'Mandatory',
             difficulty: 'Medium',
             estimatedTime: 120,
@@ -197,6 +255,109 @@ Implement rate limiting and connection tracking.`,
             order: 1,
             isPublished: true,
             hasDesktop: true,
+            tasks: [
+              {
+                id: 'task-1',
+                title: 'Basic Setup',
+                content: 'Set up the basic firewall configuration and understand the environment.',
+                order: 1,
+                hasFlags: true,
+                totalFlags: 3,
+                questions: [
+                  {
+                    id: 'q1-1',
+                    text: 'What protocol does ping use?',
+                    type: 'flag',
+                    answer: 'ICMP',
+                    flags: ['ICMP'],
+                    flagCount: 1,
+                    points: 10,
+                    isRequired: true
+                  },
+                  {
+                    id: 'q1-2',
+                    text: 'What is the syntax to ping 10.10.10.10?',
+                    type: 'flag',
+                    answer: ['ping 10.10.10.10', 'ping -c 4 10.10.10.10'],
+                    flags: ['ping 10.10.10.10', 'ping -c 4 10.10.10.10'],
+                    flagCount: 2,
+                    acceptsPartialFlags: true,
+                    points: 20,
+                    isRequired: true
+                  },
+                  {
+                    id: 'q1-3',
+                    text: 'What flag do you get when you ping 8.8.8.8?',
+                    type: 'flag',
+                    answer: 'THM{ping_successful}',
+                    flags: ['THM{ping_successful}'],
+                    flagCount: 1,
+                    points: 20,
+                    isRequired: true
+                  }
+                ],
+                documents: []
+              },
+              {
+                id: 'task-2',
+                title: 'Advanced Configuration',
+                content: 'Configure advanced firewall rules and test their effectiveness.',
+                order: 2,
+                hasFlags: false,
+                questions: [
+                  {
+                    id: 'q2-1',
+                    text: 'Upload your iptables configuration file',
+                    type: 'file-upload',
+                    answer: '',
+                    points: 30,
+                    isRequired: true
+                  }
+                ],
+                documents: []
+              },
+              {
+                id: 'task-3',
+                title: 'Multi-Flag Challenge',
+                content: 'Find all hidden flags in the system to complete this challenge.',
+                order: 3,
+                hasFlags: true,
+                totalFlags: 4,
+                questions: [
+                  {
+                    id: 'q3-1',
+                    text: 'Find all 4 flags hidden in the system (/root/, /var/, /tmp/, /home/)',
+                    type: 'flag',
+                    answer: ['FLAG{root_access}', 'FLAG{var_secrets}', 'FLAG{tmp_hidden}', 'FLAG{home_treasure}'],
+                    flags: ['FLAG{root_access}', 'FLAG{var_secrets}', 'FLAG{tmp_hidden}', 'FLAG{home_treasure}'],
+                    flagCount: 4,
+                    acceptsPartialFlags: true,
+                    points: 100,
+                    isRequired: true,
+                    hint: 'Check common directories and look for hidden files'
+                  }
+                ],
+                documents: []
+              },
+              {
+                id: 'task-4',
+                title: 'Conclusion',
+                content: 'Complete the final review questions.',
+                order: 4,
+                hasFlags: false,
+                questions: [
+                  {
+                    id: 'q4-1',
+                    text: 'Are you ready for the next filesystem?',
+                    type: 'text',
+                    answer: 'No answer needed',
+                    points: 0,
+                    isRequired: false
+                  }
+                ],
+                documents: []
+              }
+            ],
             desktopConfig: {
               id: 'desktop-1',
               name: 'Ubuntu Security Lab',
@@ -213,41 +374,6 @@ Implement rate limiting and connection tracking.`,
               },
               persistentVolumes: ['/home/student', '/var/log'],
             },
-            tasks: [
-              {
-                id: 'task-1',
-                title: 'Configure Default Policies',
-                content: 'Set up default DROP policies for INPUT and FORWARD chains, and ACCEPT for OUTPUT.',
-                order: 1,
-                questions: [
-                  {
-                    id: 'q1',
-                    text: 'What iptables command sets the default INPUT policy to DROP?',
-                    type: 'text',
-                    answer: 'iptables -P INPUT DROP',
-                    hint: 'Use the -P flag to set policies',
-                    points: 10,
-                  },
-                ],
-                documents: [],
-              },
-              {
-                id: 'task-2',
-                title: 'Allow SSH Access',
-                content: 'Configure the firewall to allow SSH connections on port 22.',
-                order: 2,
-                questions: [
-                  {
-                    id: 'q2',
-                    text: 'What is the flag found in /root/flag.txt after successfully configuring SSH access?',
-                    type: 'text',
-                    answer: 'MODULUS{ssh_access_configured}',
-                    points: 20,
-                  },
-                ],
-                documents: [],
-              },
-            ],
             resources: [
               {
                 id: 'resource-1',
@@ -276,6 +402,7 @@ Implement rate limiting and connection tracking.`,
             createdBy: 'user-2',
             createdAt: new Date('2024-01-15'),
             updatedAt: new Date('2024-06-01'),
+            deadline: new Date('2025-07-25T17:00:00'), // July 25, 2025 at 5:00 PM
           },
           {
             id: 'lab-2',
@@ -335,10 +462,11 @@ Kali Linux with Snort 3.1.x pre-installed.`,
               },
             ],
             resources: [],
-            questions: [],
+            questions: [            ],
             createdBy: 'user-2',
             createdAt: new Date('2024-01-20'),
             updatedAt: new Date('2024-06-01'),
+            deadline: new Date('2025-07-18T16:00:00'), // July 18, 2025 at 4:00 PM
           },
         ],
       },
@@ -375,10 +503,11 @@ This lab uses a deliberately vulnerable web application.`,
             hasDesktop: true,
             tasks: [],
             resources: [],
-            questions: [],
+            questions: [            ],
             createdBy: 'user-2',
             createdAt: new Date('2024-02-01'),
             updatedAt: new Date('2024-06-01'),
+            deadline: new Date('2025-07-21T23:00:00'), // July 21, 2025 at 11:00 PM
           },
         ],
       },
@@ -386,6 +515,7 @@ This lab uses a deliberately vulnerable web application.`,
   },
   {
     id: 'path-2',
+    courseId: 'course-2',
     title: 'MSc Cybersecurity - Advanced Threats',
     description: 'Advanced cybersecurity course focusing on emerging threats and defense strategies.',
     category: 'cybersecurity',
@@ -551,6 +681,7 @@ export const mockLabs: Lab[] = mockModules.flatMap(module => module.labs)
 
 export const mockData: AppData = {
   users: mockUsers,
+  courses: mockCourses,
   learningPaths: mockPaths,
   modules: mockModules,
   labs: mockLabs,

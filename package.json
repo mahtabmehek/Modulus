@@ -11,6 +11,12 @@
     "type-check": "npx tsc --noEmit"
   },
   "dependencies": {
+    "@aws-sdk/client-cloudwatch": "^3.841.0",
+    "@aws-sdk/client-ec2": "^3.843.0",
+    "@aws-sdk/client-eks": "^3.840.0",
+    "@aws-sdk/client-elastic-load-balancing-v2": "^3.840.0",
+    "@aws-sdk/client-rds": "^3.841.0",
+    "@aws-sdk/client-s3": "^3.842.0",
     "@headlessui/react": "^1.7.15",
     "@heroicons/react": "^2.0.18",
     "@types/node": "^20.0.0",

@@ -27,7 +27,7 @@ export function InstructorDashboard() {
           Instructor Dashboard 👩‍🏫
         </h1>
         <p className="text-blue-100 mb-4">
-          Manage your courses, track student progress, and create engaging content.
+          Create and manage module content within assigned courses. Track student progress and engagement.
         </p>
         <div className="flex flex-wrap gap-4">
           <div className="flex items-center bg-white/20 rounded-lg px-4 py-2">
@@ -54,7 +54,10 @@ export function InstructorDashboard() {
               Quick Actions
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <button className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 text-left hover:border-blue-300 dark:hover:border-blue-600 transition-colors">
+              <button 
+                onClick={() => navigate('lab-creation')}
+                className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 text-left hover:border-blue-300 dark:hover:border-blue-600 transition-colors"
+              >
                 <Plus className="w-8 h-8 text-blue-600 dark:text-blue-400 mb-3" />
                 <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
                   Create New Lab
@@ -90,11 +93,11 @@ export function InstructorDashboard() {
           <section>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                Your Modules
+                Your Assigned Modules
               </h2>
               <button className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center transition-colors">
                 <Plus className="w-4 h-4 mr-2" />
-                Create Module
+                Create Module Content
               </button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

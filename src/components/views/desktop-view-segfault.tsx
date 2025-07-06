@@ -67,55 +67,50 @@ export function DesktopView() {
   ]
 
   return (
-    <div className="h-screen bg-gray-900 text-white flex overflow-hidden">
-      {/* Sidebar Navigation */}
-      <div className="w-16 bg-gray-800 flex flex-col items-center py-3 space-y-3 border-r border-gray-700">
-        {/* Logo */}
-        <div 
-          onClick={() => navigate('dashboard')}
-          className="w-10 h-10 bg-red-600 rounded flex items-center justify-center mb-4 cursor-pointer hover:bg-red-500 transition-colors"
-          title="Back to Dashboard"
-        >
-          <span className="text-white font-bold text-lg">M</span>
+    <div className="h-screen bg-gray-900 text-white flex">
+      {/* Sidebar */}
+      <div className="w-20 bg-gray-800 flex flex-col items-center py-4 space-y-4">
+        <div className="flex flex-col items-center mb-6">
+          <h6 className="text-2xl font-bold text-red-500">M</h6>
+          <span className="text-xs text-gray-400">by mahtabmehek</span>
         </div>
         
-        {/* Navigation Icons */}
         {menuItems.map((item) => {
           const IconComponent = item.icon
           return (
             <div
               key={item.id}
               onClick={() => setActiveMenu(item.id)}
-              className={`w-10 h-10 rounded flex items-center justify-center cursor-pointer transition-all duration-200 ${
+              className={`w-12 h-12 rounded-lg flex items-center justify-center cursor-pointer transition-colors ${
                 activeMenu === item.id 
-                  ? 'bg-red-600 text-white shadow-lg' 
-                  : 'bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white'
+                  ? 'bg-red-600 text-white' 
+                  : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
               }`}
               title={item.name}
             >
-              <IconComponent className="w-5 h-5" />
+              <IconComponent className="w-6 h-6" />
             </div>
           )
         })}
         
         <div className="flex-1" />
         
-        {/* Back to Dashboard */}
+        {/* Back button */}
         <button
           onClick={() => navigate('dashboard')}
-          className="w-10 h-10 rounded bg-gray-700 hover:bg-gray-600 flex items-center justify-center cursor-pointer transition-colors text-gray-300 hover:text-white"
+          className="w-12 h-12 rounded-lg bg-gray-700 hover:bg-gray-600 flex items-center justify-center cursor-pointer transition-colors"
           title="Back to Dashboard"
         >
-          <ArrowLeft className="w-5 h-5" />
+          <ArrowLeft className="w-6 h-6" />
         </button>
       </div>
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col bg-gray-900">
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col">
         {/* Top Control Bar */}
-        <div className="h-10 bg-gray-800 border-b border-gray-700 flex items-center justify-between px-4 text-sm">
+        <div className="h-12 bg-gray-800 border-b border-gray-700 flex items-center justify-between px-4">
           <div className="flex items-center space-x-4">
-            <span className="text-white font-medium">
+            <span className="text-sm font-medium">
               {activeMenu === 'desktop' ? 'Remote Desktop' : activeMenu === 'terminal' ? 'Terminal' : 'File Browser'}
             </span>
             <div className="text-xs text-gray-400">
@@ -123,32 +118,32 @@ export function DesktopView() {
             </div>
           </div>
           
-          <div className="flex items-center space-x-4">
-            {/* Session Timer */}
-            <div className="flex items-center space-x-2 text-xs text-gray-300">
+          <div className="flex items-center space-x-3">
+            {/* Session Info */}
+            <div className="flex items-center space-x-2 text-xs text-gray-400">
               <Clock className="w-4 h-4" />
               <span>{formatTime(sessionTime)}</span>
             </div>
             
-            {/* Action Buttons */}
+            {/* Controls */}
             <div className="flex items-center space-x-1">
-              <button className="p-1 hover:bg-gray-700 rounded transition-colors text-gray-400 hover:text-white" title="Share">
+              <button className="p-1.5 hover:bg-gray-700 rounded transition-colors" title="Share Desktop">
                 <Share className="w-4 h-4" />
               </button>
-              <button className="p-1 hover:bg-gray-700 rounded transition-colors text-gray-400 hover:text-white" title="Upload">
+              <button className="p-1.5 hover:bg-gray-700 rounded transition-colors" title="Upload File">
                 <Upload className="w-4 h-4" />
               </button>
-              <button className="p-1 hover:bg-gray-700 rounded transition-colors text-gray-400 hover:text-white" title="Download">
+              <button className="p-1.5 hover:bg-gray-700 rounded transition-colors" title="Download">
                 <Download className="w-4 h-4" />
               </button>
               <button 
                 onClick={() => setIsFullscreen(!isFullscreen)}
-                className="p-1 hover:bg-gray-700 rounded transition-colors text-gray-400 hover:text-white" 
+                className="p-1.5 hover:bg-gray-700 rounded transition-colors" 
                 title="Toggle Fullscreen"
               >
                 {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
               </button>
-              <button className="p-1 hover:bg-gray-700 rounded transition-colors text-gray-400 hover:text-white" title="Settings">
+              <button className="p-1.5 hover:bg-gray-700 rounded transition-colors" title="Settings">
                 <Settings className="w-4 h-4" />
               </button>
             </div>
@@ -156,26 +151,26 @@ export function DesktopView() {
         </div>
 
         {/* Content Area */}
-        <div className="flex-1 relative bg-gray-900">
+        <div className="flex-1 relative">
           {activeMenu === 'desktop' && (
             <div className="h-full">
               {!isConnected ? (
-                <div className="h-full flex items-center justify-center">
+                <div className="h-full flex items-center justify-center bg-gray-900">
                   <div className="text-center">
-                    <Monitor className="w-12 h-12 mx-auto mb-3 text-gray-500" />
-                    <h3 className="text-base font-medium mb-2 text-white">Starting Desktop Session</h3>
-                    <p className="text-sm text-gray-400 mb-4">Connecting to {session.osType}...</p>
-                    <div className="w-6 h-6 border-3 border-red-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                    <Monitor className="w-16 h-16 mx-auto mb-4 text-gray-500" />
+                    <h3 className="text-lg font-semibold mb-2">Starting Desktop Session</h3>
+                    <p className="text-gray-400 mb-4">Connecting to {session.osType}...</p>
+                    <div className="w-8 h-8 border-4 border-red-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
                   </div>
                 </div>
               ) : (
-                <div className="h-full bg-black flex items-center justify-center relative">
+                <div className="h-full bg-gray-800 flex items-center justify-center">
                   <div className="text-center">
-                    <Monitor className="w-12 h-12 mx-auto mb-3 text-green-500" />
-                    <h3 className="text-base font-medium mb-2 text-white">Desktop Connected</h3>
-                    <p className="text-sm text-gray-400 mb-4">VNC session active at {session.ipAddress}:{session.vncPort}</p>
-                    <div className="bg-black rounded border border-gray-700 p-4 min-h-[300px] min-w-[500px]">
-                      <div className="text-green-400 font-mono text-sm leading-relaxed">
+                    <Monitor className="w-16 h-16 mx-auto mb-4 text-green-500" />
+                    <h3 className="text-lg font-semibold mb-2">Desktop Connected</h3>
+                    <p className="text-gray-400 mb-4">VNC session active at {session.ipAddress}:{session.vncPort}</p>
+                    <div className="bg-black rounded-lg p-4 min-h-[400px] min-w-[600px] border border-gray-600">
+                      <div className="text-green-400 font-mono text-sm">
                         <div>root@kali:~# uname -a</div>
                         <div>Linux kali 5.15.0-kali3-amd64 #1 SMP Debian 5.15.15-2kali1 (2022-01-31) x86_64 GNU/Linux</div>
                         <div>root@kali:~# whoami</div>
@@ -190,8 +185,8 @@ export function DesktopView() {
           )}
 
           {activeMenu === 'terminal' && (
-            <div className="h-full bg-black p-3">
-              <div className="h-full bg-black rounded border border-gray-700 p-3 font-mono text-sm text-green-400 leading-relaxed">
+            <div className="h-full bg-black p-4">
+              <div className="h-full bg-black rounded border border-gray-600 p-4 font-mono text-sm text-green-400">
                 <div>Welcome to Kali Linux</div>
                 <div>root@kali:~# ls -la</div>
                 <div>total 24</div>
@@ -208,37 +203,37 @@ export function DesktopView() {
           )}
 
           {activeMenu === 'files' && (
-            <div className="h-full bg-gray-900 p-3">
-              <div className="bg-gray-800 rounded border border-gray-700 h-full flex flex-col">
-                <div className="p-3 border-b border-gray-700">
-                  <h3 className="font-medium text-white text-sm">File Browser</h3>
-                  <p className="text-xs text-gray-400">/root</p>
+            <div className="h-full bg-gray-900 p-4">
+              <div className="bg-gray-800 rounded-lg border border-gray-700 h-full">
+                <div className="p-4 border-b border-gray-700">
+                  <h3 className="font-semibold">File Browser</h3>
+                  <p className="text-sm text-gray-400">/root</p>
                 </div>
-                <div className="flex-1 p-3 overflow-auto">
-                  <div className="space-y-1">
-                    <div className="flex items-center space-x-3 p-2 hover:bg-gray-700 rounded cursor-pointer text-sm">
-                      <FileText className="w-4 h-4 text-blue-400" />
-                      <span className="text-white">.bashrc</span>
+                <div className="p-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-3 p-2 hover:bg-gray-700 rounded cursor-pointer">
+                      <FileText className="w-5 h-5 text-blue-400" />
+                      <span>.bashrc</span>
                       <span className="text-xs text-gray-400 ml-auto">3.1 KB</span>
                     </div>
-                    <div className="flex items-center space-x-3 p-2 hover:bg-gray-700 rounded cursor-pointer text-sm">
-                      <FileText className="w-4 h-4 text-blue-400" />
-                      <span className="text-white">.profile</span>
+                    <div className="flex items-center space-x-3 p-2 hover:bg-gray-700 rounded cursor-pointer">
+                      <FileText className="w-5 h-5 text-blue-400" />
+                      <span>.profile</span>
                       <span className="text-xs text-gray-400 ml-auto">161 B</span>
                     </div>
-                    <div className="flex items-center space-x-3 p-2 hover:bg-gray-700 rounded cursor-pointer text-sm">
-                      <FileText className="w-4 h-4 text-yellow-400" />
-                      <span className="text-white">Desktop/</span>
+                    <div className="flex items-center space-x-3 p-2 hover:bg-gray-700 rounded cursor-pointer">
+                      <FileText className="w-5 h-5 text-yellow-400" />
+                      <span>Desktop/</span>
                       <span className="text-xs text-gray-400 ml-auto">Folder</span>
                     </div>
-                    <div className="flex items-center space-x-3 p-2 hover:bg-gray-700 rounded cursor-pointer text-sm">
-                      <FileText className="w-4 h-4 text-yellow-400" />
-                      <span className="text-white">Documents/</span>
+                    <div className="flex items-center space-x-3 p-2 hover:bg-gray-700 rounded cursor-pointer">
+                      <FileText className="w-5 h-5 text-yellow-400" />
+                      <span>Documents/</span>
                       <span className="text-xs text-gray-400 ml-auto">Folder</span>
                     </div>
-                    <div className="flex items-center space-x-3 p-2 hover:bg-gray-700 rounded cursor-pointer text-sm">
-                      <FileText className="w-4 h-4 text-yellow-400" />
-                      <span className="text-white">Downloads/</span>
+                    <div className="flex items-center space-x-3 p-2 hover:bg-gray-700 rounded cursor-pointer">
+                      <FileText className="w-5 h-5 text-yellow-400" />
+                      <span>Downloads/</span>
                       <span className="text-xs text-gray-400 ml-auto">Folder</span>
                     </div>
                   </div>
@@ -249,15 +244,15 @@ export function DesktopView() {
         </div>
 
         {/* Bottom Status Bar */}
-        <div className="h-6 bg-gray-800 border-t border-gray-700 flex items-center justify-between px-4 text-xs">
-          <div className="flex items-center space-x-4 text-gray-400">
-            <span>Status: {isConnected ? <span className="text-green-400">Connected</span> : <span className="text-yellow-400">Connecting...</span>}</span>
+        <div className="h-8 bg-gray-800 border-t border-gray-700 flex items-center justify-between px-4 text-xs text-gray-400">
+          <div className="flex items-center space-x-4">
+            <span>Status: {isConnected ? 'Connected' : 'Connecting...'}</span>
             <span>Session: {session.id}</span>
           </div>
-          <div className="flex items-center space-x-3 text-gray-400">
+          <div className="flex items-center space-x-3">
             <div className="flex items-center space-x-1">
               <Wifi className="w-3 h-3" />
-              <span className="text-green-400">Connected</span>
+              <span>Connected</span>
             </div>
             <div className="flex items-center space-x-1">
               <Battery className="w-3 h-3" />

@@ -7,22 +7,11 @@ import { useTheme } from 'next-themes'
 import { userProgress, getStreakEmoji, getLevelInfo, achievements } from '@/demo/achievements'
 
 export function Header() {
-  const { user, navigate, switchUserRole, logout, currentView, getCurrentLabSession, updateLabInteraction, cleanupExpiredSessions, appData } = useApp()
-  const { theme, setTheme, resolvedTheme } = useTheme()
+  const { user, navigate, switchUserRole, logout, currentView } = useApp()
+  const { theme, setTheme } = useTheme()
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
   const [showAchievements, setShowAchievements] = useState(false)
-  const [currentTime, setCurrentTime] = useState<Date | null>(null)
-  const [showCopiedNotification, setShowCopiedNotification] = useState(false)
-  const [mounted, setMounted] = useState(false)
-  
-  // Get current lab session
-  const currentLabSession = getCurrentLabSession()
-
-  // Handle hydration
-  useEffect(() => {
-    setMounted(true)
-  }, [])
   
   // Refs for dropdown menus
   const userMenuRef = useRef<HTMLDivElement>(null)
@@ -49,80 +38,7 @@ export function Header() {
     }
   }, [])
 
-  // Update current time and remaining lab time every 10 seconds for more accurate updates
-  useEffect(() => {
-    // Set initial time on client side only
-    setCurrentTime(new Date())
-    
-    // Initial cleanup
-    cleanupExpiredSessions()
-    
-    const timer = setInterval(() => {
-      setCurrentTime(new Date())
-      // Clean up expired sessions
-      cleanupExpiredSessions()
-      // Update lab interaction to keep session alive
-      if (currentLabSession && currentLabSession.isActive) {
-        updateLabInteraction(currentLabSession.id)
-      }
-    }, 10000) // Update every 10 seconds
-
-    return () => clearInterval(timer)
-  }, [currentLabSession, updateLabInteraction, cleanupExpiredSessions])
-
-  // Calculate remaining time for lab session
-  const getRemainingTime = () => {
-    if (!currentLabSession || !currentLabSession.isActive || !currentTime) return null
-    
-    try {
-      const now = currentTime.getTime()
-      // Ensure endTime is a Date object
-      const endTime = currentLabSession.endTime instanceof Date 
-        ? currentLabSession.endTime.getTime()
-        : new Date(currentLabSession.endTime).getTime()
-      
-      const remaining = Math.max(0, endTime - now)
-      
-      const hours = Math.floor(remaining / (1000 * 60 * 60))
-      const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60))
-      
-      if (hours > 0) {
-        return { text: `${hours}h ${minutes}m`, isLow: remaining < 15 * 60 * 1000 } // Low if less than 15 min
-      }
-      return { text: `${minutes}m`, isLow: remaining < 15 * 60 * 1000 }
-    } catch (error) {
-      console.error('Error calculating remaining time:', error)
-      return null
-    }
-  }
-
-  const handleLabVMClick = () => {
-    if (currentLabSession) {
-      navigate('lab', { 
-        labId: currentLabSession.labId, 
-        moduleId: appData.labs.find((l: any) => l.id === currentLabSession.labId)?.moduleId 
-      })
-    }
-  }
-
-  const handleCopyIP = (e: React.MouseEvent, ip: string) => {
-    e.stopPropagation() // Prevent lab navigation when clicking IP
-    navigator.clipboard.writeText(ip).then(() => {
-      setShowCopiedNotification(true)
-      setTimeout(() => {
-        setShowCopiedNotification(false)
-      }, 2000) // Hide after 2 seconds
-    }).catch(err => {
-      console.error('Failed to copy IP:', err)
-    })
-  }
-
-  const handleDesktopClick = () => {
-    // Navigate to desktop view
-    navigate('desktop')
-  }
-
-  const handleRoleSwitch = (role: 'student' | 'instructor' | 'staff' | 'admin') => {
+  const handleRoleSwitch = (role: 'student' | 'instructor' | 'admin') => {
     switchUserRole(role)
     setShowUserMenu(false)
   }
@@ -133,16 +49,14 @@ export function Header() {
     system: Monitor,
   }
 
-  // Use resolvedTheme for icon display when system is selected, otherwise use theme
-  const currentThemeForIcon = theme === 'system' ? 'system' : (resolvedTheme || theme)
-  const ThemeIcon = themeIcons[currentThemeForIcon as keyof typeof themeIcons] || Monitor
+  const ThemeIcon = themeIcons[theme as keyof typeof themeIcons] || Monitor
   const levelInfo = getLevelInfo(userProgress.level)
   const earnedAchievements = achievements.filter(a => a.earned)
 
-  // Check if user is in a lab or desktop view
+  // Mock lab/desktop session data - in real app this would come from context/state
   const isInLab = currentView.type === 'lab' || currentView.type === 'desktop'
   const userMachineIP = '192.168.1.100'
-  const remainingTime = getRemainingTime()
+  const labVmIP = '10.0.1.15'
 
   return (
     <header className="bg-red-600 text-white">
@@ -162,31 +76,11 @@ export function Header() {
               </span>
             </div>
 
-            {/* Lab VM Button - show when user has active lab session */}
-            {currentLabSession && currentLabSession.isActive && (
-              <div className="flex items-center space-x-4 ml-6">
-                <div 
-                  onClick={handleLabVMClick}
-                  className="flex items-center space-x-2 bg-red-500 hover:bg-red-400 px-3 py-1 rounded-full transition-colors cursor-pointer"
-                >
-                  <Server className="w-3 h-3" />
-                  <span className="font-medium">{currentLabSession.labName}</span>
-                  {currentLabSession.vmIP && (
-                    <span 
-                      onClick={(e) => handleCopyIP(e, currentLabSession.vmIP!)}
-                      className="text-xs opacity-80 hover:opacity-100 px-1 py-0.5 rounded bg-red-600 hover:bg-red-700 transition-colors cursor-pointer"
-                      title="Click to copy IP"
-                    >
-                      ({currentLabSession.vmIP})
-                    </span>
-                  )}
-                </div>
-                {remainingTime && (
-                  <div className={`flex items-center space-x-1 ${remainingTime.isLow ? 'text-red-300' : 'text-yellow-200'}`}>
-                    <span className="text-xs font-medium">Time: {remainingTime.text}</span>
-                    {remainingTime.isLow && <span className="text-xs">⚠️</span>}
-                  </div>
-                )}
+            {/* Lab VM Button */}
+            {isInLab && (
+              <div className="flex items-center space-x-2 bg-red-500 hover:bg-red-400 px-3 py-1 rounded-full transition-colors cursor-pointer ml-6">
+                <Server className="w-3 h-3" />
+                <span className="font-medium">Lab VM: {labVmIP}</span>
               </div>
             )}
           </div>
@@ -251,14 +145,25 @@ export function Header() {
               )}
             </div>
 
-            {/* Desktop Button - Always visible */}
-            <div 
-              onClick={handleDesktopClick}
-              className="flex items-center space-x-2 bg-green-600 hover:bg-green-500 px-4 py-2 rounded-full transition-colors cursor-pointer"
+            {/* Your Desktop Button (when in lab) */}
+            {isInLab && (
+              <div className="flex items-center space-x-2 bg-green-600 hover:bg-green-500 px-3 py-1 rounded-full transition-colors cursor-pointer">
+                <Monitor className="w-3 h-3" />
+                <span className="font-medium">Your desktop</span>
+              </div>
+            )}
+
+            {/* Theme Toggle */}
+            <button
+              onClick={() => {
+                const nextTheme = theme === 'light' ? 'dark' : theme === 'dark' ? 'system' : 'light'
+                setTheme(nextTheme)
+              }}
+              className="p-2 text-white/80 hover:text-white transition-colors"
+              title={`Current theme: ${theme}`}
             >
-              <Monitor className="w-4 h-4" />
-              <span className="font-medium">Desktop</span>
-            </div>
+              <ThemeIcon className="w-5 h-5" />
+            </button>
 
             {/* Notifications */}
             <div className="relative" ref={notificationsRef}>
@@ -271,28 +176,22 @@ export function Header() {
               </button>
 
               {showNotifications && (
-                <div className="absolute right-0 mt-2 w-80 bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-50">
-                  <div className="p-4 border-b border-gray-600">
-                    <h3 className="font-semibold text-white">Notifications</h3>
+                <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
+                  <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                    <h3 className="font-semibold text-gray-900 dark:text-white">Notifications</h3>
                   </div>
                   <div className="max-h-64 overflow-y-auto">
-                    <div className="p-4 hover:bg-gray-700 border-b border-gray-600">
-                      <p className="text-sm text-white font-medium">
+                    <div className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-600">
+                      <p className="text-sm text-gray-900 dark:text-gray-100 font-medium">
                         New lab available: APT Simulation
                       </p>
-                      <p className="text-xs text-gray-400 mt-1">2 hours ago</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">2 hours ago</p>
                     </div>
-                    <div className="p-4 hover:bg-gray-700 border-b border-gray-600">
-                      <p className="text-sm text-white font-medium">
-                        Congratulations! You earned ⚡12 🏆3 points and badges
+                    <div className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700">
+                      <p className="text-sm text-gray-900 dark:text-gray-100 font-medium">
+                        Congratulations! You earned the &quot;Week Warrior&quot; badge
                       </p>
-                      <p className="text-xs text-gray-400 mt-1">1 day ago</p>
-                    </div>
-                    <div className="p-4 hover:bg-gray-700">
-                      <p className="text-sm text-white font-medium">
-                        Achievement unlocked: ⚡25 🏆1 earned from completing Web Security module
-                      </p>
-                      <p className="text-xs text-gray-400 mt-1">3 days ago</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">1 day ago</p>
                     </div>
                   </div>
                 </div>
@@ -329,46 +228,6 @@ export function Header() {
                   
                   <div className="p-2">
                     <h4 className="px-2 py-1 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Theme
-                    </h4>
-                    <button
-                      onClick={() => setTheme('light')}
-                      className={`w-full text-left px-2 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 rounded flex items-center ${
-                        theme === 'light' ? 'text-red-600 dark:text-red-400' : 'text-gray-700 dark:text-gray-300'
-                      }`}
-                    >
-                      <Sun className="w-4 h-4 mr-2" />
-                      Light
-                    </button>
-                    <button
-                      onClick={() => setTheme('dark')}
-                      className={`w-full text-left px-2 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 rounded flex items-center ${
-                        theme === 'dark' ? 'text-red-600 dark:text-red-400' : 'text-gray-700 dark:text-gray-300'
-                      }`}
-                    >
-                      <Moon className="w-4 h-4 mr-2" />
-                      Dark
-                    </button>
-                    <button
-                      onClick={() => setTheme('system')}
-                      className={`w-full text-left px-2 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 rounded flex items-center ${
-                        theme === 'system' ? 'text-red-600 dark:text-red-400' : 'text-gray-700 dark:text-gray-300'
-                      }`}
-                    >
-                      <Monitor className="w-4 h-4 mr-2" />
-                      <div className="flex flex-col">
-                        <span>System</span>
-                        {mounted && theme === 'system' && (
-                          <span className="text-xs opacity-75">
-                            {resolvedTheme === 'dark' ? '(Dark)' : '(Light)'}
-                          </span>
-                        )}
-                      </div>
-                    </button>
-                  </div>
-
-                  <div className="p-2 border-t border-gray-200 dark:border-gray-700">
-                    <h4 className="px-2 py-1 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Switch Role
                     </h4>
                     <button
@@ -382,12 +241,6 @@ export function Header() {
                       className="w-full text-left px-2 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
                     >
                       Instructor View
-                    </button>
-                    <button
-                      onClick={() => handleRoleSwitch('staff')}
-                      className="w-full text-left px-2 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-                    >
-                      Staff View
                     </button>
                     <button
                       onClick={() => handleRoleSwitch('admin')}
@@ -422,18 +275,6 @@ export function Header() {
           </div>
         </div>
       </div>
-
-      {/* Copied Notification Popup */}
-      {showCopiedNotification && (
-        <div className="fixed top-20 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-in slide-in-from-top-2 duration-300">
-          <div className="flex items-center space-x-2">
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-            </svg>
-            <span className="text-sm font-medium">Copied!</span>
-          </div>
-        </div>
-      )}
     </header>
   )
 }

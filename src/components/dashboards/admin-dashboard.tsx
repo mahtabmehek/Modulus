@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useApp } from '@/lib/hooks/use-app'
+import { useAWSMetrics, useMockAWSMetrics } from '@/lib/hooks/use-aws-metrics'
 import { 
   Users, 
   Server, 
@@ -23,12 +24,94 @@ import {
   CheckCircle,
   Clock,
   FileText,
-  Download
+  Download,
+  Mail,
+  RefreshCw
 } from 'lucide-react'
+import InviteManagement from './invite-management'
 
 export function AdminDashboard() {
-  const { user, appData } = useApp()
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'infrastructure' | 'security' | 'approvals'>('overview')
+  const { user, appData, navigate } = useApp()
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'infrastructure' | 'security' | 'approvals' | 'invites'>('overview')
+  
+  // Use AWS metrics if configured, otherwise use mock data
+  const awsMetrics = useAWSMetrics({ 
+    refreshInterval: 30000, 
+    enableRealtime: true,
+    retryOnError: true 
+  })
+  
+  // Fallback to mock metrics if AWS is not configured
+  const mockMetrics = useMockAWSMetrics()
+  
+  // Choose the appropriate metrics source
+  const metrics = awsMetrics.isConfigured ? awsMetrics : mockMetrics
+  
+  // Use real AWS data if available, otherwise fallback to mock data
+  const systemStats = metrics.systemMetrics || {
+    totalUsers: 1247,
+    activeUsers: 89,
+    totalInstructors: 45,
+    activeDesktops: 23,
+    totalLabs: 156,
+    completedLabSessions: 3842,
+    systemUptime: '99.8%',
+    securityAlerts: 2,
+    avgSessionTime: '45 minutes',
+    storageUsed: '2.3TB',
+    totalStorage: '5TB',
+    cpuUtilization: 45,
+    memoryUtilization: 62,
+    networkIn: 1250,
+    networkOut: 1180,
+    diskUtilization: 46
+  }
+
+  const systemHealth = Object.values(metrics.infrastructureHealth || {}).map(service => ({
+    name: service.name,
+    status: service.status,
+    uptime: service.uptime,
+    instances: service.instances
+  }))
+
+  const recentAlerts = metrics.alerts.length > 0 ? metrics.alerts : [
+    { 
+      id: 1, 
+      type: 'warning' as const, 
+      severity: 'medium' as const,
+      message: 'High CPU usage on worker node 3 (85%)', 
+      time: '15 mins ago',
+      action: 'Scale cluster',
+      source: 'EKS'
+    },
+    { 
+      id: 2, 
+      type: 'info' as const, 
+      severity: 'low' as const,
+      message: 'New user registration spike detected (+15 users)', 
+      time: '1 hour ago',
+      action: 'Monitor',
+      source: 'Application'
+    },
+    { 
+      id: 3, 
+      type: 'error' as const, 
+      severity: 'high' as const,
+      message: 'Failed desktop deployment on node kube-worker-2', 
+      time: '2 hours ago',
+      action: 'Investigate',
+      source: 'Kubernetes'
+    },
+    { 
+      id: 4, 
+      type: 'warning' as const, 
+      severity: 'medium' as const,
+      message: 'SSL certificate expires in 30 days', 
+      time: '3 hours ago',
+      action: 'Renew',
+      source: 'Load Balancer'
+    },
+  ]
 
   // Handler functions for instructor approval
   const handleApproveInstructor = (instructorId: string) => {
@@ -57,64 +140,6 @@ export function AdminDashboard() {
       alert(`Instructor ${instructor.name} has been rejected.`)
     }
   }
-
-  const systemStats = {
-    totalUsers: 1247,
-    activeUsers: 89,
-    totalInstructors: 45,
-    activeDesktops: 23,
-    totalLabs: 156,
-    completedLabSessions: 3842,
-    systemUptime: '99.8%',
-    securityAlerts: 2,
-    avgSessionTime: '45 minutes',
-    storageUsed: '2.3TB',
-    totalStorage: '5TB'
-  }
-
-  const systemHealth = [
-    { name: 'Web Servers', status: 'healthy', uptime: '99.9%', instances: 3 },
-    { name: 'Database Cluster', status: 'healthy', uptime: '100%', instances: 2 },
-    { name: 'Kubernetes Cluster', status: 'warning', uptime: '99.2%', instances: 5 },
-    { name: 'Load Balancer', status: 'healthy', uptime: '99.8%', instances: 2 },
-    { name: 'Container Registry', status: 'healthy', uptime: '99.5%', instances: 1 },
-    { name: 'File Storage', status: 'healthy', uptime: '99.9%', instances: 3 },
-  ]
-
-  const recentAlerts = [
-    { 
-      id: 1, 
-      type: 'warning', 
-      severity: 'medium',
-      message: 'High CPU usage on worker node 3 (85%)', 
-      time: '15 mins ago',
-      action: 'Scale cluster'
-    },
-    { 
-      id: 2, 
-      type: 'info', 
-      severity: 'low',
-      message: 'New user registration spike detected (+15 users)', 
-      time: '1 hour ago',
-      action: 'Monitor'
-    },
-    { 
-      id: 3, 
-      type: 'error', 
-      severity: 'high',
-      message: 'Failed desktop deployment on node kube-worker-2', 
-      time: '2 hours ago',
-      action: 'Investigate'
-    },
-    { 
-      id: 4, 
-      type: 'warning', 
-      severity: 'medium',
-      message: 'SSL certificate expires in 30 days', 
-      time: '3 hours ago',
-      action: 'Renew'
-    },
-  ]
 
   const recentUsers = [
     { id: 'u1', name: 'Alice Smith', email: 'alice@university.edu', role: 'student', status: 'active', joinedAt: '2 hours ago' },
@@ -175,6 +200,7 @@ export function AdminDashboard() {
           {[
             { key: 'overview', label: 'Overview', icon: Activity },
             { key: 'users', label: 'User Management', icon: Users },
+            { key: 'invites', label: 'Invite Management', icon: Mail },
             { key: 'approvals', label: 'Instructor Approvals', icon: UserPlus },
             { key: 'infrastructure', label: 'Infrastructure', icon: Server },
             { key: 'security', label: 'Security', icon: Shield }
@@ -198,6 +224,67 @@ export function AdminDashboard() {
       {/* Tab Content */}
       {activeTab === 'overview' && (
         <div className="space-y-6">
+          {/* AWS Configuration Status */}
+          <div className={`rounded-xl p-4 border ${
+            metrics.isConfigured 
+              ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700'
+              : 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-700'
+          }`}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Cloud className={`w-5 h-5 ${
+                  metrics.isConfigured ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400'
+                }`} />
+                <div>
+                  <h4 className={`font-medium ${
+                    metrics.isConfigured 
+                      ? 'text-green-800 dark:text-green-200'
+                      : 'text-orange-800 dark:text-orange-200'
+                  }`}>
+                    AWS Integration Status
+                  </h4>
+                  <p className={`text-sm ${
+                    metrics.isConfigured 
+                      ? 'text-green-700 dark:text-green-300'
+                      : 'text-orange-700 dark:text-orange-300'
+                  }`}>
+                    {metrics.isConfigured 
+                      ? `Connected to AWS • Last updated: ${metrics.lastUpdated?.toLocaleTimeString() || 'Never'}`
+                      : 'Using mock data - AWS credentials not configured'
+                    }
+                  </p>
+                  {metrics.error && (
+                    <p className="text-sm text-red-600 dark:text-red-400 mt-1">
+                      Error: {metrics.error}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {metrics.error && (
+                  <button
+                    onClick={metrics.clearError}
+                    className="text-gray-600 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                  >
+                    Clear Error
+                  </button>
+                )}
+                <button
+                  onClick={metrics.refreshMetrics}
+                  disabled={metrics.isLoading}
+                  className={`flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                    metrics.isConfigured
+                      ? 'bg-green-600 hover:bg-green-700 text-white disabled:opacity-50'
+                      : 'bg-orange-600 hover:bg-orange-700 text-white disabled:opacity-50'
+                  }`}
+                >
+                  <RefreshCw className={`w-4 h-4 ${metrics.isLoading ? 'animate-spin' : ''}`} />
+                  {metrics.isLoading ? 'Refreshing...' : 'Refresh'}
+                </button>
+              </div>
+            </div>
+          </div>
+
           {/* Pending Approvals Notification */}
           {appData.users.filter(u => u.role === 'instructor' && u.approvalStatus === 'pending').length > 0 && (
             <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-xl p-4">
@@ -344,11 +431,21 @@ export function AdminDashboard() {
                 User Management
               </h3>
               <div className="flex gap-3">
-                <button className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors">
+                <button 
+                  onClick={() => navigate('invite-management')}
+                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
+                >
+                  <Mail className="w-4 h-4" />
+                  Invite Users
+                </button>
+                <button 
+                  onClick={() => navigate('user-creation')}
+                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+                >
                   <UserPlus className="w-4 h-4" />
                   Add User
                 </button>
-                <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
+                <button className="flex items-center gap-2 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors">
                   <Download className="w-4 h-4" />
                   Export
                 </button>
@@ -393,10 +490,18 @@ export function AdminDashboard() {
                       <td className="py-3 px-4 text-gray-600 dark:text-gray-400">{user.joinedAt}</td>
                       <td className="py-3 px-4">
                         <div className="flex gap-2">
-                          <button className="text-blue-600 hover:text-blue-700 dark:text-blue-400">
+                          <button 
+                            onClick={() => navigate('user-profile', { userId: user.id })}
+                            className="text-blue-600 hover:text-blue-700 dark:text-blue-400"
+                            title="View Profile"
+                          >
                             <Eye className="w-4 h-4" />
                           </button>
-                          <button className="text-gray-600 hover:text-gray-700 dark:text-gray-400">
+                          <button 
+                            onClick={() => navigate('user-edit', { userId: user.id })}
+                            className="text-gray-600 hover:text-gray-700 dark:text-gray-400"
+                            title="Edit User"
+                          >
                             <Settings className="w-4 h-4" />
                           </button>
                         </div>
@@ -407,6 +512,12 @@ export function AdminDashboard() {
               </table>
             </div>
           </div>
+        </div>
+      )}
+
+      {activeTab === 'invites' && (
+        <div className="space-y-6">
+          <InviteManagement />
         </div>
       )}
 
