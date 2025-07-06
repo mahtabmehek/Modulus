@@ -1,0 +1,93 @@
+# Dockerfile for Labs Environment
+# Provides Kali Linux-based environment for cybersecurity labs
+
+FROM kalilinux/kali-rolling:latest
+
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive
+ENV LAB_MODE=true
+
+# Update and install essential tools
+RUN apt-get update && apt-get install -y \
+    # Essential networking tools
+    nmap \
+    netcat \
+    wireshark-common \
+    tcpdump \
+    curl \
+    wget \
+    # Programming and development
+    python3 \
+    python3-pip \
+    nodejs \
+    npm \
+    git \
+    vim \
+    nano \
+    # Security tools
+    nikto \
+    dirb \
+    gobuster \
+    hydra \
+    john \
+    hashcat \
+    metasploit-framework \
+    # Web development
+    apache2 \
+    nginx \
+    php \
+    # System utilities
+    sudo \
+    openssh-server \
+    screen \
+    tmux \
+    htop \
+    unzip \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install additional Python packages for cybersecurity
+RUN pip3 install \
+    scapy \
+    requests \
+    beautifulsoup4 \
+    pwntools \
+    cryptography
+
+# Create lab user
+RUN useradd -m -s /bin/bash labuser && \
+    echo "labuser:labpass" | chpasswd && \
+    usermod -aG sudo labuser
+
+# Create lab directories
+RUN mkdir -p /home/labuser/labs /home/labuser/tools /home/labuser/shared
+COPY labs/ /home/labuser/labs/
+RUN chown -R labuser:labuser /home/labuser/
+
+# Setup Node.js lab environment server
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+
+# Copy lab management application
+COPY src/lab-environment/ ./src/
+COPY public/labs/ ./public/
+
+# Expose ports for various services
+EXPOSE 3000 22 80 443 8080 8000-8010
+
+# Create startup script
+RUN echo '#!/bin/bash\n\
+# Start SSH service\n\
+service ssh start\n\
+\n\
+# Start lab environment server\n\
+cd /app\n\
+npm start' > /start.sh && chmod +x /start.sh
+
+# Switch to lab user
+USER labuser
+WORKDIR /home/labuser
+
+# Start the lab environment
+CMD ["/start.sh"]

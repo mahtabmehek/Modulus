@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modulus Labs - Terminal</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #1a1a1a;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+        }
+        
+        .terminal-container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .terminal-header {
+            background: #2a2a2a;
+            padding: 10px;
+            border-bottom: 1px solid #444;
+            display: flex;
+            justify-content: between;
+            align-items: center;
+        }
+        
+        .terminal-title {
+            color: #fff;
+            font-weight: bold;
+        }
+        
+        .terminal-status {
+            color: #00ff00;
+            font-size: 12px;
+        }
+        
+        .terminal {
+            flex: 1;
+            background: #000;
+            padding: 10px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            line-height: 1.2;
+        }
+        
+        .terminal-input {
+            background: #1a1a1a;
+            border: none;
+            color: #00ff00;
+            font-family: inherit;
+            font-size: 14px;
+            padding: 10px;
+            width: 100%;
+            outline: none;
+            border-top: 1px solid #444;
+        }
+        
+        .command-line {
+            display: flex;
+            align-items: center;
+        }
+        
+        .prompt {
+            color: #ffff00;
+            margin-right: 5px;
+        }
+        
+        .cursor {
+            background: #00ff00;
+            animation: blink 1s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+        
+        .lab-info {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            color: #ccc;
+        }
+    </style>
+</head>
+<body>
+    <div class="terminal-container">
+        <div class="terminal-header">
+            <div class="terminal-title">🧪 Modulus Labs Terminal</div>
+            <div class="terminal-status" id="status">Connected</div>
+        </div>
+        
+        <div class="terminal" id="terminal"></div>
+        
+        <input type="text" class="terminal-input" id="input" placeholder="Type commands here..." autofocus>
+        
+        <div class="lab-info">
+            <div><strong>Lab Environment</strong></div>
+            <div>🐧 Kali Linux</div>
+            <div>⚡ Ready for hacking</div>
+            <div id="session-info"></div>
+        </div>
+    </div>
+
+    <script>
+        class LabTerminal {
+            constructor() {
+                this.terminal = document.getElementById('terminal');
+                this.input = document.getElementById('input');
+                this.status = document.getElementById('status');
+                this.sessionInfo = document.getElementById('session-info');
+                
+                this.connect();
+                this.setupEventListeners();
+                this.showWelcome();
+            }
+            
+            connect() {
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const wsUrl = `${protocol}//${window.location.host}`;
+                
+                this.ws = new WebSocket(wsUrl);
+                
+                this.ws.onopen = () => {
+                    this.status.textContent = 'Connected';
+                    this.status.style.color = '#00ff00';
+                };
+                
+                this.ws.onmessage = (event) => {
+                    const msg = JSON.parse(event.data);
+                    if (msg.type === 'output') {
+                        this.appendOutput(msg.data);
+                    }
+                };
+                
+                this.ws.onclose = () => {
+                    this.status.textContent = 'Disconnected';
+                    this.status.style.color = '#ff0000';
+                    this.appendOutput('\n\n[Connection lost. Refresh to reconnect]\n');
+                };
+                
+                this.ws.onerror = () => {
+                    this.status.textContent = 'Error';
+                    this.status.style.color = '#ff0000';
+                };
+            }
+            
+            setupEventListeners() {
+                this.input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        this.sendCommand(this.input.value);
+                        this.input.value = '';
+                    } else if (e.key === 'Tab') {
+                        e.preventDefault();
+                        // TODO: Implement tab completion
+                    }
+                });
+                
+                window.addEventListener('resize', () => {
+                    this.sendResize();
+                });
+            }
+            
+            sendCommand(command) {
+                if (this.ws.readyState === WebSocket.OPEN) {
+                    this.ws.send(JSON.stringify({
+                        type: 'input',
+                        data: command + '\n'
+                    }));
+                }
+            }
+            
+            sendResize() {
+                const cols = Math.floor(this.terminal.clientWidth / 8);
+                const rows = Math.floor(this.terminal.clientHeight / 20);
+                
+                if (this.ws.readyState === WebSocket.OPEN) {
+                    this.ws.send(JSON.stringify({
+                        type: 'resize',
+                        cols: cols,
+                        rows: rows
+                    }));
+                }
+            }
+            
+            appendOutput(data) {
+                this.terminal.textContent += data;
+                this.terminal.scrollTop = this.terminal.scrollHeight;
+            }
+            
+            showWelcome() {
+                const welcome = `
+╔══════════════════════════════════════════════╗
+║              🧪 MODULUS LABS                 ║
+║          Cybersecurity Lab Environment       ║
+╚══════════════════════════════════════════════╝
+
+Welcome to your personal Kali Linux environment!
+
+🔧 Available Tools:
+   • nmap - Network scanning
+   • burpsuite - Web app security
+   • john - Password cracking
+   • wireshark - Network analysis
+   • metasploit - Penetration testing
+
+📋 Quick Commands:
+   • ls - List files
+   • cd - Change directory  
+   • cat - View file contents
+   • help - Show available commands
+
+🎯 Your mission: Complete the labs and capture the flags!
+
+Type 'labs' to see available exercises.
+
+`;
+                this.appendOutput(welcome);
+            }
+        }
+        
+        // Initialize terminal when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new LabTerminal();
+        });
+    </script>
+</body>
+</html>
