@@ -230,7 +230,7 @@ Modulus LMS Team`
               {inviteCodes.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-6 py-8 text-center text-muted-foreground">
-                    No invitations created yet. Click "Create Invite" to get started.
+                    No invitations created yet. Click &ldquo;Create Invite&rdquo; to get started.
                   </td>
                 </tr>
               ) : (
