@@ -97,21 +97,66 @@ get_vpc_info() {
     log_success "Found ${#SUBNET_ARRAY[@]} subnets"
 }
 
+# Function to ensure ECS Task Execution Role has Secrets Manager permissions
+ensure_secrets_permissions() {
+    log_info "Ensuring ECS Task Execution Role has Secrets Manager permissions..."
+    
+    # Check if the role exists
+    ROLE_EXISTS=$(aws iam get-role --role-name ecsTaskExecutionRole 2>/dev/null && echo "true" || echo "false")
+    if [ "$ROLE_EXISTS" = "false" ]; then
+        log_error "ecsTaskExecutionRole not found. Please run frontend deployment first to create it."
+        exit 1
+    fi
+    
+    # Attach the built-in policy that includes Secrets Manager access
+    aws iam attach-role-policy \
+        --role-name ecsTaskExecutionRole \
+        --policy-arn "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy" 2>/dev/null || true
+    
+    log_success "ECS Task Execution Role has required permissions"
+}
+
 echo "🚀 Starting Modulus LMS Backend Deployment"
 echo "Region: $AWS_REGION"
 echo "============================================"
 
+# Pre-deployment checks
+log_info "Performing pre-deployment checks..."
+
+# Check if Docker is available
+if ! command -v docker >/dev/null 2>&1; then
+    log_error "Docker is required but not installed. Please install Docker first."
+    exit 1
+fi
+
+# Check AWS CLI access
+if ! aws sts get-caller-identity --region $AWS_REGION >/dev/null 2>&1; then
+    log_error "AWS CLI not configured or no permissions. Please configure AWS credentials."
+    exit 1
+fi
+
+# Check if openssl is available for password generation
+if ! command -v openssl >/dev/null 2>&1; then
+    log_error "OpenSSL is required for password generation but not found."
+    exit 1
+fi
+
+log_success "Pre-deployment checks passed"
+
 # Step 1: Get VPC and Subnet Information
 get_vpc_info
 
-# Step 2: Create CloudWatch Log Groups
+# Step 2: Ensure ECS Task Execution Role has proper permissions
+ensure_secrets_permissions
+
+# Step 3: Create CloudWatch Log Groups
 create_log_groups
 
-# Step 3: Get or Generate Database Password
+# Step 4: Get or Generate Database Password
 get_or_generate_db_password
 
-# Step 4: Create Database Security Group
-log_info "Step 4: Setting up database security group..."
+# Step 5: Create Database Security Group
+log_info "Step 5: Setting up database security group..."
 DB_SG_EXISTS=$(aws ec2 describe-security-groups --filters "Name=group-name,Values=$DB_SECURITY_GROUP_NAME" --query 'SecurityGroups[0].GroupId' --output text --region $AWS_REGION 2>/dev/null || echo "None")
 if [ "$DB_SG_EXISTS" = "None" ]; then
     log_info "Creating database security group..."
@@ -130,8 +175,8 @@ else
     log_success "Using existing database security group: $DB_SECURITY_GROUP_ID"
 fi
 
-# Step 5: Create Backend Security Group
-log_info "Step 5: Setting up backend security group..."
+# Step 6: Create Backend Security Group
+log_info "Step 6: Setting up backend security group..."
 BACKEND_SG_EXISTS=$(aws ec2 describe-security-groups --filters "Name=group-name,Values=$BACKEND_SECURITY_GROUP_NAME" --query 'SecurityGroups[0].GroupId' --output text --region $AWS_REGION 2>/dev/null || echo "None")
 if [ "$BACKEND_SG_EXISTS" = "None" ]; then
     log_info "Creating backend security group..."
@@ -152,8 +197,8 @@ else
     log_success "Using existing backend security group: $BACKEND_SECURITY_GROUP_ID"
 fi
 
-# Step 6: Allow database access from backend
-log_info "Step 6: Configuring database access from backend..."
+# Step 7: Allow database access from backend
+log_info "Step 7: Configuring database access from backend..."
 # Check if rule already exists
 RULE_EXISTS=$(aws ec2 describe-security-groups --group-ids $DB_SECURITY_GROUP_ID --query "SecurityGroups[0].IpPermissions[?FromPort==\`5432\` && IpProtocol==\`tcp\` && UserIdGroupPairs[?GroupId==\`$BACKEND_SECURITY_GROUP_ID\`]]" --output text --region $AWS_REGION)
 if [ -z "$RULE_EXISTS" ]; then
@@ -168,8 +213,8 @@ else
     log_success "Database access rule already exists"
 fi
 
-# Step 7: Create DB Subnet Group
-log_info "Step 7: Setting up database subnet group..."
+# Step 8: Create DB Subnet Group
+log_info "Step 8: Setting up database subnet group..."
 DB_SUBNET_GROUP_EXISTS=$(aws rds describe-db-subnet-groups --db-subnet-group-name $DB_SUBNET_GROUP_NAME --region $AWS_REGION 2>/dev/null && echo "true" || echo "false")
 if [ "$DB_SUBNET_GROUP_EXISTS" = "false" ]; then
     log_info "Creating database subnet group..."
@@ -183,8 +228,8 @@ else
     log_success "Using existing database subnet group"
 fi
 
-# Step 8: Create RDS PostgreSQL Database
-log_info "Step 8: Setting up PostgreSQL database..."
+# Step 9: Create RDS PostgreSQL Database
+log_info "Step 9: Setting up PostgreSQL database..."
 DB_EXISTS=$(aws rds describe-db-instances --db-instance-identifier $DB_INSTANCE_ID --region $AWS_REGION 2>/dev/null && echo "true" || echo "false")
 if [ "$DB_EXISTS" = "false" ]; then
     log_info "Creating PostgreSQL database instance..."
@@ -213,8 +258,8 @@ else
     log_success "Using existing database instance"
 fi
 
-# Step 9: Get Database Endpoint
-log_info "Step 9: Getting database connection information..."
+# Step 10: Get Database Endpoint
+log_info "Step 10: Getting database connection information..."
 DB_ENDPOINT=$(aws rds describe-db-instances \
     --db-instance-identifier $DB_INSTANCE_ID \
     --query 'DBInstances[0].Endpoint.Address' \
@@ -222,8 +267,8 @@ DB_ENDPOINT=$(aws rds describe-db-instances \
     --region $AWS_REGION)
 log_success "Database endpoint: $DB_ENDPOINT"
 
-# Step 10: Backend ECR Repository
-log_info "Step 10: Setting up backend container registry..."
+# Step 11: Backend ECR Repository
+log_info "Step 11: Setting up backend container registry..."
 BACKEND_ECR_EXISTS=$(aws ecr describe-repositories --repository-names $BACKEND_ECR_REPO --region $AWS_REGION 2>/dev/null && echo "true" || echo "false")
 if [ "$BACKEND_ECR_EXISTS" = "false" ]; then
     log_info "Creating backend ECR repository..."
@@ -233,8 +278,8 @@ else
     log_success "Using existing backend ECR repository"
 fi
 
-# Step 11: Create Sample Backend Application
-log_info "Step 11: Creating sample backend application..."
+# Step 12: Create Sample Backend Application
+log_info "Step 12: Creating sample backend application..."
 mkdir -p backend
 
 # Create a simple Express.js backend
@@ -400,8 +445,8 @@ EOF
 
 log_success "Created sample backend application"
 
-# Step 12: Build and Push Backend Docker Image
-log_info "Step 12: Building and pushing backend Docker image..."
+# Step 13: Build and Push Backend Docker Image
+log_info "Step 13: Building and pushing backend Docker image..."
 
 # Get ECR login
 aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin "$(aws sts get-caller-identity --query Account --output text).dkr.ecr.$AWS_REGION.amazonaws.com"
@@ -418,8 +463,11 @@ cd ..
 
 log_success "Backend image pushed to ECR: $BACKEND_IMAGE_URI"
 
-# Step 13: Create ECS Task Definition for Backend
-log_info "Step 13: Creating backend ECS task definition..."
+# Step 14: Create ECS Task Definition for Backend
+log_info "Step 14: Creating backend ECS task definition..."
+
+# Get the actual Secrets Manager ARN
+SECRET_ARN=$(aws secretsmanager describe-secret --secret-id "modulus/db/password" --query 'ARN' --output text --region $AWS_REGION)
 
 cat > backend-task-definition.json << EOF
 {
@@ -469,7 +517,7 @@ cat > backend-task-definition.json << EOF
       "secrets": [
         {
           "name": "DB_PASSWORD",
-          "valueFrom": "arn:aws:secretsmanager:$AWS_REGION:$(aws sts get-caller-identity --query Account --output text):secret:modulus/db/password"
+          "valueFrom": "$SECRET_ARN"
         }
       ],
       "logConfiguration": {
@@ -498,8 +546,8 @@ EOF
 aws ecs register-task-definition --cli-input-json file://backend-task-definition.json --region $AWS_REGION
 log_success "Registered backend task definition"
 
-# Step 14: Create Backend Target Group
-log_info "Step 14: Creating backend target group..."
+# Step 15: Create Backend Target Group
+log_info "Step 15: Creating backend target group..."
 BACKEND_TG_EXISTS=$(aws elbv2 describe-target-groups --names $BACKEND_TARGET_GROUP_NAME --region $AWS_REGION 2>/dev/null && echo "true" || echo "false")
 if [ "$BACKEND_TG_EXISTS" = "false" ]; then
     log_info "Creating backend target group..."
@@ -527,8 +575,8 @@ else
     log_success "Using existing backend target group: $BACKEND_TARGET_GROUP_ARN"
 fi
 
-# Step 15: Get ALB ARN and Create Backend Listener Rule
-log_info "Step 15: Setting up ALB listener rule for backend..."
+# Step 16: Get ALB ARN and Create Backend Listener Rule
+log_info "Step 16: Setting up ALB listener rule for backend..."
 ALB_ARN=$(aws elbv2 describe-load-balancers --names $ALB_NAME --query 'LoadBalancers[0].LoadBalancerArn' --output text --region $AWS_REGION 2>/dev/null || echo "None")
 if [ "$ALB_ARN" != "None" ]; then
     LISTENER_ARN=$(aws elbv2 describe-listeners --load-balancer-arn $ALB_ARN --query 'Listeners[0].ListenerArn' --output text --region $AWS_REGION)
@@ -552,8 +600,8 @@ else
     log_warning "ALB not found. Backend will be accessible directly via ECS service."
 fi
 
-# Step 16: Create Backend ECS Service
-log_info "Step 16: Creating backend ECS service..."
+# Step 17: Create Backend ECS Service
+log_info "Step 17: Creating backend ECS service..."
 BACKEND_SERVICE_EXISTS=$(aws ecs describe-services --cluster $CLUSTER_NAME --services $BACKEND_SERVICE_NAME --region $AWS_REGION 2>/dev/null && echo "true" || echo "false")
 if [ "$BACKEND_SERVICE_EXISTS" = "false" ]; then
     log_info "Creating backend ECS service..."
@@ -584,46 +632,80 @@ else
     log_success "Backend service updated and stable"
 fi
 
-# Step 17: Test Backend Deployment
-log_info "Step 17: Testing backend deployment..."
+# Step 18: Test Backend Deployment
+log_info "Step 18: Testing backend deployment..."
 
 # Get service details
 BACKEND_TASK_ARN=$(aws ecs list-tasks --cluster $CLUSTER_NAME --service-name $BACKEND_SERVICE_NAME --query 'taskArns[0]' --output text --region $AWS_REGION)
-if [ "$BACKEND_TASK_ARN" != "None" ]; then
-    BACKEND_TASK_DETAILS=$(aws ecs describe-tasks --cluster $CLUSTER_NAME --tasks $BACKEND_TASK_ARN --region $AWS_REGION)
-    BACKEND_PUBLIC_IP=$(echo $BACKEND_TASK_DETAILS | jq -r '.tasks[0].attachments[0].details[] | select(.name=="networkInterfaceId") | .value' | xargs -I {} aws ec2 describe-network-interfaces --network-interface-ids {} --query 'NetworkInterfaces[0].Association.PublicIp' --output text --region $AWS_REGION)
+if [ "$BACKEND_TASK_ARN" != "None" ] && [ "$BACKEND_TASK_ARN" != "null" ] && [ -n "$BACKEND_TASK_ARN" ]; then
+    log_info "Getting backend task network details..."
     
-    if [ "$BACKEND_PUBLIC_IP" != "None" ] && [ -n "$BACKEND_PUBLIC_IP" ]; then
-        log_info "Testing backend health endpoint..."
-        if curl -f -s "http://$BACKEND_PUBLIC_IP:3001/health" > /dev/null; then
-            log_success "Backend health check passed"
-            
-            log_info "Testing backend API endpoint..."
-            if curl -f -s "http://$BACKEND_PUBLIC_IP:3001/api/status" > /dev/null; then
-                log_success "Backend API is responding"
-            else
-                log_warning "Backend API endpoint not responding"
-            fi
-        else
-            log_warning "Backend health check failed"
-        fi
+    # Get the network interface ID from the task
+    NETWORK_INTERFACE_ID=$(aws ecs describe-tasks \
+        --cluster $CLUSTER_NAME \
+        --tasks $BACKEND_TASK_ARN \
+        --query 'tasks[0].attachments[0].details[?name==`networkInterfaceId`].value' \
+        --output text \
+        --region $AWS_REGION)
+    
+    if [ "$NETWORK_INTERFACE_ID" != "None" ] && [ -n "$NETWORK_INTERFACE_ID" ]; then
+        # Get the public IP from the network interface
+        BACKEND_PUBLIC_IP=$(aws ec2 describe-network-interfaces \
+            --network-interface-ids $NETWORK_INTERFACE_ID \
+            --query 'NetworkInterfaces[0].Association.PublicIp' \
+            --output text \
+            --region $AWS_REGION)
         
-        log_info "Backend directly accessible at: http://$BACKEND_PUBLIC_IP:3001"
+        if [ "$BACKEND_PUBLIC_IP" != "None" ] && [ -n "$BACKEND_PUBLIC_IP" ]; then
+            log_info "Backend task public IP: $BACKEND_PUBLIC_IP"
+            
+            # Test endpoints if curl is available
+            if command -v curl >/dev/null 2>&1; then
+                log_info "Testing backend health endpoint..."
+                if curl -f -s --max-time 10 "http://$BACKEND_PUBLIC_IP:3001/health" > /dev/null; then
+                    log_success "Backend health check passed"
+                    
+                    log_info "Testing backend API endpoint..."
+                    if curl -f -s --max-time 10 "http://$BACKEND_PUBLIC_IP:3001/api/status" > /dev/null; then
+                        log_success "Backend API is responding"
+                    else
+                        log_warning "Backend API endpoint not responding (may still be starting)"
+                    fi
+                else
+                    log_warning "Backend health check failed (may still be starting)"
+                fi
+            else
+                log_info "curl not available - skipping connectivity tests"
+            fi
+            
+            log_info "Backend directly accessible at: http://$BACKEND_PUBLIC_IP:3001"
+        else
+            log_info "Backend task has no public IP (this is normal for private subnets)"
+        fi
+    else
+        log_warning "Could not retrieve network interface ID from backend task"
     fi
+else
+    log_warning "No backend tasks found - service may still be starting"
 fi
 
 # Test via ALB if available
 if [ "$ALB_ARN" != "None" ]; then
     ALB_DNS=$(aws elbv2 describe-load-balancers --load-balancer-arns $ALB_ARN --query 'LoadBalancers[0].DNSName' --output text --region $AWS_REGION)
     log_info "Testing backend via ALB..."
-    if curl -f -s "http://$ALB_DNS/api/status" > /dev/null; then
-        log_success "Backend accessible via ALB at: http://$ALB_DNS/api/status"
+    
+    if command -v curl >/dev/null 2>&1; then
+        if curl -f -s --max-time 15 "http://$ALB_DNS/api/status" > /dev/null; then
+            log_success "Backend accessible via ALB at: http://$ALB_DNS/api/status"
+        else
+            log_warning "Backend not yet accessible via ALB (target registration may take a few minutes)"
+        fi
     else
-        log_warning "Backend not yet accessible via ALB (may need time to register)"
+        log_info "curl not available - manual testing required at: http://$ALB_DNS/api/status"
     fi
 fi
 
-# Step 18: Summary
+# Step 19: Summary
 echo ""
 echo "🎉 Backend Deployment Complete!"
 echo "================================"
