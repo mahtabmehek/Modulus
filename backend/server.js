@@ -66,7 +66,7 @@ pool.connect()
   });
 
 // Routes
-app.use('/health', healthRoutes);
+app.use('/api/health', healthRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 
