@@ -1,1490 +1,700 @@
-﻿2025-07-06T17:54:18.3127790Z Current runner version: '2.325.0'
-2025-07-06T17:54:18.3195470Z ##[group]Operating System
-2025-07-06T17:54:18.3196803Z Ubuntu
-2025-07-06T17:54:18.3197632Z 24.04.2
-2025-07-06T17:54:18.3198629Z LTS
-2025-07-06T17:54:18.3199764Z ##[endgroup]
-2025-07-06T17:54:18.3200710Z ##[group]Runner Image
-2025-07-06T17:54:18.3201794Z Image: ubuntu-24.04
-2025-07-06T17:54:18.3202778Z Version: 20250629.1.0
-2025-07-06T17:54:18.3204581Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20250629.1/images/ubuntu/Ubuntu2404-Readme.md
-2025-07-06T17:54:18.3207333Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20250629.1
-2025-07-06T17:54:18.3209049Z ##[endgroup]
-2025-07-06T17:54:18.3230424Z ##[group]Runner Image Provisioner
-2025-07-06T17:54:18.3231703Z 2.0.449.1
-2025-07-06T17:54:18.3232540Z ##[endgroup]
-2025-07-06T17:54:18.3234595Z ##[group]GITHUB_TOKEN Permissions
-2025-07-06T17:54:18.3237194Z Contents: read
-2025-07-06T17:54:18.3238020Z Metadata: read
-2025-07-06T17:54:18.3239532Z Packages: read
-2025-07-06T17:54:18.3240450Z ##[endgroup]
-2025-07-06T17:54:18.3243449Z Secret source: Actions
-2025-07-06T17:54:18.3244628Z Prepare workflow directory
-2025-07-06T17:54:18.4241009Z Prepare all required actions
-2025-07-06T17:54:18.4297110Z Getting action download info
-2025-07-06T17:54:18.8355649Z ##[group]Download immutable action package 'actions/checkout@v4'
-2025-07-06T17:54:18.8356711Z Version: 4.2.2
-2025-07-06T17:54:18.8357727Z Digest: sha256:ccb2698953eaebd21c7bf6268a94f9c26518a7e38e27e0b83c1fe1ad049819b1
-2025-07-06T17:54:18.8359600Z Source commit SHA: 11bd71901bbe5b1630ceea73d27597364c9af683
-2025-07-06T17:54:18.8360336Z ##[endgroup]
-2025-07-06T17:54:18.9383941Z ##[group]Download immutable action package 'actions/setup-node@v4'
-2025-07-06T17:54:18.9384725Z Version: 4.4.0
-2025-07-06T17:54:18.9385512Z Digest: sha256:9427cefe82346e992fb5b949e3569b39d537ae41aa3086483b14eceebfc16bc1
-2025-07-06T17:54:18.9386551Z Source commit SHA: 49933ea5288caeca8642d1e84afbd3f7d6820020
-2025-07-06T17:54:18.9387232Z ##[endgroup]
-2025-07-06T17:54:19.0382279Z Download action repository 'aws-actions/configure-aws-credentials@v4' (SHA:e3dd6a429d7300a6a4c196c26e071d42e0343502)
-2025-07-06T17:54:19.2701159Z ##[group]Download immutable action package 'docker/setup-buildx-action@v3'
-2025-07-06T17:54:19.2702016Z Version: 3.11.1
-2025-07-06T17:54:19.2702808Z Digest: sha256:b58e632d2d812e161c8abeba6def9f56b420aa9ae41d825a8408241bcad0f303
-2025-07-06T17:54:19.2703830Z Source commit SHA: e468171a9de216ec08956ac3ada2f0791b6bd435
-2025-07-06T17:54:19.2704525Z ##[endgroup]
-2025-07-06T17:54:19.6536346Z Complete job name: 🚀 Smart Deploy Modulus LMS
-2025-07-06T17:54:19.7181764Z ##[group]Run actions/checkout@v4
-2025-07-06T17:54:19.7182582Z with:
-2025-07-06T17:54:19.7182993Z   repository: mahtabmehek/Modulus
-2025-07-06T17:54:19.7183637Z   token: ***
-2025-07-06T17:54:19.7184020Z   ssh-strict: true
-2025-07-06T17:54:19.7184419Z   ssh-user: git
-2025-07-06T17:54:19.7184828Z   persist-credentials: true
-2025-07-06T17:54:19.7185267Z   clean: true
-2025-07-06T17:54:19.7185686Z   sparse-checkout-cone-mode: true
-2025-07-06T17:54:19.7186164Z   fetch-depth: 1
-2025-07-06T17:54:19.7186561Z   fetch-tags: false
-2025-07-06T17:54:19.7186991Z   show-progress: true
-2025-07-06T17:54:19.7187401Z   lfs: false
-2025-07-06T17:54:19.7187769Z   submodules: false
-2025-07-06T17:54:19.7188199Z   set-safe-directory: true
-2025-07-06T17:54:19.7188831Z env:
-2025-07-06T17:54:19.7189375Z   AWS_REGION: eu-west-2
-2025-07-06T17:54:19.7189807Z ##[endgroup]
-2025-07-06T17:54:19.9590863Z Syncing repository: mahtabmehek/Modulus
-2025-07-06T17:54:19.9593525Z ##[group]Getting Git version info
-2025-07-06T17:54:19.9594735Z Working directory is '/home/runner/work/Modulus/Modulus'
-2025-07-06T17:54:19.9596370Z [command]/usr/bin/git version
-2025-07-06T17:54:19.9673621Z git version 2.49.0
-2025-07-06T17:54:19.9709830Z ##[endgroup]
-2025-07-06T17:54:19.9726859Z Temporarily overriding HOME='/home/runner/work/_temp/e8d64c3e-549a-4208-a922-104102c0b77a' before making global git config changes
-2025-07-06T17:54:19.9730563Z Adding repository directory to the temporary git global config as a safe directory
-2025-07-06T17:54:19.9744111Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Modulus/Modulus
-2025-07-06T17:54:19.9787947Z Deleting the contents of '/home/runner/work/Modulus/Modulus'
-2025-07-06T17:54:19.9793728Z ##[group]Initializing the repository
-2025-07-06T17:54:19.9800118Z [command]/usr/bin/git init /home/runner/work/Modulus/Modulus
-2025-07-06T17:54:19.9898108Z hint: Using 'master' as the name for the initial branch. This default branch name
-2025-07-06T17:54:19.9899940Z hint: is subject to change. To configure the initial branch name to use in all
-2025-07-06T17:54:19.9902915Z hint: of your new repositories, which will suppress this warning, call:
-2025-07-06T17:54:19.9904016Z hint:
-2025-07-06T17:54:19.9904828Z hint: 	git config --global init.defaultBranch <name>
-2025-07-06T17:54:19.9913083Z hint:
-2025-07-06T17:54:19.9914032Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
-2025-07-06T17:54:19.9915916Z hint: 'development'. The just-created branch can be renamed via this command:
-2025-07-06T17:54:19.9917509Z hint:
-2025-07-06T17:54:19.9918114Z hint: 	git branch -m <name>
-2025-07-06T17:54:19.9918855Z Initialized empty Git repository in /home/runner/work/Modulus/Modulus/.git/
-2025-07-06T17:54:19.9920594Z [command]/usr/bin/git remote add origin https://github.com/mahtabmehek/Modulus
-2025-07-06T17:54:19.9970353Z ##[endgroup]
-2025-07-06T17:54:19.9972532Z ##[group]Disabling automatic garbage collection
-2025-07-06T17:54:19.9973546Z [command]/usr/bin/git config --local gc.auto 0
-2025-07-06T17:54:20.0003508Z ##[endgroup]
-2025-07-06T17:54:20.0006514Z ##[group]Setting up auth
-2025-07-06T17:54:20.0007698Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
-2025-07-06T17:54:20.0042902Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
-2025-07-06T17:54:20.0455011Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
-2025-07-06T17:54:20.0495313Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
-2025-07-06T17:54:20.0746219Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
-2025-07-06T17:54:20.0793953Z ##[endgroup]
-2025-07-06T17:54:20.0811072Z ##[group]Fetching the repository
-2025-07-06T17:54:20.0813649Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +582d8d501aba3b188c89f4b313e591ad1c70729f:refs/remotes/origin/master
-2025-07-06T17:54:20.4702726Z From https://github.com/mahtabmehek/Modulus
-2025-07-06T17:54:20.4704281Z  * [new ref]         582d8d501aba3b188c89f4b313e591ad1c70729f -> origin/master
-2025-07-06T17:54:20.4707361Z ##[endgroup]
-2025-07-06T17:54:20.4708513Z ##[group]Determining the checkout info
-2025-07-06T17:54:20.4709760Z ##[endgroup]
-2025-07-06T17:54:20.4710638Z [command]/usr/bin/git sparse-checkout disable
-2025-07-06T17:54:20.4741908Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
-2025-07-06T17:54:20.4775048Z ##[group]Checking out the ref
-2025-07-06T17:54:20.4780573Z [command]/usr/bin/git checkout --progress --force -B master refs/remotes/origin/master
-2025-07-06T17:54:20.4960627Z Reset branch 'master'
-2025-07-06T17:54:20.4963043Z branch 'master' set up to track 'origin/master'.
-2025-07-06T17:54:20.4973346Z ##[endgroup]
-2025-07-06T17:54:20.5019692Z [command]/usr/bin/git log -1 --format=%H
-2025-07-06T17:54:20.5048100Z 582d8d501aba3b188c89f4b313e591ad1c70729f
-2025-07-06T17:54:20.5311295Z ##[group]Run actions/setup-node@v4
-2025-07-06T17:54:20.5311926Z with:
-2025-07-06T17:54:20.5312337Z   node-version: 18
-2025-07-06T17:54:20.5312776Z   cache: npm
-2025-07-06T17:54:20.5313399Z   always-auth: false
-2025-07-06T17:54:20.5313867Z   check-latest: false
-2025-07-06T17:54:20.5314478Z   token: ***
-2025-07-06T17:54:20.5314885Z env:
-2025-07-06T17:54:20.5315278Z   AWS_REGION: eu-west-2
-2025-07-06T17:54:20.5315738Z ##[endgroup]
-2025-07-06T17:54:20.7265111Z Found in cache @ /opt/hostedtoolcache/node/18.20.8/x64
-2025-07-06T17:54:20.7277539Z ##[group]Environment details
-2025-07-06T17:54:21.1738428Z node: v18.20.8
-2025-07-06T17:54:21.1756011Z npm: 10.8.2
-2025-07-06T17:54:21.1757132Z yarn: 1.22.22
-2025-07-06T17:54:21.1759741Z ##[endgroup]
-2025-07-06T17:54:21.1777933Z [command]/opt/hostedtoolcache/node/18.20.8/x64/bin/npm config get cache
-2025-07-06T17:54:21.3113023Z /home/runner/.npm
-2025-07-06T17:54:21.4827267Z npm cache is not found
-2025-07-06T17:54:21.5211932Z ##[group]Run aws-actions/configure-aws-credentials@v4
-2025-07-06T17:54:21.5212906Z with:
-2025-07-06T17:54:21.5213968Z   aws-access-key-id: ***
-2025-07-06T17:54:21.5214947Z   aws-secret-access-key: ***
-2025-07-06T17:54:21.5215725Z   aws-region: eu-west-2
-2025-07-06T17:54:21.5216525Z   audience: sts.amazonaws.com
-2025-07-06T17:54:21.5217309Z env:
-2025-07-06T17:54:21.5218006Z   AWS_REGION: eu-west-2
-2025-07-06T17:54:21.5218756Z ##[endgroup]
-2025-07-06T17:54:22.0708619Z Proceeding with IAM user credentials
-2025-07-06T17:54:22.0822869Z ##[group]Run docker/setup-buildx-action@v3
-2025-07-06T17:54:22.0823158Z with:
-2025-07-06T17:54:22.0823340Z   driver: docker-container
-2025-07-06T17:54:22.0823553Z   install: false
-2025-07-06T17:54:22.0823726Z   use: true
-2025-07-06T17:54:22.0823893Z   keep-state: false
-2025-07-06T17:54:22.0824078Z   cache-binary: true
-2025-07-06T17:54:22.0824269Z   cleanup: true
-2025-07-06T17:54:22.0824442Z env:
-2025-07-06T17:54:22.0824605Z   AWS_REGION: eu-west-2
-2025-07-06T17:54:22.0824806Z   AWS_DEFAULT_REGION: eu-west-2
-2025-07-06T17:54:22.0825146Z   AWS_ACCESS_KEY_ID: ***
-2025-07-06T17:54:22.0825443Z   AWS_SECRET_ACCESS_KEY: ***
-2025-07-06T17:54:22.0825652Z ##[endgroup]
-2025-07-06T17:54:22.4308756Z ##[group]Docker info
-2025-07-06T17:54:22.4338703Z [command]/usr/bin/docker version
-2025-07-06T17:54:22.5761639Z Client: Docker Engine - Community
-2025-07-06T17:54:22.5767540Z  Version:           28.0.4
-2025-07-06T17:54:22.5767966Z  API version:       1.48
-2025-07-06T17:54:22.5768407Z  Go version:        go1.23.7
-2025-07-06T17:54:22.5768822Z  Git commit:        b8034c0
-2025-07-06T17:54:22.5769549Z  Built:             Tue Mar 25 15:07:16 2025
-2025-07-06T17:54:22.5770057Z  OS/Arch:           linux/amd64
-2025-07-06T17:54:22.5770470Z  Context:           default
-2025-07-06T17:54:22.5770721Z 
-2025-07-06T17:54:22.5770982Z Server: Docker Engine - Community
-2025-07-06T17:54:22.5771376Z  Engine:
-2025-07-06T17:54:22.5771678Z   Version:          28.0.4
-2025-07-06T17:54:22.5772173Z   API version:      1.48 (minimum version 1.24)
-2025-07-06T17:54:22.5772645Z   Go version:       go1.23.7
-2025-07-06T17:54:22.5773049Z   Git commit:       6430e49
-2025-07-06T17:54:22.5773494Z   Built:            Tue Mar 25 15:07:16 2025
-2025-07-06T17:54:22.5773967Z   OS/Arch:          linux/amd64
-2025-07-06T17:54:22.5774368Z   Experimental:     false
-2025-07-06T17:54:22.5774731Z  containerd:
-2025-07-06T17:54:22.5775041Z   Version:          1.7.27
-2025-07-06T17:54:22.5775543Z   GitCommit:        05044ec0a9a75232cad458027ca83437aae3f4da
-2025-07-06T17:54:22.5776027Z  runc:
-2025-07-06T17:54:22.5776326Z   Version:          1.2.5
-2025-07-06T17:54:22.5776765Z   GitCommit:        v1.2.5-0-g59923ef
-2025-07-06T17:54:22.5777172Z  docker-init:
-2025-07-06T17:54:22.5777469Z   Version:          0.19.0
-2025-07-06T17:54:22.5777824Z   GitCommit:        de40ad0
-2025-07-06T17:54:22.5830431Z [command]/usr/bin/docker info
-2025-07-06T17:54:24.7233437Z Client: Docker Engine - Community
-2025-07-06T17:54:24.7236297Z  Version:    28.0.4
-2025-07-06T17:54:24.7236815Z  Context:    default
-2025-07-06T17:54:24.7237208Z  Debug Mode: false
-2025-07-06T17:54:24.7249894Z  Plugins:
-2025-07-06T17:54:24.7251336Z   buildx: Docker Buildx (Docker Inc.)
-2025-07-06T17:54:24.7251782Z     Version:  v0.25.0
-2025-07-06T17:54:24.7252768Z     Path:     /usr/libexec/docker/cli-plugins/docker-buildx
-2025-07-06T17:54:24.7253341Z   compose: Docker Compose (Docker Inc.)
-2025-07-06T17:54:24.7253802Z     Version:  v2.36.2
-2025-07-06T17:54:24.7254356Z     Path:     /usr/libexec/docker/cli-plugins/docker-compose
-2025-07-06T17:54:24.7254762Z 
-2025-07-06T17:54:24.7254891Z Server:
-2025-07-06T17:54:24.7255275Z  Containers: 0
-2025-07-06T17:54:24.7255593Z   Running: 0
-2025-07-06T17:54:24.7255920Z   Paused: 0
-2025-07-06T17:54:24.7256240Z   Stopped: 0
-2025-07-06T17:54:24.7256562Z  Images: 0
-2025-07-06T17:54:24.7256889Z  Server Version: 28.0.4
-2025-07-06T17:54:24.7257269Z  Storage Driver: overlay2
-2025-07-06T17:54:24.7257660Z   Backing Filesystem: extfs
-2025-07-06T17:54:24.7258031Z   Supports d_type: true
-2025-07-06T17:54:24.7258383Z   Using metacopy: false
-2025-07-06T17:54:24.7258722Z   Native Overlay Diff: false
-2025-07-06T17:54:24.7259082Z   userxattr: false
-2025-07-06T17:54:24.7259634Z  Logging Driver: json-file
-2025-07-06T17:54:24.7260024Z  Cgroup Driver: systemd
-2025-07-06T17:54:24.7263783Z  Cgroup Version: 2
-2025-07-06T17:54:24.7264328Z  Plugins:
-2025-07-06T17:54:24.7264677Z   Volume: local
-2025-07-06T17:54:24.7265186Z   Network: bridge host ipvlan macvlan null overlay
-2025-07-06T17:54:24.7266308Z   Log: awslogs fluentd gcplogs gelf journald json-file local splunk syslog
-2025-07-06T17:54:24.7266984Z  Swarm: inactive
-2025-07-06T17:54:24.7267410Z  Runtimes: io.containerd.runc.v2 runc
-2025-07-06T17:54:24.7267874Z  Default Runtime: runc
-2025-07-06T17:54:24.7268256Z  Init Binary: docker-init
-2025-07-06T17:54:24.7268835Z  containerd version: 05044ec0a9a75232cad458027ca83437aae3f4da
-2025-07-06T17:54:24.7269877Z  runc version: v1.2.5-0-g59923ef
-2025-07-06T17:54:24.7270288Z  init version: de40ad0
-2025-07-06T17:54:24.7270663Z  Security Options:
-2025-07-06T17:54:24.7270997Z   apparmor
-2025-07-06T17:54:24.7271294Z   seccomp
-2025-07-06T17:54:24.7271628Z    Profile: builtin
-2025-07-06T17:54:24.7271984Z   cgroupns
-2025-07-06T17:54:24.7272374Z  Kernel Version: 6.11.0-1015-azure
-2025-07-06T17:54:24.7272895Z  Operating System: Ubuntu 24.04.2 LTS
-2025-07-06T17:54:24.7273357Z  OSType: linux
-2025-07-06T17:54:24.7273713Z  Architecture: x86_64
-2025-07-06T17:54:24.7274052Z  CPUs: 2
-2025-07-06T17:54:24.7274388Z  Total Memory: 7.758GiB
-2025-07-06T17:54:24.7274832Z  Name: fv-az1724-604
-2025-07-06T17:54:24.7275289Z  ID: f3f57c73-cc58-4859-b84c-8d290ada94db
-2025-07-06T17:54:24.7275789Z  Docker Root Dir: /var/lib/docker
-2025-07-06T17:54:24.7276220Z  Debug Mode: false
-2025-07-06T17:54:24.7276586Z  Username: githubactions
-2025-07-06T17:54:24.7276985Z  Experimental: false
-2025-07-06T17:54:24.7277351Z  Insecure Registries:
-2025-07-06T17:54:24.7277812Z   ::1/128
-2025-07-06T17:54:24.7278127Z   127.0.0.0/8
-2025-07-06T17:54:24.7278490Z  Live Restore Enabled: false
-2025-07-06T17:54:24.7278750Z 
-2025-07-06T17:54:24.7280364Z ##[endgroup]
-2025-07-06T17:54:24.7944426Z ##[group]Buildx version
-2025-07-06T17:54:24.7975027Z [command]/usr/bin/docker buildx version
-2025-07-06T17:54:24.8404766Z github.com/docker/buildx v0.25.0 faaea65da4ba0e58a13cd9cadcb950c51cf3b3c9
-2025-07-06T17:54:24.8440413Z ##[endgroup]
-2025-07-06T17:54:24.8607707Z ##[group]Inspecting default docker context
-2025-07-06T17:54:24.8762530Z [
-2025-07-06T17:54:24.8764525Z   {
-2025-07-06T17:54:24.8764916Z     "Name": "default",
-2025-07-06T17:54:24.8765333Z     "Metadata": {},
-2025-07-06T17:54:24.8765698Z     "Endpoints": {
-2025-07-06T17:54:24.8766055Z       "docker": {
-2025-07-06T17:54:24.8766510Z         "Host": "unix:///var/run/docker.sock",
-2025-07-06T17:54:24.8767113Z         "SkipTLSVerify": false
-2025-07-06T17:54:24.8767518Z       }
-2025-07-06T17:54:24.8767834Z     },
-2025-07-06T17:54:24.8768173Z     "TLSMaterial": {},
-2025-07-06T17:54:24.8768549Z     "Storage": {
-2025-07-06T17:54:24.8768967Z       "MetadataPath": "<IN MEMORY>",
-2025-07-06T17:54:24.8769752Z       "TLSPath": "<IN MEMORY>"
-2025-07-06T17:54:24.8770176Z     }
-2025-07-06T17:54:24.8770494Z   }
-2025-07-06T17:54:24.8770791Z ]
-2025-07-06T17:54:24.8771442Z ##[endgroup]
-2025-07-06T17:54:24.8772588Z ##[group]Creating a new builder instance
-2025-07-06T17:54:25.0081364Z [command]/usr/bin/docker buildx create --name builder-e2b8f1c6-011f-4b50-b5d6-35fb0c660e28 --driver docker-container --buildkitd-flags --allow-insecure-entitlement security.insecure --allow-insecure-entitlement network.host --use
-2025-07-06T17:54:25.0591158Z builder-e2b8f1c6-011f-4b50-b5d6-35fb0c660e28
-2025-07-06T17:54:25.0628063Z ##[endgroup]
-2025-07-06T17:54:25.0630161Z ##[group]Booting builder
-2025-07-06T17:54:25.0671032Z [command]/usr/bin/docker buildx inspect --bootstrap --builder builder-e2b8f1c6-011f-4b50-b5d6-35fb0c660e28
-2025-07-06T17:54:25.1276082Z #1 [internal] booting buildkit
-2025-07-06T17:54:25.2774629Z #1 pulling image moby/buildkit:buildx-stable-1
-2025-07-06T17:54:28.2143389Z #1 pulling image moby/buildkit:buildx-stable-1 3.1s done
-2025-07-06T17:54:28.3648087Z #1 creating container buildx_buildkit_builder-e2b8f1c6-011f-4b50-b5d6-35fb0c660e280
-2025-07-06T17:54:29.0214219Z #1 creating container buildx_buildkit_builder-e2b8f1c6-011f-4b50-b5d6-35fb0c660e280 0.8s done
-2025-07-06T17:54:29.0259836Z #1 DONE 3.9s
-2025-07-06T17:54:29.0695984Z Name:          builder-e2b8f1c6-011f-4b50-b5d6-35fb0c660e28
-2025-07-06T17:54:29.0703774Z Driver:        docker-container
-2025-07-06T17:54:29.0708262Z Last Activity: 2025-07-06 17:54:25 +0000 UTC
-2025-07-06T17:54:29.0709002Z 
-2025-07-06T17:54:29.0709539Z Nodes:
-2025-07-06T17:54:29.0710305Z Name:                  builder-e2b8f1c6-011f-4b50-b5d6-35fb0c660e280
-2025-07-06T17:54:29.0711158Z Endpoint:              unix:///var/run/docker.sock
-2025-07-06T17:54:29.0711869Z Status:                running
-2025-07-06T17:54:29.0715029Z BuildKit daemon flags: --allow-insecure-entitlement security.insecure --allow-insecure-entitlement network.host
-2025-07-06T17:54:29.0715997Z BuildKit version:      v0.22.0
-2025-07-06T17:54:29.0716640Z Platforms:             linux/amd64, linux/amd64/v2, linux/amd64/v3, linux/386
-2025-07-06T17:54:29.0717149Z Labels:
-2025-07-06T17:54:29.0717596Z  org.mobyproject.buildkit.worker.executor:         oci
-2025-07-06T17:54:29.0718334Z  org.mobyproject.buildkit.worker.hostname:         963e1c8d3211
-2025-07-06T17:54:29.0719045Z  org.mobyproject.buildkit.worker.network:          host
-2025-07-06T17:54:29.0719931Z  org.mobyproject.buildkit.worker.oci.process-mode: sandbox
-2025-07-06T17:54:29.0729065Z  org.mobyproject.buildkit.worker.selinux.enabled:  false
-2025-07-06T17:54:29.0734665Z  org.mobyproject.buildkit.worker.snapshotter:      overlayfs
-2025-07-06T17:54:29.0735292Z GC Policy rule#0:
-2025-07-06T17:54:29.0735637Z  All:            false
-2025-07-06T17:54:29.0736313Z  Filters:        type==source.local,type==exec.cachemount,type==source.git.checkout
-2025-07-06T17:54:29.0736968Z  Keep Duration:  48h0m0s
-2025-07-06T17:54:29.0737339Z  Max Used Space: 488.3MiB
-2025-07-06T17:54:29.0737705Z GC Policy rule#1:
-2025-07-06T17:54:29.0738040Z  All:            false
-2025-07-06T17:54:29.0738397Z  Keep Duration:  1440h0m0s
-2025-07-06T17:54:29.0738788Z  Reserved Space: 7.451GiB
-2025-07-06T17:54:29.0749086Z  Max Used Space: 54.02GiB
-2025-07-06T17:54:29.0750050Z  Min Free Space: 13.97GiB
-2025-07-06T17:54:29.0750433Z GC Policy rule#2:
-2025-07-06T17:54:29.0750754Z  All:            false
-2025-07-06T17:54:29.0751103Z  Reserved Space: 7.451GiB
-2025-07-06T17:54:29.0751465Z  Max Used Space: 54.02GiB
-2025-07-06T17:54:29.0751822Z  Min Free Space: 13.97GiB
-2025-07-06T17:54:29.0752187Z GC Policy rule#3:
-2025-07-06T17:54:29.0752530Z  All:            true
-2025-07-06T17:54:29.0752875Z  Reserved Space: 7.451GiB
-2025-07-06T17:54:29.0753234Z  Max Used Space: 54.02GiB
-2025-07-06T17:54:29.0753584Z  Min Free Space: 13.97GiB
-2025-07-06T17:54:29.0787729Z ##[endgroup]
-2025-07-06T17:54:29.1682918Z ##[group]Inspect builder
-2025-07-06T17:54:29.1683781Z {
-2025-07-06T17:54:29.1684301Z   "nodes": [
-2025-07-06T17:54:29.1684599Z     {
-2025-07-06T17:54:29.1685086Z       "name": "builder-e2b8f1c6-011f-4b50-b5d6-35fb0c660e280",
-2025-07-06T17:54:29.1685698Z       "endpoint": "unix:///var/run/docker.sock",
-2025-07-06T17:54:29.1686567Z       "status": "running",
-2025-07-06T17:54:29.1687476Z       "buildkitd-flags": "--allow-insecure-entitlement security.insecure --allow-insecure-entitlement network.host",
-2025-07-06T17:54:29.1688313Z       "buildkit": "v0.22.0",
-2025-07-06T17:54:29.1688912Z       "platforms": "linux/amd64,linux/amd64/v2,linux/amd64/v3,linux/386",
-2025-07-06T17:54:29.1690274Z       "features": {
-2025-07-06T17:54:29.1690864Z         "Automatically load images to the Docker Engine image store": true,
-2025-07-06T17:54:29.1691750Z         "Cache export": true,
-2025-07-06T17:54:29.1692166Z         "Direct push": true,
-2025-07-06T17:54:29.1692615Z         "Docker exporter": true,
-2025-07-06T17:54:29.1693103Z         "Multi-platform build": true,
-2025-07-06T17:54:29.1693572Z         "OCI exporter": true
-2025-07-06T17:54:29.1693955Z       },
-2025-07-06T17:54:29.1694260Z       "labels": {
-2025-07-06T17:54:29.1694770Z         "org.mobyproject.buildkit.worker.executor": "oci",
-2025-07-06T17:54:29.1695521Z         "org.mobyproject.buildkit.worker.hostname": "963e1c8d3211",
-2025-07-06T17:54:29.1696245Z         "org.mobyproject.buildkit.worker.network": "host",
-2025-07-06T17:54:29.1696992Z         "org.mobyproject.buildkit.worker.oci.process-mode": "sandbox",
-2025-07-06T17:54:29.1698132Z         "org.mobyproject.buildkit.worker.selinux.enabled": "false",
-2025-07-06T17:54:29.1699053Z         "org.mobyproject.buildkit.worker.snapshotter": "overlayfs"
-2025-07-06T17:54:29.1699836Z       },
-2025-07-06T17:54:29.1700111Z       "gcPolicy": [
-2025-07-06T17:54:29.1700407Z         {
-2025-07-06T17:54:29.1700683Z           "all": false,
-2025-07-06T17:54:29.1701001Z           "filter": [
-2025-07-06T17:54:29.1701365Z             "type==source.local",
-2025-07-06T17:54:29.1701795Z             "type==exec.cachemount",
-2025-07-06T17:54:29.1702274Z             "type==source.git.checkout"
-2025-07-06T17:54:29.1702713Z           ],
-2025-07-06T17:54:29.1703083Z           "keepDuration": "48h0m0s",
-2025-07-06T17:54:29.1703576Z           "maxUsedSpace": "488.3MiB"
-2025-07-06T17:54:29.1703997Z         },
-2025-07-06T17:54:29.1704259Z         {
-2025-07-06T17:54:29.1704527Z           "all": false,
-2025-07-06T17:54:29.1704904Z           "keepDuration": "1440h0m0s",
-2025-07-06T17:54:29.1705391Z           "reservedSpace": "7.451GiB",
-2025-07-06T17:54:29.1705859Z           "maxUsedSpace": "54.02GiB",
-2025-07-06T17:54:29.1706330Z           "minFreeSpace": "13.97GiB"
-2025-07-06T17:54:29.1706737Z         },
-2025-07-06T17:54:29.1707034Z         {
-2025-07-06T17:54:29.1707326Z           "all": false,
-2025-07-06T17:54:29.1707745Z           "reservedSpace": "7.451GiB",
-2025-07-06T17:54:29.1708223Z           "maxUsedSpace": "54.02GiB",
-2025-07-06T17:54:29.1708647Z           "minFreeSpace": "13.97GiB"
-2025-07-06T17:54:29.1708979Z         },
-2025-07-06T17:54:29.1709564Z         {
-2025-07-06T17:54:29.1709846Z           "all": true,
-2025-07-06T17:54:29.1710226Z           "reservedSpace": "7.451GiB",
-2025-07-06T17:54:29.1710659Z           "maxUsedSpace": "54.02GiB",
-2025-07-06T17:54:29.1711107Z           "minFreeSpace": "13.97GiB"
-2025-07-06T17:54:29.1711470Z         }
-2025-07-06T17:54:29.1711729Z       ]
-2025-07-06T17:54:29.1711980Z     }
-2025-07-06T17:54:29.1712217Z   ],
-2025-07-06T17:54:29.1712628Z   "name": "builder-e2b8f1c6-011f-4b50-b5d6-35fb0c660e28",
-2025-07-06T17:54:29.1713139Z   "driver": "docker-container",
-2025-07-06T17:54:29.1713569Z   "lastActivity": "2025-07-06T17:54:25.000Z"
-2025-07-06T17:54:29.1713965Z }
-2025-07-06T17:54:29.1714645Z ##[endgroup]
-2025-07-06T17:54:29.1715150Z ##[group]BuildKit version
-2025-07-06T17:54:29.1715705Z builder-e2b8f1c6-011f-4b50-b5d6-35fb0c660e280: v0.22.0
-2025-07-06T17:54:29.1716361Z ##[endgroup]
-2025-07-06T17:54:29.1833421Z ##[group]Run npm ci --legacy-peer-deps
-2025-07-06T17:54:29.1833787Z [36;1mnpm ci --legacy-peer-deps[0m
-2025-07-06T17:54:29.1834055Z [36;1mnpm run build[0m
-2025-07-06T17:54:29.1834487Z [36;1mecho "✅ Local build successful, proceeding with deployment"[0m
-2025-07-06T17:54:29.1931664Z shell: /usr/bin/bash -e {0}
-2025-07-06T17:54:29.1932113Z env:
-2025-07-06T17:54:29.1932292Z   AWS_REGION: eu-west-2
-2025-07-06T17:54:29.1932506Z   AWS_DEFAULT_REGION: eu-west-2
-2025-07-06T17:54:29.1932858Z   AWS_ACCESS_KEY_ID: ***
-2025-07-06T17:54:29.1933156Z   AWS_SECRET_ACCESS_KEY: ***
-2025-07-06T17:54:29.1933368Z ##[endgroup]
-2025-07-06T17:54:32.3596269Z npm warn deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported
-2025-07-06T17:54:33.1668451Z npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
-2025-07-06T17:54:33.2466760Z npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
-2025-07-06T17:54:34.8492225Z npm warn deprecated @humanwhocodes/object-schema@2.0.3: Use @eslint/object-schema instead
-2025-07-06T17:54:34.8922123Z npm warn deprecated @humanwhocodes/config-array@0.13.0: Use @eslint/config-array instead
-2025-07-06T17:54:37.5370458Z npm warn deprecated xterm@5.3.0: This package is now deprecated. Move to @xterm/xterm instead.
-2025-07-06T17:54:38.8326742Z npm warn deprecated eslint@8.57.1: This version is no longer supported. Please see https://eslint.org/version-support for other options.
-2025-07-06T17:54:54.3859029Z 
-2025-07-06T17:54:54.3860737Z added 599 packages, and audited 600 packages in 25s
-2025-07-06T17:54:54.3862786Z 
-2025-07-06T17:54:54.3863085Z 168 packages are looking for funding
-2025-07-06T17:54:54.3863577Z   run `npm fund` for details
-2025-07-06T17:54:54.3873028Z 
-2025-07-06T17:54:54.3874859Z found 0 vulnerabilities
-2025-07-06T17:54:54.5510125Z 
-2025-07-06T17:54:54.5511463Z > modulus-lms@0.1.0 build
-2025-07-06T17:54:54.5512952Z > next build
-2025-07-06T17:54:54.5514537Z 
-2025-07-06T17:54:55.1695103Z ⚠ No build cache found. Please configure build caching for faster rebuilds. Read more: https://nextjs.org/docs/messages/no-cache
-2025-07-06T17:54:55.2573681Z Attention: Next.js now collects completely anonymous telemetry regarding usage.
-2025-07-06T17:54:55.2575856Z This information is used to shape Next.js' roadmap and prioritize features.
-2025-07-06T17:54:55.2577144Z You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
-2025-07-06T17:54:55.2578110Z https://nextjs.org/telemetry
-2025-07-06T17:54:55.2578382Z 
-2025-07-06T17:54:55.3145052Z    ▲ Next.js 15.3.4
-2025-07-06T17:54:55.3147267Z 
-2025-07-06T17:54:55.3652428Z    Creating an optimized production build ...
-2025-07-06T17:55:30.0775637Z  ✓ Compiled successfully in 31.0s
-2025-07-06T17:55:30.0808624Z    Linting and checking validity of types ...
-2025-07-06T17:55:42.0041918Z    Collecting page data ...
-2025-07-06T17:55:44.1583879Z    Generating static pages (0/4) ...
-2025-07-06T17:55:45.4381182Z    Generating static pages (1/4) 
-2025-07-06T17:55:45.4386779Z    Generating static pages (2/4) 
-2025-07-06T17:55:45.4429727Z    Generating static pages (3/4) 
-2025-07-06T17:55:45.4432243Z  ✓ Generating static pages (4/4)
-2025-07-06T17:55:46.3449031Z    Finalizing page optimization ...
-2025-07-06T17:55:46.3492113Z    Collecting build traces ...
-2025-07-06T17:56:00.2036123Z 
-2025-07-06T17:56:00.2065543Z Route (app)                                 Size  First Load JS
-2025-07-06T17:56:00.2076411Z ┌ ○ /                                     152 kB         253 kB
-2025-07-06T17:56:00.2076998Z └ ○ /_not-found                            977 B         102 kB
-2025-07-06T17:56:00.2077388Z + First Load JS shared by all             101 kB
-2025-07-06T17:56:00.2077783Z   ├ chunks/4bd1b696-ad9abd2a22b3b603.js  53.2 kB
-2025-07-06T17:56:00.2078428Z   ├ chunks/684-6f53d10c017ab09b.js       45.9 kB
-2025-07-06T17:56:00.2078796Z   └ other shared chunks (total)          1.92 kB
-2025-07-06T17:56:00.2078982Z 
-2025-07-06T17:56:00.2078989Z 
-2025-07-06T17:56:00.2084404Z ○  (Static)  prerendered as static content
-2025-07-06T17:56:00.2084965Z 
-2025-07-06T17:56:00.2503433Z ✅ Local build successful, proceeding with deployment
-2025-07-06T17:56:00.2537061Z ##[group]Run # Make deployment script executable
-2025-07-06T17:56:00.2537426Z [36;1m# Make deployment script executable[0m
-2025-07-06T17:56:00.2537689Z [36;1mchmod +x ./deploy.sh[0m
-2025-07-06T17:56:00.2537892Z [36;1m[0m
-2025-07-06T17:56:00.2538120Z [36;1m# Run smart deployment (checks existing resources)[0m
-2025-07-06T17:56:00.2538404Z [36;1m./deploy.sh[0m
-2025-07-06T17:56:00.2599761Z shell: /usr/bin/bash -e {0}
-2025-07-06T17:56:00.2599994Z env:
-2025-07-06T17:56:00.2600159Z   AWS_REGION: eu-west-2
-2025-07-06T17:56:00.2600370Z   AWS_DEFAULT_REGION: eu-west-2
-2025-07-06T17:56:00.2600752Z   AWS_ACCESS_KEY_ID: ***
-2025-07-06T17:56:00.2601056Z   AWS_SECRET_ACCESS_KEY: ***
-2025-07-06T17:56:00.2601258Z ##[endgroup]
-2025-07-06T17:56:00.2733568Z 🚀 Modulus LMS - SMART Deployment Starting...
-2025-07-06T17:56:00.2735541Z ==============================================
-2025-07-06T17:56:00.2736569Z [0;34mℹ️  Step 1: Validating AWS access...[0m
-2025-07-06T17:56:01.8485094Z if [ "$TARGET_GROUP_ARN" = "None" ]; then
-2025-07-06T17:56:01.8486021Z     log_info "Creating target group..."
-2025-07-06T17:56:01.8486752Z     TARGET_GROUP_ARN=$(aws elbv2 create-target-group \
-2025-07-06T17:56:01.8488305Z         --name $TARGET_GROUP_NAME \
-2025-07-06T17:56:01.8488730Z         --protocol HTTP \
-2025-07-06T17:56:01.8490480Z         --port 3000 \
-2025-07-06T17:56:01.8490950Z         --vpc-id $VPC_ID \
-2025-07-06T17:56:01.8491336Z         --target-type ip \
-2025-07-06T17:56:01.8491750Z         --health-check-path / \
-2025-07-06T17:56:01.8492238Z         --health-check-interval-seconds 60 \
-2025-07-06T17:56:01.8492792Z         --health-check-timeout-seconds 10 \
-2025-07-06T17:56:01.8493383Z         --healthy-threshold-count 2 \
-2025-07-06T17:56:01.8493913Z         --unhealthy-threshold-count 5 \
-2025-07-06T17:56:01.8494413Z         --matcher HttpCode=200,301,302 \
-2025-07-06T17:56:01.8494942Z         --query TargetGroups[0].TargetGroupArn \
-2025-07-06T17:56:01.8495412Z         --output text \
-2025-07-06T17:56:01.8495801Z         --region $AWS_REGION)
-2025-07-06T17:56:01.8496322Z     log_success "Created target group: $TARGET_GROUP_ARN"
-2025-07-06T17:56:01.8496795Z else
-2025-07-06T17:56:01.8497220Z     log_skip "Using existing target group: $TARGET_GROUP_ARN"
-2025-07-06T17:56:01.8497905Z     # Update health check settings for existing target group
-2025-07-06T17:56:01.8498466Z     aws elbv2 modify-target-group \
-2025-07-06T17:56:01.8498983Z         --target-group-arn $TARGET_GROUP_ARN \
-2025-07-06T17:56:01.8499755Z         --health-check-interval-seconds 60 \
-2025-07-06T17:56:01.8500288Z         --health-check-timeout-seconds 10 \
-2025-07-06T17:56:01.8500825Z         --healthy-threshold-count 2 \
-2025-07-06T17:56:01.8501324Z         --unhealthy-threshold-count 5 \
-2025-07-06T17:56:01.8501817Z         --matcher HttpCode=200,301,302 \
-2025-07-06T17:56:01.8502316Z         --region $AWS_REGION >/dev/null 2>&1
-2025-07-06T17:56:01.8502908Z     log_success "Updated target group health check settings"
-2025-07-06T17:56:01.8503832Z fi3[1;33m✅ AWS Account ID: 376129881409[0m
-2025-07-06T17:56:01.8504580Z if [ "$TARGET_GROUP_ARN" = "None" ]; then
-2025-07-06T17:56:01.8505105Z     log_info "Creating target group..."
-2025-07-06T17:56:01.8505679Z     TARGET_GROUP_ARN=$(aws elbv2 create-target-group \
-2025-07-06T17:56:01.8506246Z         --name $TARGET_GROUP_NAME \
-2025-07-06T17:56:01.8506688Z         --protocol HTTP \
-2025-07-06T17:56:01.8507058Z         --port 3000 \
-2025-07-06T17:56:01.8507401Z         --vpc-id $VPC_ID \
-2025-07-06T17:56:01.8507779Z         --target-type ip \
-2025-07-06T17:56:01.8508190Z         --health-check-path / \
-2025-07-06T17:56:01.8508686Z         --health-check-interval-seconds 60 \
-2025-07-06T17:56:01.8509448Z         --health-check-timeout-seconds 10 \
-2025-07-06T17:56:01.8509970Z         --healthy-threshold-count 2 \
-2025-07-06T17:56:01.8510497Z         --unhealthy-threshold-count 5 \
-2025-07-06T17:56:01.8511009Z         --matcher HttpCode=200,301,302 \
-2025-07-06T17:56:01.8511990Z         --query TargetGroups[0].TargetGroupArn \
-2025-07-06T17:56:01.8512692Z         --output text \
-2025-07-06T17:56:01.8513066Z         --region $AWS_REGION)
-2025-07-06T17:56:01.8513598Z     log_success "Created target group: $TARGET_GROUP_ARN"
-2025-07-06T17:56:01.8514069Z else
-2025-07-06T17:56:01.8514529Z     log_skip "Using existing target group: $TARGET_GROUP_ARN"
-2025-07-06T17:56:01.8515199Z     # Update health check settings for existing target group
-2025-07-06T17:56:01.8515769Z     aws elbv2 modify-target-group \
-2025-07-06T17:56:01.8516271Z         --target-group-arn $TARGET_GROUP_ARN \
-2025-07-06T17:56:01.8516799Z         --health-check-interval-seconds 60 \
-2025-07-06T17:56:01.8517334Z         --health-check-timeout-seconds 10 \
-2025-07-06T17:56:01.8517836Z         --healthy-threshold-count 2 \
-2025-07-06T17:56:01.8518308Z         --unhealthy-threshold-count 5 \
-2025-07-06T17:56:01.8518791Z         --matcher HttpCode=200,301,302 \
-2025-07-06T17:56:01.8519547Z         --region $AWS_REGION >/dev/null 2>&1
-2025-07-06T17:56:01.8520142Z     log_success "Updated target group health check settings"
-2025-07-06T17:56:01.8520853Z fi3[1;33m✅ Region: eu-west-2[0m
-2025-07-06T17:56:01.8521485Z [0;34mℹ️  Checking required AWS services...[0m
-2025-07-06T17:56:03.9235892Z if [ "$TARGET_GROUP_ARN" = "None" ]; then
-2025-07-06T17:56:03.9238065Z     log_info "Creating target group..."
-2025-07-06T17:56:03.9243356Z     TARGET_GROUP_ARN=$(aws elbv2 create-target-group \
-2025-07-06T17:56:03.9243922Z         --name $TARGET_GROUP_NAME \
-2025-07-06T17:56:03.9244353Z         --protocol HTTP \
-2025-07-06T17:56:03.9244709Z         --port 3000 \
-2025-07-06T17:56:03.9245110Z         --vpc-id $VPC_ID \
-2025-07-06T17:56:03.9245525Z         --target-type ip \
-2025-07-06T17:56:03.9245932Z         --health-check-path / \
-2025-07-06T17:56:03.9246419Z         --health-check-interval-seconds 60 \
-2025-07-06T17:56:03.9246965Z         --health-check-timeout-seconds 10 \
-2025-07-06T17:56:03.9247487Z         --healthy-threshold-count 2 \
-2025-07-06T17:56:03.9248052Z         --unhealthy-threshold-count 5 \
-2025-07-06T17:56:03.9248533Z         --matcher HttpCode=200,301,302 \
-2025-07-06T17:56:03.9249017Z         --query TargetGroups[0].TargetGroupArn \
-2025-07-06T17:56:03.9252873Z         --output text \
-2025-07-06T17:56:03.9253435Z         --region $AWS_REGION)
-2025-07-06T17:56:03.9253886Z     log_success "Created target group: $TARGET_GROUP_ARN"
-2025-07-06T17:56:03.9254550Z else
-2025-07-06T17:56:03.9255166Z     log_skip "Using existing target group: $TARGET_GROUP_ARN"
-2025-07-06T17:56:03.9256069Z     # Update health check settings for existing target group
-2025-07-06T17:56:03.9256920Z     aws elbv2 modify-target-group \
-2025-07-06T17:56:03.9257650Z         --target-group-arn $TARGET_GROUP_ARN \
-2025-07-06T17:56:03.9258429Z         --health-check-interval-seconds 60 \
-2025-07-06T17:56:03.9259314Z         --health-check-timeout-seconds 10 \
-2025-07-06T17:56:03.9260082Z         --healthy-threshold-count 2 \
-2025-07-06T17:56:03.9260609Z         --unhealthy-threshold-count 5 \
-2025-07-06T17:56:03.9261223Z         --matcher HttpCode=200,301,302 \
-2025-07-06T17:56:03.9261724Z         --region $AWS_REGION >/dev/null 2>&1
-2025-07-06T17:56:03.9262323Z     log_success "Updated target group health check settings"
-2025-07-06T17:56:03.9263286Z fi3[1;33m✅ Required AWS services are accessible[0m
-2025-07-06T17:56:03.9264121Z [0;34mℹ️  Step 2: Checking existing infrastructure...[0m
-2025-07-06T17:56:05.2092342Z if [ "$TARGET_GROUP_ARN" = "None" ]; then
-2025-07-06T17:56:05.2094052Z     log_info "Creating target group..."
-2025-07-06T17:56:05.2094830Z     TARGET_GROUP_ARN=$(aws elbv2 create-target-group \
-2025-07-06T17:56:05.2095602Z         --name $TARGET_GROUP_NAME \
-2025-07-06T17:56:05.2096327Z         --protocol HTTP \
-2025-07-06T17:56:05.2096800Z         --port 3000 \
-2025-07-06T17:56:05.2097211Z         --vpc-id $VPC_ID \
-2025-07-06T17:56:05.2104812Z         --target-type ip \
-2025-07-06T17:56:05.2105276Z         --health-check-path / \
-2025-07-06T17:56:05.2106287Z         --health-check-interval-seconds 60 \
-2025-07-06T17:56:05.2107103Z         --health-check-timeout-seconds 10 \
-2025-07-06T17:56:05.2107611Z         --healthy-threshold-count 2 \
-2025-07-06T17:56:05.2108085Z         --unhealthy-threshold-count 5 \
-2025-07-06T17:56:05.2108574Z         --matcher HttpCode=200,301,302 \
-2025-07-06T17:56:05.2109089Z         --query TargetGroups[0].TargetGroupArn \
-2025-07-06T17:56:05.2109774Z         --output text \
-2025-07-06T17:56:05.2110150Z         --region $AWS_REGION)
-2025-07-06T17:56:05.2110706Z     log_success "Created target group: $TARGET_GROUP_ARN"
-2025-07-06T17:56:05.2111199Z else
-2025-07-06T17:56:05.2111754Z     log_skip "Using existing target group: $TARGET_GROUP_ARN"
-2025-07-06T17:56:05.2112439Z     # Update health check settings for existing target group
-2025-07-06T17:56:05.2113023Z     aws elbv2 modify-target-group \
-2025-07-06T17:56:05.2113555Z         --target-group-arn $TARGET_GROUP_ARN \
-2025-07-06T17:56:05.2114135Z         --health-check-interval-seconds 60 \
-2025-07-06T17:56:05.2114744Z         --health-check-timeout-seconds 10 \
-2025-07-06T17:56:05.2115272Z         --healthy-threshold-count 2 \
-2025-07-06T17:56:05.2115762Z         --unhealthy-threshold-count 5 \
-2025-07-06T17:56:05.2116256Z         --matcher HttpCode=200,301,302 \
-2025-07-06T17:56:05.2116768Z         --region $AWS_REGION >/dev/null 2>&1
-2025-07-06T17:56:05.2117380Z     log_success "Updated target group health check settings"
-2025-07-06T17:56:05.2118371Z fi3[1;33m✅ Using VPC: vpc-04d155bb35a9ee8c5[0m
-2025-07-06T17:56:06.3843882Z if [ "$TARGET_GROUP_ARN" = "None" ]; then
-2025-07-06T17:56:06.3845964Z     log_info "Creating target group..."
-2025-07-06T17:56:06.3855584Z     TARGET_GROUP_ARN=$(aws elbv2 create-target-group \
-2025-07-06T17:56:06.3856177Z         --name $TARGET_GROUP_NAME \
-2025-07-06T17:56:06.3856602Z         --protocol HTTP \
-2025-07-06T17:56:06.3856984Z         --port 3000 \
-2025-07-06T17:56:06.3857324Z         --vpc-id $VPC_ID \
-2025-07-06T17:56:06.3857738Z         --target-type ip \
-2025-07-06T17:56:06.3858165Z         --health-check-path / \
-2025-07-06T17:56:06.3858662Z         --health-check-interval-seconds 60 \
-2025-07-06T17:56:06.3859613Z         --health-check-timeout-seconds 10 \
-2025-07-06T17:56:06.3860158Z         --healthy-threshold-count 2 \
-2025-07-06T17:56:06.3860653Z         --unhealthy-threshold-count 5 \
-2025-07-06T17:56:06.3861142Z         --matcher HttpCode=200,301,302 \
-2025-07-06T17:56:06.3861662Z         --query TargetGroups[0].TargetGroupArn \
-2025-07-06T17:56:06.3862167Z         --output text \
-2025-07-06T17:56:06.3862574Z         --region $AWS_REGION)
-2025-07-06T17:56:06.3863104Z     log_success "Created target group: $TARGET_GROUP_ARN"
-2025-07-06T17:56:06.3863593Z else
-2025-07-06T17:56:06.3864048Z     log_skip "Using existing target group: $TARGET_GROUP_ARN"
-2025-07-06T17:56:06.3864718Z     # Update health check settings for existing target group
-2025-07-06T17:56:06.3865309Z     aws elbv2 modify-target-group \
-2025-07-06T17:56:06.3865827Z         --target-group-arn $TARGET_GROUP_ARN \
-2025-07-06T17:56:06.3866371Z         --health-check-interval-seconds 60 \
-2025-07-06T17:56:06.3866904Z         --health-check-timeout-seconds 10 \
-2025-07-06T17:56:06.3867426Z         --healthy-threshold-count 2 \
-2025-07-06T17:56:06.3867931Z         --unhealthy-threshold-count 5 \
-2025-07-06T17:56:06.3868430Z         --matcher HttpCode=200,301,302 \
-2025-07-06T17:56:06.3868916Z         --region $AWS_REGION >/dev/null 2>&1
-2025-07-06T17:56:06.3869705Z     log_success "Updated target group health check settings"
-2025-07-06T17:56:06.3870836Z fi3[1;33m✅ Using subnets: subnet-0cc34cda0d0f7edca, subnet-040a224ccafdbf8e7[0m
-2025-07-06T17:56:06.3871666Z 🔍 Checking security group...[0m
-2025-07-06T17:56:07.5793845Z if [ "$TARGET_GROUP_ARN" = "None" ]; then
-2025-07-06T17:56:07.5795377Z     log_info "Creating target group..."
-2025-07-06T17:56:07.5797205Z     TARGET_GROUP_ARN=$(aws elbv2 create-target-group \
-2025-07-06T17:56:07.5797787Z         --name $TARGET_GROUP_NAME \
-2025-07-06T17:56:07.5799029Z         --protocol HTTP \
-2025-07-06T17:56:07.5799636Z         --port 3000 \
-2025-07-06T17:56:07.5799996Z         --vpc-id $VPC_ID \
-2025-07-06T17:56:07.5800350Z         --target-type ip \
-2025-07-06T17:56:07.5800751Z         --health-check-path / \
-2025-07-06T17:56:07.5801234Z         --health-check-interval-seconds 60 \
-2025-07-06T17:56:07.5801724Z         --health-check-timeout-seconds 10 \
-2025-07-06T17:56:07.5802142Z         --healthy-threshold-count 2 \
-2025-07-06T17:56:07.5802618Z         --unhealthy-threshold-count 5 \
-2025-07-06T17:56:07.5803116Z         --matcher HttpCode=200,301,302 \
-2025-07-06T17:56:07.5803630Z         --query TargetGroups[0].TargetGroupArn \
-2025-07-06T17:56:07.5804082Z         --output text \
-2025-07-06T17:56:07.5804442Z         --region $AWS_REGION)
-2025-07-06T17:56:07.5804987Z     log_success "Created target group: $TARGET_GROUP_ARN"
-2025-07-06T17:56:07.5805535Z else
-2025-07-06T17:56:07.5805978Z     log_skip "Using existing target group: $TARGET_GROUP_ARN"
-2025-07-06T17:56:07.5806686Z     # Update health check settings for existing target group
-2025-07-06T17:56:07.5807262Z     aws elbv2 modify-target-group \
-2025-07-06T17:56:07.5807781Z         --target-group-arn $TARGET_GROUP_ARN \
-2025-07-06T17:56:07.5808324Z         --health-check-interval-seconds 60 \
-2025-07-06T17:56:07.5808839Z         --health-check-timeout-seconds 10 \
-2025-07-06T17:56:07.5809622Z         --healthy-threshold-count 2 \
-2025-07-06T17:56:07.5811667Z         --unhealthy-threshold-count 5 \
-2025-07-06T17:56:07.5812196Z         --matcher HttpCode=200,301,302 \
-2025-07-06T17:56:07.5812658Z         --region $AWS_REGION >/dev/null 2>&1
-2025-07-06T17:56:07.5813206Z     log_success "Updated target group health check settings"
-2025-07-06T17:56:07.5814253Z fi3[1;33m⏭️  Using existing security group: sg-011290af387c73063[0m
-2025-07-06T17:56:07.5815098Z 🔍 Checking ECR repository...[0m
-2025-07-06T17:56:08.5432819Z if [ "$TARGET_GROUP_ARN" = "None" ]; then
-2025-07-06T17:56:08.5434876Z     log_info "Creating target group..."
-2025-07-06T17:56:08.5435477Z     TARGET_GROUP_ARN=$(aws elbv2 create-target-group \
-2025-07-06T17:56:08.5436041Z         --name $TARGET_GROUP_NAME \
-2025-07-06T17:56:08.5436466Z         --protocol HTTP \
-2025-07-06T17:56:08.5436841Z         --port 3000 \
-2025-07-06T17:56:08.5437186Z         --vpc-id $VPC_ID \
-2025-07-06T17:56:08.5437556Z         --target-type ip \
-2025-07-06T17:56:08.5437963Z         --health-check-path / \
-2025-07-06T17:56:08.5438434Z         --health-check-interval-seconds 60 \
-2025-07-06T17:56:08.5438966Z         --health-check-timeout-seconds 10 \
-2025-07-06T17:56:08.5439663Z         --healthy-threshold-count 2 \
-2025-07-06T17:56:08.5440111Z         --unhealthy-threshold-count 5 \
-2025-07-06T17:56:08.5440515Z         --matcher HttpCode=200,301,302 \
-2025-07-06T17:56:08.5440976Z         --query TargetGroups[0].TargetGroupArn \
-2025-07-06T17:56:08.5441439Z         --output text \
-2025-07-06T17:56:08.5441788Z         --region $AWS_REGION)
-2025-07-06T17:56:08.5442308Z     log_success "Created target group: $TARGET_GROUP_ARN"
-2025-07-06T17:56:08.5442788Z else
-2025-07-06T17:56:08.5443233Z     log_skip "Using existing target group: $TARGET_GROUP_ARN"
-2025-07-06T17:56:08.5444007Z     # Update health check settings for existing target group
-2025-07-06T17:56:08.5444577Z     aws elbv2 modify-target-group \
-2025-07-06T17:56:08.5445079Z         --target-group-arn $TARGET_GROUP_ARN \
-2025-07-06T17:56:08.5445622Z         --health-check-interval-seconds 60 \
-2025-07-06T17:56:08.5446183Z         --health-check-timeout-seconds 10 \
-2025-07-06T17:56:08.5446704Z         --healthy-threshold-count 2 \
-2025-07-06T17:56:08.5447177Z         --unhealthy-threshold-count 5 \
-2025-07-06T17:56:08.5447644Z         --matcher HttpCode=200,301,302 \
-2025-07-06T17:56:08.5448133Z         --region $AWS_REGION >/dev/null 2>&1
-2025-07-06T17:56:08.5448708Z     log_success "Updated target group health check settings"
-2025-07-06T17:56:08.5449800Z fi3[1;33m⏭️  Using existing ECR repository[0m
-2025-07-06T17:56:08.5451464Z 🔍 Checking ECS cluster...[0m
-2025-07-06T17:56:09.5874031Z if [ "$TARGET_GROUP_ARN" = "None" ]; then
-2025-07-06T17:56:09.5876515Z     log_info "Creating target group..."
-2025-07-06T17:56:09.5877122Z     TARGET_GROUP_ARN=$(aws elbv2 create-target-group \
-2025-07-06T17:56:09.5877666Z         --name $TARGET_GROUP_NAME \
-2025-07-06T17:56:09.5878100Z         --protocol HTTP \
-2025-07-06T17:56:09.5878549Z         --port 3000 \
-2025-07-06T17:56:09.5878901Z         --vpc-id $VPC_ID \
-2025-07-06T17:56:09.5879456Z         --target-type ip \
-2025-07-06T17:56:09.5879858Z         --health-check-path / \
-2025-07-06T17:56:09.5880345Z         --health-check-interval-seconds 60 \
-2025-07-06T17:56:09.5880876Z         --health-check-timeout-seconds 10 \
-2025-07-06T17:56:09.5881310Z         --healthy-threshold-count 2 \
-2025-07-06T17:56:09.5881714Z         --unhealthy-threshold-count 5 \
-2025-07-06T17:56:09.5882181Z         --matcher HttpCode=200,301,302 \
-2025-07-06T17:56:09.5882743Z         --query TargetGroups[0].TargetGroupArn \
-2025-07-06T17:56:09.5883212Z         --output text \
-2025-07-06T17:56:09.5883566Z         --region $AWS_REGION)
-2025-07-06T17:56:09.5884082Z     log_success "Created target group: $TARGET_GROUP_ARN"
-2025-07-06T17:56:09.5884598Z else
-2025-07-06T17:56:09.5885097Z     log_skip "Using existing target group: $TARGET_GROUP_ARN"
-2025-07-06T17:56:09.5885763Z     # Update health check settings for existing target group
-2025-07-06T17:56:09.5886345Z     aws elbv2 modify-target-group \
-2025-07-06T17:56:09.5886856Z         --target-group-arn $TARGET_GROUP_ARN \
-2025-07-06T17:56:09.5887412Z         --health-check-interval-seconds 60 \
-2025-07-06T17:56:09.5887947Z         --health-check-timeout-seconds 10 \
-2025-07-06T17:56:09.5888437Z         --healthy-threshold-count 2 \
-2025-07-06T17:56:09.5888918Z         --unhealthy-threshold-count 5 \
-2025-07-06T17:56:09.5889696Z         --matcher HttpCode=200,301,302 \
-2025-07-06T17:56:09.5890180Z         --region $AWS_REGION >/dev/null 2>&1
-2025-07-06T17:56:09.5890791Z     log_success "Updated target group health check settings"
-2025-07-06T17:56:09.5891772Z fi3[1;33m⏭️  Using existing ECS cluster: modulus-cluster[0m
-2025-07-06T17:56:09.5892471Z 🔍 Checking CloudWatch log group...[0m
-2025-07-06T17:56:10.6264655Z if [ "$TARGET_GROUP_ARN" = "None" ]; then
-2025-07-06T17:56:10.6266481Z     log_info "Creating target group..."
-2025-07-06T17:56:10.6267060Z     TARGET_GROUP_ARN=$(aws elbv2 create-target-group \
-2025-07-06T17:56:10.6267586Z         --name $TARGET_GROUP_NAME \
-2025-07-06T17:56:10.6267986Z         --protocol HTTP \
-2025-07-06T17:56:10.6268355Z         --port 3000 \
-2025-07-06T17:56:10.6268683Z         --vpc-id $VPC_ID \
-2025-07-06T17:56:10.6269033Z         --target-type ip \
-2025-07-06T17:56:10.6269864Z         --health-check-path / \
-2025-07-06T17:56:10.6270368Z         --health-check-interval-seconds 60 \
-2025-07-06T17:56:10.6270919Z         --health-check-timeout-seconds 10 \
-2025-07-06T17:56:10.6271348Z         --healthy-threshold-count 2 \
-2025-07-06T17:56:10.6271814Z         --unhealthy-threshold-count 5 \
-2025-07-06T17:56:10.6272299Z         --matcher HttpCode=200,301,302 \
-2025-07-06T17:56:10.6272813Z         --query TargetGroups[0].TargetGroupArn \
-2025-07-06T17:56:10.6273255Z         --output text \
-2025-07-06T17:56:10.6273568Z         --region $AWS_REGION)
-2025-07-06T17:56:10.6274024Z     log_success "Created target group: $TARGET_GROUP_ARN"
-2025-07-06T17:56:10.6274501Z else
-2025-07-06T17:56:10.6274931Z     log_skip "Using existing target group: $TARGET_GROUP_ARN"
-2025-07-06T17:56:10.6275713Z     # Update health check settings for existing target group
-2025-07-06T17:56:10.6276274Z     aws elbv2 modify-target-group \
-2025-07-06T17:56:10.6276793Z         --target-group-arn $TARGET_GROUP_ARN \
-2025-07-06T17:56:10.6277410Z         --health-check-interval-seconds 60 \
-2025-07-06T17:56:10.6277928Z         --health-check-timeout-seconds 10 \
-2025-07-06T17:56:10.6278418Z         --healthy-threshold-count 2 \
-2025-07-06T17:56:10.6279537Z         --unhealthy-threshold-count 5 \
-2025-07-06T17:56:10.6280272Z         --matcher HttpCode=200,301,302 \
-2025-07-06T17:56:10.6280780Z         --region $AWS_REGION >/dev/null 2>&1
-2025-07-06T17:56:10.6281371Z     log_success "Updated target group health check settings"
-2025-07-06T17:56:10.6282351Z fi3[1;33m⏭️  Using existing log group: /ecs/modulus-simple[0m
-2025-07-06T17:56:10.6283212Z [0;34mℹ️  Step 5: Building and pushing Docker image...[0m
-2025-07-06T17:56:10.6287483Z [0;34mℹ️  Building Docker image...[0m
-2025-07-06T17:56:10.9532429Z #0 building with "default" instance using docker driver
-2025-07-06T17:56:10.9532858Z 
-2025-07-06T17:56:10.9533268Z #1 [internal] load build definition from Dockerfile.deploy
-2025-07-06T17:56:10.9534306Z #1 transferring dockerfile: 1.20kB done
-2025-07-06T17:56:10.9535705Z #1 DONE 0.0s
-2025-07-06T17:56:10.9535889Z 
-2025-07-06T17:56:10.9536241Z #2 [auth] library/node:pull token for registry-1.docker.io
-2025-07-06T17:56:10.9536648Z #2 DONE 0.0s
-2025-07-06T17:56:10.9536759Z 
-2025-07-06T17:56:10.9537072Z #3 [internal] load metadata for docker.io/library/node:18-alpine
-2025-07-06T17:56:11.1305681Z #3 DONE 0.4s
-2025-07-06T17:56:11.2582812Z 
-2025-07-06T17:56:11.2583476Z #4 [internal] load .dockerignore
-2025-07-06T17:56:11.2584093Z #4 transferring context: 594B done
-2025-07-06T17:56:11.2584512Z #4 DONE 0.0s
-2025-07-06T17:56:11.2585794Z 
-2025-07-06T17:56:11.2586049Z #5 [internal] load build context
-2025-07-06T17:56:11.2586541Z #5 transferring context: 952.25kB 0.0s done
-2025-07-06T17:56:11.2586903Z #5 DONE 0.0s
-2025-07-06T17:56:11.2587024Z 
-2025-07-06T17:56:11.2587556Z #6 [base 1/1] FROM docker.io/library/node:18-alpine@sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e
-2025-07-06T17:56:11.2588532Z #6 resolve docker.io/library/node:18-alpine@sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e done
-2025-07-06T17:56:11.2589604Z #6 sha256:25ff2da83641908f65c3a74d80409d6b1b62ccfaab220b9ea70b80df5a2e0549 0B / 446B 0.1s
-2025-07-06T17:56:11.2590369Z #6 sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e 7.67kB / 7.67kB done
-2025-07-06T17:56:11.2591115Z #6 sha256:929b04d7c782f04f615cf785488fed452b6569f87c73ff666ad553a7554f0006 1.72kB / 1.72kB done
-2025-07-06T17:56:11.2591860Z #6 sha256:ee77c6cd7c1886ecc802ad6cedef3a8ec1ea27d1fb96162bf03dd3710839b8da 6.18kB / 6.18kB done
-2025-07-06T17:56:11.2592621Z #6 sha256:dd71dde834b5c203d162902e6b8994cb2309ae049a0eabc4efea161b2b5a3d0e 4.19MB / 40.01MB 0.1s
-2025-07-06T17:56:11.4579365Z #6 sha256:25ff2da83641908f65c3a74d80409d6b1b62ccfaab220b9ea70b80df5a2e0549 446B / 446B 0.1s done
-2025-07-06T17:56:11.4582729Z #6 sha256:dd71dde834b5c203d162902e6b8994cb2309ae049a0eabc4efea161b2b5a3d0e 16.78MB / 40.01MB 0.3s
-2025-07-06T17:56:11.4584803Z #6 sha256:1e5a4c89cee5c0826c540ab06d4b6b491c96eda01837f430bd47f0d26702d6e3 1.26MB / 1.26MB 0.3s done
-2025-07-06T17:56:11.6581199Z #6 sha256:dd71dde834b5c203d162902e6b8994cb2309ae049a0eabc4efea161b2b5a3d0e 29.36MB / 40.01MB 0.5s
-2025-07-06T17:56:11.7581037Z #6 sha256:dd71dde834b5c203d162902e6b8994cb2309ae049a0eabc4efea161b2b5a3d0e 40.01MB / 40.01MB 0.6s
-2025-07-06T17:56:11.9110830Z #6 sha256:dd71dde834b5c203d162902e6b8994cb2309ae049a0eabc4efea161b2b5a3d0e 40.01MB / 40.01MB 0.6s done
-2025-07-06T17:56:11.9115973Z #6 extracting sha256:dd71dde834b5c203d162902e6b8994cb2309ae049a0eabc4efea161b2b5a3d0e 0.1s
-2025-07-06T17:56:13.0569815Z #6 extracting sha256:dd71dde834b5c203d162902e6b8994cb2309ae049a0eabc4efea161b2b5a3d0e 1.2s done
-2025-07-06T17:56:13.5183195Z #6 extracting sha256:1e5a4c89cee5c0826c540ab06d4b6b491c96eda01837f430bd47f0d26702d6e3
-2025-07-06T17:56:13.6273487Z #6 extracting sha256:1e5a4c89cee5c0826c540ab06d4b6b491c96eda01837f430bd47f0d26702d6e3 0.0s done
-2025-07-06T17:56:13.6274582Z #6 extracting sha256:25ff2da83641908f65c3a74d80409d6b1b62ccfaab220b9ea70b80df5a2e0549 done
-2025-07-06T17:56:13.6275154Z #6 DONE 2.5s
-2025-07-06T17:56:13.8568328Z 
-2025-07-06T17:56:13.8570916Z #7 [deps 1/3] WORKDIR /app
-2025-07-06T17:56:13.8571360Z #7 DONE 0.0s
-2025-07-06T17:56:13.8571520Z 
-2025-07-06T17:56:13.8572452Z #8 [deps 2/3] COPY package.json package-lock.json* ./
-2025-07-06T17:56:13.8572909Z #8 DONE 0.1s
-2025-07-06T17:56:13.8573074Z 
-2025-07-06T17:56:13.8573317Z #9 [deps 3/3] RUN npm ci --legacy-peer-deps
-2025-07-06T17:56:14.7908661Z #9 ...
-2025-07-06T17:56:14.7909448Z 
-2025-07-06T17:56:14.7910047Z #10 [runner 2/7] RUN apk add --no-cache curl
-2025-07-06T17:56:14.7911192Z #10 0.236 fetch https://dl-cdn.alpinelinux.org/alpine/v3.21/main/x86_64/APKINDEX.tar.gz
-2025-07-06T17:56:14.7914364Z #10 0.363 fetch https://dl-cdn.alpinelinux.org/alpine/v3.21/community/x86_64/APKINDEX.tar.gz
-2025-07-06T17:56:14.7915415Z #10 0.834 (1/9) Installing brotli-libs (1.1.0-r2)
-2025-07-06T17:56:14.7916168Z #10 0.860 (2/9) Installing c-ares (1.34.5-r0)
-2025-07-06T17:56:14.7917087Z #10 0.872 (3/9) Installing libunistring (1.2-r0)
-2025-07-06T17:56:14.7918271Z #10 0.898 (4/9) Installing libidn2 (2.3.7-r0)
-2025-07-06T17:56:14.7919275Z #10 0.908 (5/9) Installing nghttp2-libs (1.64.0-r0)
-2025-07-06T17:56:14.7920096Z #10 0.916 (6/9) Installing libpsl (0.21.5-r3)
-2025-07-06T17:56:14.7921106Z #10 0.924 (7/9) Installing zstd-libs (1.5.6-r2)
-2025-07-06T17:56:14.7921850Z #10 0.942 (8/9) Installing libcurl (8.12.1-r1)
-2025-07-06T17:56:14.7923118Z #10 0.957 (9/9) Installing curl (8.12.1-r1)
-2025-07-06T17:56:14.7923753Z #10 0.969 Executing busybox-1.37.0-r12.trigger
-2025-07-06T17:56:14.7924324Z #10 0.985 OK: 14 MiB in 26 packages
-2025-07-06T17:56:14.7924717Z #10 DONE 1.1s
-2025-07-06T17:56:14.9453731Z 
-2025-07-06T17:56:14.9457410Z #11 [runner 3/7] RUN addgroup --system --gid 1001 nodejs
-2025-07-06T17:56:15.0232132Z #11 DONE 0.2s
-2025-07-06T17:56:15.0233054Z 
-2025-07-06T17:56:15.0233748Z #9 [deps 3/3] RUN npm ci --legacy-peer-deps
-2025-07-06T17:56:15.2969578Z #9 ...
-2025-07-06T17:56:15.2972898Z 
-2025-07-06T17:56:15.2974861Z #12 [runner 4/7] RUN adduser --system --uid 1001 nextjs
-2025-07-06T17:56:15.2990683Z #12 DONE 0.3s
-2025-07-06T17:56:15.4478313Z 
-2025-07-06T17:56:15.4479880Z #9 [deps 3/3] RUN npm ci --legacy-peer-deps
-2025-07-06T17:56:17.9327629Z #9 4.229 npm warn deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported
-2025-07-06T17:56:18.6855132Z #9 4.981 npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
-2025-07-06T17:56:18.8141139Z #9 5.110 npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
-2025-07-06T17:56:20.3655446Z #9 6.661 npm warn deprecated @humanwhocodes/object-schema@2.0.3: Use @eslint/object-schema instead
-2025-07-06T17:56:20.6147627Z #9 6.760 npm warn deprecated @humanwhocodes/config-array@0.13.0: Use @eslint/config-array instead
-2025-07-06T17:56:23.9151644Z #9 10.21 npm warn deprecated xterm@5.3.0: This package is now deprecated. Move to @xterm/xterm instead.
-2025-07-06T17:56:25.2954921Z #9 11.59 npm warn deprecated eslint@8.57.1: This version is no longer supported. Please see https://eslint.org/version-support for other options.
-2025-07-06T17:56:39.4716302Z #9 25.77 
-2025-07-06T17:56:39.4719630Z #9 25.77 added 599 packages, and audited 600 packages in 25s
-2025-07-06T17:56:39.4720536Z #9 25.77 
-2025-07-06T17:56:39.4726390Z #9 25.77 168 packages are looking for funding
-2025-07-06T17:56:39.4729517Z #9 25.77   run `npm fund` for details
-2025-07-06T17:56:39.6260615Z #9 25.77 
-2025-07-06T17:56:39.6262183Z #9 25.77 found 0 vulnerabilities
-2025-07-06T17:56:39.6262757Z #9 25.77 npm notice
-2025-07-06T17:56:39.6265049Z #9 25.77 npm notice New major version of npm available! 10.8.2 -> 11.4.2
-2025-07-06T17:56:39.6265947Z #9 25.77 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.4.2
-2025-07-06T17:56:39.6266732Z #9 25.77 npm notice To update run: npm install -g npm@11.4.2
-2025-07-06T17:56:39.6267218Z #9 25.77 npm notice
-2025-07-06T17:56:40.9084216Z #9 DONE 27.2s
-2025-07-06T17:56:44.2001464Z 
-2025-07-06T17:56:44.2004219Z #13 [builder 2/4] COPY --from=deps /app/node_modules ./node_modules
-2025-07-06T17:56:52.5444977Z #13 DONE 8.3s
-2025-07-06T17:56:52.7376960Z 
-2025-07-06T17:56:52.7378150Z #14 [builder 3/4] COPY . .
-2025-07-06T17:56:52.7379664Z #14 DONE 0.0s
-2025-07-06T17:56:52.7379842Z 
-2025-07-06T17:56:52.7380060Z #15 [builder 4/4] RUN npm run build
-2025-07-06T17:56:53.1543570Z #15 0.564 
-2025-07-06T17:56:53.1545939Z #15 0.564 > modulus-lms@0.1.0 build
-2025-07-06T17:56:53.1548994Z #15 0.564 > next build
-2025-07-06T17:56:53.1551444Z #15 0.564 
-2025-07-06T17:56:54.0315252Z #15 1.444    ▲ Next.js 15.3.4
-2025-07-06T17:56:54.1947217Z #15 1.444 
-2025-07-06T17:56:54.1949023Z #15 1.457    Creating an optimized production build ...
-2025-07-06T17:57:33.2806106Z #15 40.69  ✓ Compiled successfully in 35.0s
-2025-07-06T17:57:33.4334607Z #15 40.70    Linting and checking validity of types ...
-2025-07-06T17:57:47.6124734Z #15 55.02    Collecting page data ...
-2025-07-06T17:57:49.9510737Z #15 57.36    Generating static pages (0/4) ...
-2025-07-06T17:57:51.4468760Z #15 58.86    Generating static pages (1/4) 
-2025-07-06T17:57:51.5976504Z #15 58.86    Generating static pages (2/4) 
-2025-07-06T17:57:51.5980519Z #15 58.86    Generating static pages (3/4) 
-2025-07-06T17:57:51.5981655Z #15 58.86  ✓ Generating static pages (4/4)
-2025-07-06T17:57:52.4393623Z #15 59.85    Finalizing page optimization ...
-2025-07-06T17:57:52.4398913Z #15 59.85    Collecting build traces ...
-2025-07-06T17:58:07.3416958Z #15 74.75 
-2025-07-06T17:58:07.4654607Z #15 74.76 Route (app)                                 Size  First Load JS
-2025-07-06T17:58:07.4656280Z #15 74.76 ┌ ○ /                                     152 kB         253 kB
-2025-07-06T17:58:07.4661832Z #15 74.76 └ ○ /_not-found                            977 B         102 kB
-2025-07-06T17:58:07.4662586Z #15 74.76 + First Load JS shared by all             101 kB
-2025-07-06T17:58:07.4663381Z #15 74.76   ├ chunks/4bd1b696-ad9abd2a22b3b603.js  53.2 kB
-2025-07-06T17:58:07.4664097Z #15 74.76   ├ chunks/684-6f53d10c017ab09b.js       45.9 kB
-2025-07-06T17:58:07.4664832Z #15 74.76   └ other shared chunks (total)          1.92 kB
-2025-07-06T17:58:07.4665290Z #15 74.76 
-2025-07-06T17:58:07.4665563Z #15 74.76 
-2025-07-06T17:58:07.4666125Z #15 74.76 ○  (Static)  prerendered as static content
-2025-07-06T17:58:07.4666554Z #15 74.76 
-2025-07-06T17:58:07.4666842Z #15 74.80 npm notice
-2025-07-06T17:58:07.4667455Z #15 74.80 npm notice New major version of npm available! 10.8.2 -> 11.4.2
-2025-07-06T17:58:07.4668379Z #15 74.80 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.4.2
-2025-07-06T17:58:07.4712740Z #15 74.80 npm notice To update run: npm install -g npm@11.4.2
-2025-07-06T17:58:07.4713367Z #15 74.80 npm notice
-2025-07-06T17:58:07.4713887Z #15 DONE 74.9s
-2025-07-06T17:58:08.6366766Z 
-2025-07-06T17:58:08.6368516Z #16 [runner 5/7] COPY --from=builder /app/public ./public
-2025-07-06T17:58:08.8070832Z #16 DONE 0.0s
-2025-07-06T17:58:08.8072122Z 
-2025-07-06T17:58:08.8072696Z #17 [runner 6/7] COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-2025-07-06T17:58:09.1263086Z #17 DONE 0.5s
-2025-07-06T17:58:09.3078006Z 
-2025-07-06T17:58:09.3080959Z #18 [runner 7/7] COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-2025-07-06T17:58:09.3082779Z #18 DONE 0.0s
-2025-07-06T17:58:09.3084176Z 
-2025-07-06T17:58:09.3084671Z #19 exporting to image
-2025-07-06T17:58:09.3085055Z #19 exporting layers
-2025-07-06T17:58:10.3745125Z #19 exporting layers 1.2s done
-2025-07-06T17:58:10.3746125Z #19 writing image sha256:3b41279d75ddb02691a878bbe9736048d5637bf21aec01ed504954d14876d396 done
-2025-07-06T17:58:10.3747034Z #19 naming to docker.io/library/modulus-lms:latest done
-2025-07-06T17:58:10.4027516Z #19 DONE 1.2s
-2025-07-06T17:58:12.3451304Z 
-2025-07-06T17:58:12.3452401Z WARNING! Your credentials are stored unencrypted in '/home/runner/.docker/config.json'.
-2025-07-06T17:58:12.3453670Z Configure a credential helper to remove this warning. See
-2025-07-06T17:58:12.3454557Z https://docs.docker.com/go/credential-store/
-2025-07-06T17:58:12.3454905Z 
-2025-07-06T17:58:12.3455075Z Login Succeeded
-2025-07-06T17:58:12.4511177Z The push refers to repository [376129881409.dkr.ecr.eu-west-2.amazonaws.com/modulus-lms]
-2025-07-06T17:58:12.7817043Z 8160142b1d6e: Preparing
-2025-07-06T17:58:12.7817537Z d84621893ae3: Preparing
-2025-07-06T17:58:12.7817894Z 5403d7101785: Preparing
-2025-07-06T17:58:12.7818250Z b8a833c526de: Preparing
-2025-07-06T17:58:12.7818581Z ad8ec7c21fb1: Preparing
-2025-07-06T17:58:12.7818934Z f69d56813e3e: Preparing
-2025-07-06T17:58:12.7819502Z 489c13aae283: Preparing
-2025-07-06T17:58:12.7819834Z 82140d9a70a7: Preparing
-2025-07-06T17:58:12.7820201Z f3b40b0cdb1c: Preparing
-2025-07-06T17:58:12.7820560Z 0b1f26057bd0: Preparing
-2025-07-06T17:58:12.7820902Z 08000c18d16d: Preparing
-2025-07-06T17:58:12.7821254Z f69d56813e3e: Waiting
-2025-07-06T17:58:12.7821595Z 489c13aae283: Waiting
-2025-07-06T17:58:12.7821925Z 82140d9a70a7: Waiting
-2025-07-06T17:58:12.7822294Z f3b40b0cdb1c: Waiting
-2025-07-06T17:58:12.7822651Z 0b1f26057bd0: Waiting
-2025-07-06T17:58:12.7822987Z 08000c18d16d: Waiting
-2025-07-06T17:58:14.6288833Z b8a833c526de: Pushed
-2025-07-06T17:58:14.7238485Z ad8ec7c21fb1: Pushed
-2025-07-06T17:58:14.7421558Z 5403d7101785: Pushed
-2025-07-06T17:58:15.0566566Z 8160142b1d6e: Pushed
-2025-07-06T17:58:15.1370412Z 82140d9a70a7: Layer already exists
-2025-07-06T17:58:15.4342047Z f3b40b0cdb1c: Layer already exists
-2025-07-06T17:58:15.5192794Z 0b1f26057bd0: Layer already exists
-2025-07-06T17:58:15.8251518Z 08000c18d16d: Layer already exists
-2025-07-06T17:58:16.4905042Z 489c13aae283: Pushed
-2025-07-06T17:58:17.1530783Z f69d56813e3e: Pushed
-2025-07-06T17:58:17.4980113Z d84621893ae3: Pushed
-2025-07-06T17:58:20.2975513Z latest: digest: sha256:62d992a3835b3b78e7e6e596ff5f77fbcb2671f5a191f3a41a1af28445009aba size: 2619
-2025-07-06T17:58:20.3005784Z if [ "$TARGET_GROUP_ARN" = "None" ]; then
-2025-07-06T17:58:20.3006649Z     log_info "Creating target group..."
-2025-07-06T17:58:20.3007652Z     TARGET_GROUP_ARN=$(aws elbv2 create-target-group \
-2025-07-06T17:58:20.3008432Z         --name $TARGET_GROUP_NAME \
-2025-07-06T17:58:20.3009068Z         --protocol HTTP \
-2025-07-06T17:58:20.3010704Z         --port 3000 \
-2025-07-06T17:58:20.3011049Z         --vpc-id $VPC_ID \
-2025-07-06T17:58:20.3011405Z         --target-type ip \
-2025-07-06T17:58:20.3011817Z         --health-check-path / \
-2025-07-06T17:58:20.3012306Z         --health-check-interval-seconds 60 \
-2025-07-06T17:58:20.3012847Z         --health-check-timeout-seconds 10 \
-2025-07-06T17:58:20.3013338Z         --healthy-threshold-count 2 \
-2025-07-06T17:58:20.3013816Z         --unhealthy-threshold-count 5 \
-2025-07-06T17:58:20.3014236Z         --matcher HttpCode=200,301,302 \
-2025-07-06T17:58:20.3014656Z         --query TargetGroups[0].TargetGroupArn \
-2025-07-06T17:58:20.3015099Z         --output text \
-2025-07-06T17:58:20.3015451Z         --region $AWS_REGION)
-2025-07-06T17:58:20.3015957Z     log_success "Created target group: $TARGET_GROUP_ARN"
-2025-07-06T17:58:20.3016417Z else
-2025-07-06T17:58:20.3016848Z     log_skip "Using existing target group: $TARGET_GROUP_ARN"
-2025-07-06T17:58:20.3017605Z     # Update health check settings for existing target group
-2025-07-06T17:58:20.3018177Z     aws elbv2 modify-target-group \
-2025-07-06T17:58:20.3018676Z         --target-group-arn $TARGET_GROUP_ARN \
-2025-07-06T17:58:20.3019386Z         --health-check-interval-seconds 60 \
-2025-07-06T17:58:20.3019944Z         --health-check-timeout-seconds 10 \
-2025-07-06T17:58:20.3020461Z         --healthy-threshold-count 2 \
-2025-07-06T17:58:20.3020949Z         --unhealthy-threshold-count 5 \
-2025-07-06T17:58:20.3021420Z         --matcher HttpCode=200,301,302 \
-2025-07-06T17:58:20.3021894Z         --region $AWS_REGION >/dev/null 2>&1
-2025-07-06T17:58:20.3022464Z     log_success "Updated target group health check settings"
-2025-07-06T17:58:20.3023258Z fi3[1;33m✅ Docker image pushed to ECR[0m
-2025-07-06T17:58:20.3030470Z [0;34mℹ️  Step 6: Setting up Application Load Balancer...[0m
-2025-07-06T17:58:20.3031301Z 🔍 Checking Application Load Balancer...[0m
-2025-07-06T17:58:21.3275435Z if [ "$TARGET_GROUP_ARN" = "None" ]; then
-2025-07-06T17:58:21.3277708Z     log_info "Creating target group..."
-2025-07-06T17:58:21.3279818Z     TARGET_GROUP_ARN=$(aws elbv2 create-target-group \
-2025-07-06T17:58:21.3292453Z         --name $TARGET_GROUP_NAME \
-2025-07-06T17:58:21.3292886Z         --protocol HTTP \
-2025-07-06T17:58:21.3293252Z         --port 3000 \
-2025-07-06T17:58:21.3293592Z         --vpc-id $VPC_ID \
-2025-07-06T17:58:21.3295465Z         --target-type ip \
-2025-07-06T17:58:21.3295888Z         --health-check-path / \
-2025-07-06T17:58:21.3296395Z         --health-check-interval-seconds 60 \
-2025-07-06T17:58:21.3296947Z         --health-check-timeout-seconds 10 \
-2025-07-06T17:58:21.3297575Z         --healthy-threshold-count 2 \
-2025-07-06T17:58:21.3298075Z         --unhealthy-threshold-count 5 \
-2025-07-06T17:58:21.3298577Z         --matcher HttpCode=200,301,302 \
-2025-07-06T17:58:21.3299290Z         --query TargetGroups[0].TargetGroupArn \
-2025-07-06T17:58:21.3299764Z         --output text \
-2025-07-06T17:58:21.3300221Z         --region $AWS_REGION)
-2025-07-06T17:58:21.3300759Z     log_success "Created target group: $TARGET_GROUP_ARN"
-2025-07-06T17:58:21.3301255Z else
-2025-07-06T17:58:21.3301705Z     log_skip "Using existing target group: $TARGET_GROUP_ARN"
-2025-07-06T17:58:21.3302356Z     # Update health check settings for existing target group
-2025-07-06T17:58:21.3302943Z     aws elbv2 modify-target-group \
-2025-07-06T17:58:21.3303459Z         --target-group-arn $TARGET_GROUP_ARN \
-2025-07-06T17:58:21.3304013Z         --health-check-interval-seconds 60 \
-2025-07-06T17:58:21.3304549Z         --health-check-timeout-seconds 10 \
-2025-07-06T17:58:21.3305070Z         --healthy-threshold-count 2 \
-2025-07-06T17:58:21.3305553Z         --unhealthy-threshold-count 5 \
-2025-07-06T17:58:21.3306034Z         --matcher HttpCode=200,301,302 \
-2025-07-06T17:58:21.3306525Z         --region $AWS_REGION >/dev/null 2>&1
-2025-07-06T17:58:21.3307114Z     log_success "Updated target group health check settings"
-2025-07-06T17:58:21.3308732Z fi3[1;33m⏭️  Using existing ALB: arn:aws:elasticloadbalancing:eu-west-2:376129881409:loadbalancer/app/modulus-alb/b0ade2f1c5b73b71[0m
-2025-07-06T17:58:21.3310076Z 🔍 Checking target group...[0m
-2025-07-06T17:58:22.3243041Z if [ "$TARGET_GROUP_ARN" = "None" ]; then
-2025-07-06T17:58:22.3244623Z     log_info "Creating target group..."
-2025-07-06T17:58:22.3245201Z     TARGET_GROUP_ARN=$(aws elbv2 create-target-group \
-2025-07-06T17:58:22.3245749Z         --name $TARGET_GROUP_NAME \
-2025-07-06T17:58:22.3246186Z         --protocol HTTP \
-2025-07-06T17:58:22.3246559Z         --port 3000 \
-2025-07-06T17:58:22.3246905Z         --vpc-id $VPC_ID \
-2025-07-06T17:58:22.3247257Z         --target-type ip \
-2025-07-06T17:58:22.3247675Z         --health-check-path / \
-2025-07-06T17:58:22.3248170Z         --health-check-interval-seconds 60 \
-2025-07-06T17:58:22.3249927Z         --health-check-timeout-seconds 10 \
-2025-07-06T17:58:22.3250440Z         --healthy-threshold-count 2 \
-2025-07-06T17:58:22.3250961Z         --unhealthy-threshold-count 5 \
-2025-07-06T17:58:22.3251450Z         --matcher HttpCode=200,301,302 \
-2025-07-06T17:58:22.3251967Z         --query TargetGroups[0].TargetGroupArn \
-2025-07-06T17:58:22.3252334Z         --output text \
-2025-07-06T17:58:22.3252614Z         --region $AWS_REGION)
-2025-07-06T17:58:22.3253080Z     log_success "Created target group: $TARGET_GROUP_ARN"
-2025-07-06T17:58:22.3253558Z else
-2025-07-06T17:58:22.3253994Z     log_skip "Using existing target group: $TARGET_GROUP_ARN"
-2025-07-06T17:58:22.3254653Z     # Update health check settings for existing target group
-2025-07-06T17:58:22.3255216Z     aws elbv2 modify-target-group \
-2025-07-06T17:58:22.3255819Z         --target-group-arn $TARGET_GROUP_ARN \
-2025-07-06T17:58:22.3256344Z         --health-check-interval-seconds 60 \
-2025-07-06T17:58:22.3256887Z         --health-check-timeout-seconds 10 \
-2025-07-06T17:58:22.3257398Z         --healthy-threshold-count 2 \
-2025-07-06T17:58:22.3257901Z         --unhealthy-threshold-count 5 \
-2025-07-06T17:58:22.3259054Z         --matcher HttpCode=200,301,302 \
-2025-07-06T17:58:22.3260294Z         --region $AWS_REGION >/dev/null 2>&1
-2025-07-06T17:58:22.3261092Z     log_success "Updated target group health check settings"
-2025-07-06T17:58:22.3263076Z fi3[1;33m⏭️  Using existing target group: arn:aws:elasticloadbalancing:eu-west-2:376129881409:targetgroup/modulus-tg/0ca6ccfd67879646[0m
-2025-07-06T17:58:22.3264408Z 🔍 Checking ALB listener...[0m
-2025-07-06T17:58:23.3004779Z if [ "$TARGET_GROUP_ARN" = "None" ]; then
-2025-07-06T17:58:23.3006622Z     log_info "Creating target group..."
-2025-07-06T17:58:23.3007192Z     TARGET_GROUP_ARN=$(aws elbv2 create-target-group \
-2025-07-06T17:58:23.3007725Z         --name $TARGET_GROUP_NAME \
-2025-07-06T17:58:23.3008117Z         --protocol HTTP \
-2025-07-06T17:58:23.3008452Z         --port 3000 \
-2025-07-06T17:58:23.3008790Z         --vpc-id $VPC_ID \
-2025-07-06T17:58:23.3009409Z         --target-type ip \
-2025-07-06T17:58:23.3009823Z         --health-check-path / \
-2025-07-06T17:58:23.3010368Z         --health-check-interval-seconds 60 \
-2025-07-06T17:58:23.3010872Z         --health-check-timeout-seconds 10 \
-2025-07-06T17:58:23.3011337Z         --healthy-threshold-count 2 \
-2025-07-06T17:58:23.3011766Z         --unhealthy-threshold-count 5 \
-2025-07-06T17:58:23.3012254Z         --matcher HttpCode=200,301,302 \
-2025-07-06T17:58:23.3012757Z         --query TargetGroups[0].TargetGroupArn \
-2025-07-06T17:58:23.3013205Z         --output text \
-2025-07-06T17:58:23.3013563Z         --region $AWS_REGION)
-2025-07-06T17:58:23.3014068Z     log_success "Created target group: $TARGET_GROUP_ARN"
-2025-07-06T17:58:23.3014655Z else
-2025-07-06T17:58:23.3015093Z     log_skip "Using existing target group: $TARGET_GROUP_ARN"
-2025-07-06T17:58:23.3015762Z     # Update health check settings for existing target group
-2025-07-06T17:58:23.3016327Z     aws elbv2 modify-target-group \
-2025-07-06T17:58:23.3016801Z         --target-group-arn $TARGET_GROUP_ARN \
-2025-07-06T17:58:23.3017333Z         --health-check-interval-seconds 60 \
-2025-07-06T17:58:23.3017876Z         --health-check-timeout-seconds 10 \
-2025-07-06T17:58:23.3018395Z         --healthy-threshold-count 2 \
-2025-07-06T17:58:23.3018887Z         --unhealthy-threshold-count 5 \
-2025-07-06T17:58:23.3019646Z         --matcher HttpCode=200,301,302 \
-2025-07-06T17:58:23.3020127Z         --region $AWS_REGION >/dev/null 2>&1
-2025-07-06T17:58:23.3020704Z     log_success "Updated target group health check settings"
-2025-07-06T17:58:23.3021540Z fi3[1;33m⏭️  Using existing ALB listener[0m
-2025-07-06T17:58:23.3022283Z [0;34mℹ️  Step 7: Creating ECS task definition...[0m
-2025-07-06T17:58:24.3199430Z if [ "$TARGET_GROUP_ARN" = "None" ]; then
-2025-07-06T17:58:24.3201023Z     log_info "Creating target group..."
-2025-07-06T17:58:24.3201597Z     TARGET_GROUP_ARN=$(aws elbv2 create-target-group \
-2025-07-06T17:58:24.3202147Z         --name $TARGET_GROUP_NAME \
-2025-07-06T17:58:24.3202576Z         --protocol HTTP \
-2025-07-06T17:58:24.3202942Z         --port 3000 \
-2025-07-06T17:58:24.3203338Z         --vpc-id $VPC_ID \
-2025-07-06T17:58:24.3203695Z         --target-type ip \
-2025-07-06T17:58:24.3204125Z         --health-check-path / \
-2025-07-06T17:58:24.3204623Z         --health-check-interval-seconds 60 \
-2025-07-06T17:58:24.3205159Z         --health-check-timeout-seconds 10 \
-2025-07-06T17:58:24.3205648Z         --healthy-threshold-count 2 \
-2025-07-06T17:58:24.3206142Z         --unhealthy-threshold-count 5 \
-2025-07-06T17:58:24.3206887Z         --matcher HttpCode=200,301,302 \
-2025-07-06T17:58:24.3207419Z         --query TargetGroups[0].TargetGroupArn \
-2025-07-06T17:58:24.3207999Z         --output text \
-2025-07-06T17:58:24.3208543Z         --region $AWS_REGION)
-2025-07-06T17:58:24.3209407Z     log_success "Created target group: $TARGET_GROUP_ARN"
-2025-07-06T17:58:24.3209985Z else
-2025-07-06T17:58:24.3210778Z     log_skip "Using existing target group: $TARGET_GROUP_ARN"
-2025-07-06T17:58:24.3211605Z     # Update health check settings for existing target group
-2025-07-06T17:58:24.3233763Z     aws elbv2 modify-target-group \
-2025-07-06T17:58:24.3234328Z         --target-group-arn $TARGET_GROUP_ARN \
-2025-07-06T17:58:24.3234879Z         --health-check-interval-seconds 60 \
-2025-07-06T17:58:24.3235403Z         --health-check-timeout-seconds 10 \
-2025-07-06T17:58:24.3235911Z         --healthy-threshold-count 2 \
-2025-07-06T17:58:24.3236397Z         --unhealthy-threshold-count 5 \
-2025-07-06T17:58:24.3236889Z         --matcher HttpCode=200,301,302 \
-2025-07-06T17:58:24.3237375Z         --region $AWS_REGION >/dev/null 2>&1
-2025-07-06T17:58:24.3237955Z     log_success "Updated target group health check settings"
-2025-07-06T17:58:24.3238802Z fi3[1;33m✅ Task definition registered[0m
-2025-07-06T17:58:24.3241027Z [0;34mℹ️  Step 8: Creating/updating ECS service...[0m
-2025-07-06T17:58:24.3241696Z 🔍 Checking ECS service...[0m
-2025-07-06T17:58:25.3425553Z [0;34m🔄 Updating existing ECS service (zero downtime)...[0m
-2025-07-06T17:58:26.7424552Z if [ "$TARGET_GROUP_ARN" = "None" ]; then
-2025-07-06T17:58:26.7426071Z     log_info "Creating target group..."
-2025-07-06T17:58:26.7426983Z     TARGET_GROUP_ARN=$(aws elbv2 create-target-group \
-2025-07-06T17:58:26.7427815Z         --name $TARGET_GROUP_NAME \
-2025-07-06T17:58:26.7428428Z         --protocol HTTP \
-2025-07-06T17:58:26.7428974Z         --port 3000 \
-2025-07-06T17:58:26.7429796Z         --vpc-id $VPC_ID \
-2025-07-06T17:58:26.7430423Z         --target-type ip \
-2025-07-06T17:58:26.7431093Z         --health-check-path / \
-2025-07-06T17:58:26.7431795Z         --health-check-interval-seconds 60 \
-2025-07-06T17:58:26.7437636Z         --health-check-timeout-seconds 10 \
-2025-07-06T17:58:26.7438245Z         --healthy-threshold-count 2 \
-2025-07-06T17:58:26.7438738Z         --unhealthy-threshold-count 5 \
-2025-07-06T17:58:26.7439426Z         --matcher HttpCode=200,301,302 \
-2025-07-06T17:58:26.7439947Z         --query TargetGroups[0].TargetGroupArn \
-2025-07-06T17:58:26.7440422Z         --output text \
-2025-07-06T17:58:26.7440786Z         --region $AWS_REGION)
-2025-07-06T17:58:26.7441321Z     log_success "Created target group: $TARGET_GROUP_ARN"
-2025-07-06T17:58:26.7441768Z else
-2025-07-06T17:58:26.7442195Z     log_skip "Using existing target group: $TARGET_GROUP_ARN"
-2025-07-06T17:58:26.7442853Z     # Update health check settings for existing target group
-2025-07-06T17:58:26.7443396Z     aws elbv2 modify-target-group \
-2025-07-06T17:58:26.7443908Z         --target-group-arn $TARGET_GROUP_ARN \
-2025-07-06T17:58:26.7444470Z         --health-check-interval-seconds 60 \
-2025-07-06T17:58:26.7445018Z         --health-check-timeout-seconds 10 \
-2025-07-06T17:58:26.7445510Z         --healthy-threshold-count 2 \
-2025-07-06T17:58:26.7446016Z         --unhealthy-threshold-count 5 \
-2025-07-06T17:58:26.7446500Z         --matcher HttpCode=200,301,302 \
-2025-07-06T17:58:26.7446998Z         --region $AWS_REGION >/dev/null 2>&1
-2025-07-06T17:58:26.7447572Z     log_success "Updated target group health check settings"
-2025-07-06T17:58:26.7448465Z fi3[1;33m✅ Updated ECS service[0m
-2025-07-06T17:58:26.7449501Z [0;34mℹ️  Step 9: Waiting for deployment to complete...[0m
-2025-07-06T17:58:26.7450749Z [0;34mℹ️  This may take 5-10 minutes for containers to start and pass health checks...[0m
-2025-07-06T17:58:26.7451747Z [0;34mℹ️  Checking deployment status (attempt 1/20)...[0m
-2025-07-06T17:58:29.8032432Z [0;34mℹ️  Service status: PRIMARY, Running: 0/1[0m
-2025-07-06T17:58:29.8033750Z [0;34mℹ️  Waiting 30 seconds before next check...[0m
-2025-07-06T17:58:59.8092743Z [0;34mℹ️  Checking deployment status (attempt 2/20)...[0m
-2025-07-06T17:59:02.8290682Z [0;34mℹ️  Service status: PRIMARY, Running: 0/1[0m
-2025-07-06T17:59:02.8292982Z [0;34mℹ️  Waiting 30 seconds before next check...[0m
-2025-07-06T17:59:32.8308815Z [0;34mℹ️  Checking deployment status (attempt 3/20)...[0m
-2025-07-06T17:59:35.8748069Z [0;34mℹ️  Service status: PRIMARY, Running: 0/1[0m
-2025-07-06T17:59:35.8748896Z [0;34mℹ️  Waiting 30 seconds before next check...[0m
-2025-07-06T18:00:05.8766242Z [0;34mℹ️  Checking deployment status (attempt 4/20)...[0m
-2025-07-06T18:00:08.9695580Z [0;34mℹ️  Service status: PRIMARY, Running: 0/1[0m
-2025-07-06T18:00:08.9696801Z [0;34mℹ️  Waiting 30 seconds before next check...[0m
-2025-07-06T18:00:38.9714305Z [0;34mℹ️  Checking deployment status (attempt 5/20)...[0m
-2025-07-06T18:00:42.0031263Z [0;34mℹ️  Service status: PRIMARY, Running: 0/1[0m
-2025-07-06T18:00:42.0032492Z [0;34mℹ️  Waiting 30 seconds before next check...[0m
-2025-07-06T18:01:12.0048302Z [0;34mℹ️  Checking deployment status (attempt 6/20)...[0m
-2025-07-06T18:01:15.0376551Z [0;34mℹ️  Service status: PRIMARY, Running: 0/1[0m
-2025-07-06T18:01:15.0377816Z [0;34mℹ️  Waiting 30 seconds before next check...[0m
-2025-07-06T18:01:45.0394355Z [0;34mℹ️  Checking deployment status (attempt 7/20)...[0m
-2025-07-06T18:01:48.1077071Z [0;34mℹ️  Service status: PRIMARY, Running: 0/1[0m
-2025-07-06T18:01:48.1078304Z [0;34mℹ️  Waiting 30 seconds before next check...[0m
-2025-07-06T18:02:18.1096460Z [0;34mℹ️  Checking deployment status (attempt 8/20)...[0m
-2025-07-06T18:02:21.0864313Z [0;34mℹ️  Service status: PRIMARY, Running: 0/1[0m
-2025-07-06T18:02:21.0865407Z [0;34mℹ️  Waiting 30 seconds before next check...[0m
-2025-07-06T18:02:51.0882525Z [0;34mℹ️  Checking deployment status (attempt 9/20)...[0m
-2025-07-06T18:02:54.1742067Z [0;34mℹ️  Service status: PRIMARY, Running: 0/1[0m
-2025-07-06T18:02:54.1743166Z [0;34mℹ️  Waiting 30 seconds before next check...[0m
-2025-07-06T18:03:24.1762968Z [0;34mℹ️  Checking deployment status (attempt 10/20)...[0m
-2025-07-06T18:03:27.1698423Z [0;34mℹ️  Service status: PRIMARY, Running: 0/1[0m
-2025-07-06T18:03:27.1699973Z [0;34mℹ️  Waiting 30 seconds before next check...[0m
-2025-07-06T18:03:57.1716603Z [0;34mℹ️  Checking deployment status (attempt 11/20)...[0m
-2025-07-06T18:04:00.2376780Z [0;34mℹ️  Service status: PRIMARY, Running: 0/1[0m
-2025-07-06T18:04:00.2379524Z [0;34mℹ️  Waiting 30 seconds before next check...[0m
-2025-07-06T18:04:30.2395066Z [0;34mℹ️  Checking deployment status (attempt 12/20)...[0m
-2025-07-06T18:04:33.2169626Z [0;34mℹ️  Service status: PRIMARY, Running: 0/1[0m
-2025-07-06T18:04:33.2170872Z [0;34mℹ️  Waiting 30 seconds before next check...[0m
-2025-07-06T18:05:03.2188169Z [0;34mℹ️  Checking deployment status (attempt 13/20)...[0m
-2025-07-06T18:05:06.2588961Z [0;34mℹ️  Service status: PRIMARY, Running: 0/1[0m
-2025-07-06T18:05:06.2591676Z [0;34mℹ️  Waiting 30 seconds before next check...[0m
-2025-07-06T18:05:36.2607258Z [0;34mℹ️  Checking deployment status (attempt 14/20)...[0m
-2025-07-06T18:05:39.2571835Z [0;34mℹ️  Service status: PRIMARY, Running: 0/1[0m
-2025-07-06T18:05:39.2573074Z [0;34mℹ️  Waiting 30 seconds before next check...[0m
-2025-07-06T18:06:09.2590265Z [0;34mℹ️  Checking deployment status (attempt 15/20)...[0m
-2025-07-06T18:06:12.2780591Z [0;34mℹ️  Service status: PRIMARY, Running: 0/1[0m
-2025-07-06T18:06:12.2782018Z [0;34mℹ️  Waiting 30 seconds before next check...[0m
-2025-07-06T18:06:42.2798451Z [0;34mℹ️  Checking deployment status (attempt 16/20)...[0m
-2025-07-06T18:06:45.2601567Z [0;34mℹ️  Service status: PRIMARY, Running: 0/1[0m
-2025-07-06T18:06:45.2602840Z [0;34mℹ️  Waiting 30 seconds before next check...[0m
-2025-07-06T18:07:15.2619940Z [0;34mℹ️  Checking deployment status (attempt 17/20)...[0m
-2025-07-06T18:07:18.3048441Z [0;34mℹ️  Service status: PRIMARY, Running: 0/1[0m
-2025-07-06T18:07:18.3049870Z [0;34mℹ️  Waiting 30 seconds before next check...[0m
-2025-07-06T18:07:48.3066942Z [0;34mℹ️  Checking deployment status (attempt 18/20)...[0m
-2025-07-06T18:07:51.2882148Z [0;34mℹ️  Service status: PRIMARY, Running: 0/1[0m
-2025-07-06T18:07:51.2883474Z [0;34mℹ️  Waiting 30 seconds before next check...[0m
-2025-07-06T18:08:21.2900182Z [0;34mℹ️  Checking deployment status (attempt 19/20)...[0m
-2025-07-06T18:08:24.3256328Z [0;34mℹ️  Service status: PRIMARY, Running: 0/1[0m
-2025-07-06T18:08:24.3258183Z [0;34mℹ️  Waiting 30 seconds before next check...[0m
-2025-07-06T18:08:54.3275096Z [0;34mℹ️  Checking deployment status (attempt 20/20)...[0m
-2025-07-06T18:08:57.3856184Z [0;34mℹ️  Service status: PRIMARY, Running: 0/1[0m
-2025-07-06T18:08:57.3858085Z [0;34mℹ️  Waiting 30 seconds before next check...[0m
-2025-07-06T18:09:27.3875451Z ⚠️  Deployment check timed out, but service may still be starting...[0m
-2025-07-06T18:09:27.3877242Z [0;34mℹ️  Check AWS Console for detailed status[0m
-2025-07-06T18:09:28.3807195Z 
-2025-07-06T18:09:28.3808310Z ==============================================
-2025-07-06T18:09:28.3810400Z if [ "$TARGET_GROUP_ARN" = "None" ]; then
-2025-07-06T18:09:28.3810896Z     log_info "Creating target group..."
-2025-07-06T18:09:28.3811446Z     TARGET_GROUP_ARN=$(aws elbv2 create-target-group \
-2025-07-06T18:09:28.3811996Z         --name $TARGET_GROUP_NAME \
-2025-07-06T18:09:28.3812402Z         --protocol HTTP \
-2025-07-06T18:09:28.3812748Z         --port 3000 \
-2025-07-06T18:09:28.3813087Z         --vpc-id $VPC_ID \
-2025-07-06T18:09:28.3813446Z         --target-type ip \
-2025-07-06T18:09:28.3813914Z         --health-check-path / \
-2025-07-06T18:09:28.3814393Z         --health-check-interval-seconds 60 \
-2025-07-06T18:09:28.3814943Z         --health-check-timeout-seconds 10 \
-2025-07-06T18:09:28.3815450Z         --healthy-threshold-count 2 \
-2025-07-06T18:09:28.3815953Z         --unhealthy-threshold-count 5 \
-2025-07-06T18:09:28.3816446Z         --matcher HttpCode=200,301,302 \
-2025-07-06T18:09:28.3816953Z         --query TargetGroups[0].TargetGroupArn \
-2025-07-06T18:09:28.3817397Z         --output text \
-2025-07-06T18:09:28.3817754Z         --region $AWS_REGION)
-2025-07-06T18:09:28.3818256Z     log_success "Created target group: $TARGET_GROUP_ARN"
-2025-07-06T18:09:28.3818721Z else
-2025-07-06T18:09:28.3819351Z     log_skip "Using existing target group: $TARGET_GROUP_ARN"
-2025-07-06T18:09:28.3819993Z     # Update health check settings for existing target group
-2025-07-06T18:09:28.3820543Z     aws elbv2 modify-target-group \
-2025-07-06T18:09:28.3821043Z         --target-group-arn $TARGET_GROUP_ARN \
-2025-07-06T18:09:28.3821587Z         --health-check-interval-seconds 60 \
-2025-07-06T18:09:28.3822136Z         --health-check-timeout-seconds 10 \
-2025-07-06T18:09:28.3822656Z         --healthy-threshold-count 2 \
-2025-07-06T18:09:28.3823151Z         --unhealthy-threshold-count 5 \
-2025-07-06T18:09:28.3823639Z         --matcher HttpCode=200,301,302 \
-2025-07-06T18:09:28.3824125Z         --region $AWS_REGION >/dev/null 2>&1
-2025-07-06T18:09:28.3824702Z     log_success "Updated target group health check settings"
-2025-07-06T18:09:28.3825518Z fi3[1;33m✅ 🎉 SMART Deployment Complete![0m
-2025-07-06T18:09:28.3826068Z ==============================================
-2025-07-06T18:09:28.3826661Z if [ "$TARGET_GROUP_ARN" = "None" ]; then
-2025-07-06T18:09:28.3827162Z     log_info "Creating target group..."
-2025-07-06T18:09:28.3827723Z     TARGET_GROUP_ARN=$(aws elbv2 create-target-group \
-2025-07-06T18:09:28.3828284Z         --name $TARGET_GROUP_NAME \
-2025-07-06T18:09:28.3828722Z         --protocol HTTP \
-2025-07-06T18:09:28.3829090Z         --port 3000 \
-2025-07-06T18:09:28.3829743Z         --vpc-id $VPC_ID \
-2025-07-06T18:09:28.3830137Z         --target-type ip \
-2025-07-06T18:09:28.3830554Z         --health-check-path / \
-2025-07-06T18:09:28.3831040Z         --health-check-interval-seconds 60 \
-2025-07-06T18:09:28.3831581Z         --health-check-timeout-seconds 10 \
-2025-07-06T18:09:28.3832113Z         --healthy-threshold-count 2 \
-2025-07-06T18:09:28.3832612Z         --unhealthy-threshold-count 5 \
-2025-07-06T18:09:28.3833096Z         --matcher HttpCode=200,301,302 \
-2025-07-06T18:09:28.3833612Z         --query TargetGroups[0].TargetGroupArn \
-2025-07-06T18:09:28.3834080Z         --output text \
-2025-07-06T18:09:28.3834442Z         --region $AWS_REGION)
-2025-07-06T18:09:28.3834964Z     log_success "Created target group: $TARGET_GROUP_ARN"
-2025-07-06T18:09:28.3835431Z else
-2025-07-06T18:09:28.3835890Z     log_skip "Using existing target group: $TARGET_GROUP_ARN"
-2025-07-06T18:09:28.3836977Z     # Update health check settings for existing target group
-2025-07-06T18:09:28.3837847Z     aws elbv2 modify-target-group \
-2025-07-06T18:09:28.3838365Z         --target-group-arn $TARGET_GROUP_ARN \
-2025-07-06T18:09:28.3838908Z         --health-check-interval-seconds 60 \
-2025-07-06T18:09:28.3839885Z         --health-check-timeout-seconds 10 \
-2025-07-06T18:09:28.3840421Z         --healthy-threshold-count 2 \
-2025-07-06T18:09:28.3840919Z         --unhealthy-threshold-count 5 \
-2025-07-06T18:09:28.3841416Z         --matcher HttpCode=200,301,302 \
-2025-07-06T18:09:28.3841907Z         --region $AWS_REGION >/dev/null 2>&1
-2025-07-06T18:09:28.3842485Z     log_success "Updated target group health check settings"
-2025-07-06T18:09:28.3843696Z fi3[1;33m✅ Application URL: http://modulus-alb-2046761654.eu-west-2.elb.amazonaws.com[0m
-2025-07-06T18:09:28.3844913Z if [ "$TARGET_GROUP_ARN" = "None" ]; then
-2025-07-06T18:09:28.3845560Z     log_info "Creating target group..."
-2025-07-06T18:09:28.3846264Z     TARGET_GROUP_ARN=$(aws elbv2 create-target-group \
-2025-07-06T18:09:28.3846978Z         --name $TARGET_GROUP_NAME \
-2025-07-06T18:09:28.3847515Z         --protocol HTTP \
-2025-07-06T18:09:28.3847993Z         --port 3000 \
-2025-07-06T18:09:28.3848443Z         --vpc-id $VPC_ID \
-2025-07-06T18:09:28.3848919Z         --target-type ip \
-2025-07-06T18:09:28.3849576Z         --health-check-path / \
-2025-07-06T18:09:28.3850173Z         --health-check-interval-seconds 60 \
-2025-07-06T18:09:28.3850810Z         --health-check-timeout-seconds 10 \
-2025-07-06T18:09:28.3851447Z         --healthy-threshold-count 2 \
-2025-07-06T18:09:28.3852052Z         --unhealthy-threshold-count 5 \
-2025-07-06T18:09:28.3852650Z         --matcher HttpCode=200,301,302 \
-2025-07-06T18:09:28.3853255Z         --query TargetGroups[0].TargetGroupArn \
-2025-07-06T18:09:28.3853829Z         --output text \
-2025-07-06T18:09:28.3854211Z         --region $AWS_REGION)
-2025-07-06T18:09:28.3855862Z     log_success "Created target group: $TARGET_GROUP_ARN"
-2025-07-06T18:09:28.3857443Z else
-2025-07-06T18:09:28.3857945Z     log_skip "Using existing target group: $TARGET_GROUP_ARN"
-2025-07-06T18:09:28.3858635Z     # Update health check settings for existing target group
-2025-07-06T18:09:28.3859422Z     aws elbv2 modify-target-group \
-2025-07-06T18:09:28.3859950Z         --target-group-arn $TARGET_GROUP_ARN \
-2025-07-06T18:09:28.3860506Z         --health-check-interval-seconds 60 \
-2025-07-06T18:09:28.3861063Z         --health-check-timeout-seconds 10 \
-2025-07-06T18:09:28.3861590Z         --healthy-threshold-count 2 \
-2025-07-06T18:09:28.3862069Z         --unhealthy-threshold-count 5 \
-2025-07-06T18:09:28.3862506Z         --matcher HttpCode=200,301,302 \
-2025-07-06T18:09:28.3863031Z         --region $AWS_REGION >/dev/null 2>&1
-2025-07-06T18:09:28.3863728Z     log_success "Updated target group health check settings"
-2025-07-06T18:09:28.3864619Z fi3[1;33m✅ Deployment Type: UPDATE (Zero Downtime)[0m
-2025-07-06T18:09:28.3865296Z if [ "$TARGET_GROUP_ARN" = "None" ]; then
-2025-07-06T18:09:28.3865796Z     log_info "Creating target group..."
-2025-07-06T18:09:28.3866363Z     TARGET_GROUP_ARN=$(aws elbv2 create-target-group \
-2025-07-06T18:09:28.3866915Z         --name $TARGET_GROUP_NAME \
-2025-07-06T18:09:28.3867333Z         --protocol HTTP \
-2025-07-06T18:09:28.3867687Z         --port 3000 \
-2025-07-06T18:09:28.3868028Z         --vpc-id $VPC_ID \
-2025-07-06T18:09:28.3868398Z         --target-type ip \
-2025-07-06T18:09:28.3868799Z         --health-check-path / \
-2025-07-06T18:09:28.3869962Z         --health-check-interval-seconds 60 \
-2025-07-06T18:09:28.3870701Z         --health-check-timeout-seconds 10 \
-2025-07-06T18:09:28.3871228Z         --healthy-threshold-count 2 \
-2025-07-06T18:09:28.3871733Z         --unhealthy-threshold-count 5 \
-2025-07-06T18:09:28.3872217Z         --matcher HttpCode=200,301,302 \
-2025-07-06T18:09:28.3872831Z         --query TargetGroups[0].TargetGroupArn \
-2025-07-06T18:09:28.3873287Z         --output text \
-2025-07-06T18:09:28.3873644Z         --region $AWS_REGION)
-2025-07-06T18:09:28.3874539Z     log_success "Created target group: $TARGET_GROUP_ARN"
-2025-07-06T18:09:28.3875009Z else
-2025-07-06T18:09:28.3875428Z     log_skip "Using existing target group: $TARGET_GROUP_ARN"
-2025-07-06T18:09:28.3876096Z     # Update health check settings for existing target group
-2025-07-06T18:09:28.3876656Z     aws elbv2 modify-target-group \
-2025-07-06T18:09:28.3877166Z         --target-group-arn $TARGET_GROUP_ARN \
-2025-07-06T18:09:28.3877719Z         --health-check-interval-seconds 60 \
-2025-07-06T18:09:28.3878263Z         --health-check-timeout-seconds 10 \
-2025-07-06T18:09:28.3878787Z         --healthy-threshold-count 2 \
-2025-07-06T18:09:28.3879464Z         --unhealthy-threshold-count 5 \
-2025-07-06T18:09:28.3879940Z         --matcher HttpCode=200,301,302 \
-2025-07-06T18:09:28.3880426Z         --region $AWS_REGION >/dev/null 2>&1
-2025-07-06T18:09:28.3881079Z     log_success "Updated target group health check settings"
-2025-07-06T18:09:28.3881781Z fi3[1;33m✅ Region: eu-west-2[0m
-2025-07-06T18:09:28.3882401Z if [ "$TARGET_GROUP_ARN" = "None" ]; then
-2025-07-06T18:09:28.3882911Z     log_info "Creating target group..."
-2025-07-06T18:09:28.3883454Z     TARGET_GROUP_ARN=$(aws elbv2 create-target-group \
-2025-07-06T18:09:28.3885460Z         --name $TARGET_GROUP_NAME \
-2025-07-06T18:09:28.3885886Z         --protocol HTTP \
-2025-07-06T18:09:28.3886244Z         --port 3000 \
-2025-07-06T18:09:28.3886559Z         --vpc-id $VPC_ID \
-2025-07-06T18:09:28.3886884Z         --target-type ip \
-2025-07-06T18:09:28.3887250Z         --health-check-path / \
-2025-07-06T18:09:28.3887693Z         --health-check-interval-seconds 60 \
-2025-07-06T18:09:28.3888196Z         --health-check-timeout-seconds 10 \
-2025-07-06T18:09:28.3888674Z         --healthy-threshold-count 2 \
-2025-07-06T18:09:28.3892484Z         --unhealthy-threshold-count 5 \
-2025-07-06T18:09:28.3893298Z         --matcher HttpCode=200,301,302 \
-2025-07-06T18:09:28.3893821Z         --query TargetGroups[0].TargetGroupArn \
-2025-07-06T18:09:28.3894279Z         --output text \
-2025-07-06T18:09:28.3894634Z         --region $AWS_REGION)
-2025-07-06T18:09:28.3895143Z     log_success "Created target group: $TARGET_GROUP_ARN"
-2025-07-06T18:09:28.3895596Z else
-2025-07-06T18:09:28.3896039Z     log_skip "Using existing target group: $TARGET_GROUP_ARN"
-2025-07-06T18:09:28.3896684Z     # Update health check settings for existing target group
-2025-07-06T18:09:28.3897226Z     aws elbv2 modify-target-group \
-2025-07-06T18:09:28.3897714Z         --target-group-arn $TARGET_GROUP_ARN \
-2025-07-06T18:09:28.3898238Z         --health-check-interval-seconds 60 \
-2025-07-06T18:09:28.3898608Z         --health-check-timeout-seconds 10 \
-2025-07-06T18:09:28.3898892Z         --healthy-threshold-count 2 \
-2025-07-06T18:09:28.3899458Z         --unhealthy-threshold-count 5 \
-2025-07-06T18:09:28.3899761Z         --matcher HttpCode=200,301,302 \
-2025-07-06T18:09:28.3900042Z         --region $AWS_REGION >/dev/null 2>&1
-2025-07-06T18:09:28.3900380Z     log_success "Updated target group health check settings"
-2025-07-06T18:09:28.3900840Z fi3[1;33m✅ Cluster: modulus-cluster[0m
-2025-07-06T18:09:28.3901183Z if [ "$TARGET_GROUP_ARN" = "None" ]; then
-2025-07-06T18:09:28.3901470Z     log_info "Creating target group..."
-2025-07-06T18:09:28.3901778Z     TARGET_GROUP_ARN=$(aws elbv2 create-target-group \
-2025-07-06T18:09:28.3902086Z         --name $TARGET_GROUP_NAME \
-2025-07-06T18:09:28.3902323Z         --protocol HTTP \
-2025-07-06T18:09:28.3902526Z         --port 3000 \
-2025-07-06T18:09:28.3902716Z         --vpc-id $VPC_ID \
-2025-07-06T18:09:28.3902927Z         --target-type ip \
-2025-07-06T18:09:28.3903162Z         --health-check-path / \
-2025-07-06T18:09:28.3903432Z         --health-check-interval-seconds 60 \
-2025-07-06T18:09:28.3903725Z         --health-check-timeout-seconds 10 \
-2025-07-06T18:09:28.3904011Z         --healthy-threshold-count 2 \
-2025-07-06T18:09:28.3904296Z         --unhealthy-threshold-count 5 \
-2025-07-06T18:09:28.3904575Z         --matcher HttpCode=200,301,302 \
-2025-07-06T18:09:28.3905149Z         --query TargetGroups[0].TargetGroupArn \
-2025-07-06T18:09:28.3905417Z         --output text \
-2025-07-06T18:09:28.3905618Z         --region $AWS_REGION)
-2025-07-06T18:09:28.3905912Z     log_success "Created target group: $TARGET_GROUP_ARN"
-2025-07-06T18:09:28.3906175Z else
-2025-07-06T18:09:28.3906426Z     log_skip "Using existing target group: $TARGET_GROUP_ARN"
-2025-07-06T18:09:28.3906799Z     # Update health check settings for existing target group
-2025-07-06T18:09:28.3907118Z     aws elbv2 modify-target-group \
-2025-07-06T18:09:28.3907405Z         --target-group-arn $TARGET_GROUP_ARN \
-2025-07-06T18:09:28.3907702Z         --health-check-interval-seconds 60 \
-2025-07-06T18:09:28.3907997Z         --health-check-timeout-seconds 10 \
-2025-07-06T18:09:28.3908277Z         --healthy-threshold-count 2 \
-2025-07-06T18:09:28.3908549Z         --unhealthy-threshold-count 5 \
-2025-07-06T18:09:28.3908812Z         --matcher HttpCode=200,301,302 \
-2025-07-06T18:09:28.3909088Z         --region $AWS_REGION >/dev/null 2>&1
-2025-07-06T18:09:28.3909739Z     log_success "Updated target group health check settings"
-2025-07-06T18:09:28.3910152Z fi3[1;33m✅ Service: modulus-service[0m
-2025-07-06T18:09:28.3910316Z 
-2025-07-06T18:09:28.3910437Z 📊 Resource Status:
-2025-07-06T18:09:28.3910675Z   VPC: ♻️  Reused (Default)
-2025-07-06T18:09:28.3910945Z   Subnets: ♻️  Reused (Default)
-2025-07-06T18:09:28.3911200Z   Security Group: ♻️  Reused
-2025-07-06T18:09:28.3911445Z   ECR Repository: 🆕 Created
-2025-07-06T18:09:28.3911687Z   ECS Cluster: ♻️  Reused
-2025-07-06T18:09:28.3911923Z   Load Balancer: ♻️  Reused
-2025-07-06T18:09:28.3912160Z   Target Group: ♻️  Reused
-2025-07-06T18:09:28.3912413Z   ECS Service: 🔄 Updated
-2025-07-06T18:09:28.3912547Z 
-2025-07-06T18:09:28.3912866Z [0;34mℹ️  Note: It may take 2-3 minutes for the health checks to pass[0m
-2025-07-06T18:09:28.3913401Z [0;34mℹ️  Check the ALB target group health in AWS Console if needed[0m
-2025-07-06T18:09:28.3913646Z 
-2025-07-06T18:09:28.3913837Z if [ "$TARGET_GROUP_ARN" = "None" ]; then
-2025-07-06T18:09:28.3914132Z     log_info "Creating target group..."
-2025-07-06T18:09:28.3914453Z     TARGET_GROUP_ARN=$(aws elbv2 create-target-group \
-2025-07-06T18:09:28.3914762Z         --name $TARGET_GROUP_NAME \
-2025-07-06T18:09:28.3915003Z         --protocol HTTP \
-2025-07-06T18:09:28.3915215Z         --port 3000 \
-2025-07-06T18:09:28.3915406Z         --vpc-id $VPC_ID \
-2025-07-06T18:09:28.3915614Z         --target-type ip \
-2025-07-06T18:09:28.3915845Z         --health-check-path / \
-2025-07-06T18:09:28.3916117Z         --health-check-interval-seconds 60 \
-2025-07-06T18:09:28.3916415Z         --health-check-timeout-seconds 10 \
-2025-07-06T18:09:28.3916716Z         --healthy-threshold-count 2 \
-2025-07-06T18:09:28.3916998Z         --unhealthy-threshold-count 5 \
-2025-07-06T18:09:28.3917271Z         --matcher HttpCode=200,301,302 \
-2025-07-06T18:09:28.3917559Z         --query TargetGroups[0].TargetGroupArn \
-2025-07-06T18:09:28.3917817Z         --output text \
-2025-07-06T18:09:28.3918028Z         --region $AWS_REGION)
-2025-07-06T18:09:28.3918319Z     log_success "Created target group: $TARGET_GROUP_ARN"
-2025-07-06T18:09:28.3918584Z else
-2025-07-06T18:09:28.3918832Z     log_skip "Using existing target group: $TARGET_GROUP_ARN"
-2025-07-06T18:09:28.3919857Z     # Update health check settings for existing target group
-2025-07-06T18:09:28.3920206Z     aws elbv2 modify-target-group \
-2025-07-06T18:09:28.3920497Z         --target-group-arn $TARGET_GROUP_ARN \
-2025-07-06T18:09:28.3920812Z         --health-check-interval-seconds 60 \
-2025-07-06T18:09:28.3921112Z         --health-check-timeout-seconds 10 \
-2025-07-06T18:09:28.3921403Z         --healthy-threshold-count 2 \
-2025-07-06T18:09:28.3921672Z         --unhealthy-threshold-count 5 \
-2025-07-06T18:09:28.3921947Z         --matcher HttpCode=200,301,302 \
-2025-07-06T18:09:28.3922223Z         --region $AWS_REGION >/dev/null 2>&1
-2025-07-06T18:09:28.3922551Z     log_success "Updated target group health check settings"
-2025-07-06T18:09:28.3923313Z fi3[1;33m✅ 🚀 Modulus LMS is now deployed and accessible![0m
-2025-07-06T18:09:28.3975192Z ##[group]Run echo "🎉 Smart Deployment completed successfully!"
-2025-07-06T18:09:28.3975629Z [36;1mecho "🎉 Smart Deployment completed successfully!"[0m
-2025-07-06T18:09:28.3975959Z [36;1mecho "🔗 Check AWS Console for ALB DNS name"[0m
-2025-07-06T18:09:28.3976237Z [36;1mecho "📍 Region: eu-west-2"[0m
-2025-07-06T18:09:28.3976552Z [36;1mecho "⏱️ Allow 2-3 minutes for health checks to pass"[0m
-2025-07-06T18:09:28.3976842Z [36;1mecho ""[0m
-2025-07-06T18:09:28.3977024Z [36;1mecho "✨ Smart Features:"[0m
-2025-07-06T18:09:28.3977274Z [36;1mecho "  - ♻️  Reuses existing resources"[0m
-2025-07-06T18:09:28.3977567Z [36;1mecho "  - 🔄 Zero-downtime service updates"[0m
-2025-07-06T18:09:28.3977855Z [36;1mecho "  - 🔍 Checks infrastructure state"[0m
-2025-07-06T18:09:28.3978138Z [36;1mecho "  - 💚 Idempotent deployments"[0m
-2025-07-06T18:09:28.4038239Z shell: /usr/bin/bash -e {0}
-2025-07-06T18:09:28.4038487Z env:
-2025-07-06T18:09:28.4038658Z   AWS_REGION: eu-west-2
-2025-07-06T18:09:28.4038894Z   AWS_DEFAULT_REGION: eu-west-2
-2025-07-06T18:09:28.4039370Z   AWS_ACCESS_KEY_ID: ***
-2025-07-06T18:09:28.4039665Z   AWS_SECRET_ACCESS_KEY: ***
-2025-07-06T18:09:28.4039872Z ##[endgroup]
-2025-07-06T18:09:28.4117292Z 🎉 Smart Deployment completed successfully!
-2025-07-06T18:09:28.4118824Z 🔗 Check AWS Console for ALB DNS name
-2025-07-06T18:09:28.4119534Z 📍 Region: eu-west-2
-2025-07-06T18:09:28.4120599Z ⏱️ Allow 2-3 minutes for health checks to pass
-2025-07-06T18:09:28.4120948Z 
-2025-07-06T18:09:28.4121177Z ✨ Smart Features:
-2025-07-06T18:09:28.4121641Z   - ♻️  Reuses existing resources
-2025-07-06T18:09:28.4122169Z   - 🔄 Zero-downtime service updates
-2025-07-06T18:09:28.4122694Z   - 🔍 Checks infrastructure state
-2025-07-06T18:09:28.4123163Z   - 💚 Idempotent deployments
-2025-07-06T18:09:28.4183376Z Post job cleanup.
-2025-07-06T18:09:28.8741222Z ##[group]Removing builder
-2025-07-06T18:09:28.9913902Z [command]/usr/bin/docker buildx rm builder-e2b8f1c6-011f-4b50-b5d6-35fb0c660e28
-2025-07-06T18:09:29.1873964Z builder-e2b8f1c6-011f-4b50-b5d6-35fb0c660e28 removed
-2025-07-06T18:09:29.1981356Z ##[endgroup]
-2025-07-06T18:09:29.1988931Z ##[group]Cleaning up certificates
-2025-07-06T18:09:29.2003336Z ##[endgroup]
-2025-07-06T18:09:29.2008539Z ##[group]Post cache
-2025-07-06T18:09:29.2015715Z State not set
-2025-07-06T18:09:29.2019914Z ##[endgroup]
-2025-07-06T18:09:29.2244476Z Post job cleanup.
-2025-07-06T18:09:29.3906311Z Post job cleanup.
-2025-07-06T18:09:29.5934664Z [command]/usr/bin/tar --posix -cf cache.tzst --exclude cache.tzst -P -C /home/runner/work/Modulus/Modulus --files-from manifest.txt --use-compress-program zstdmt
-2025-07-06T18:09:31.2153738Z Sent 35308665 of 169526393 (20.8%), 33.6 MBs/sec
-2025-07-06T18:09:31.4922768Z Sent 169526393 of 169526393 (100.0%), 126.5 MBs/sec
-2025-07-06T18:09:31.5818809Z Cache saved with the key: node-cache-Linux-x64-npm-6269515aa38ede3f790ddef7296652b19b78e99e5b2cba2b8e23cbacc7464a22
-2025-07-06T18:09:31.5978488Z Post job cleanup.
-2025-07-06T18:09:31.6965404Z [command]/usr/bin/git version
-2025-07-06T18:09:31.7007378Z git version 2.49.0
-2025-07-06T18:09:31.7055556Z Temporarily overriding HOME='/home/runner/work/_temp/f3c0b0e2-3956-4970-8f02-fd5092d80de2' before making global git config changes
-2025-07-06T18:09:31.7058264Z Adding repository directory to the temporary git global config as a safe directory
-2025-07-06T18:09:31.7063296Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Modulus/Modulus
-2025-07-06T18:09:31.7106449Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
-2025-07-06T18:09:31.7142442Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
-2025-07-06T18:09:31.7387914Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
-2025-07-06T18:09:31.7412908Z http.https://github.com/.extraheader
-2025-07-06T18:09:31.7426944Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
-2025-07-06T18:09:31.7461023Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
-2025-07-06T18:09:31.7805567Z Cleaning up orphan processes
+﻿2025-07-07T10:50:24.7647516Z Current runner version: '2.325.0'
+2025-07-07T10:50:24.7723998Z ##[group]Operating System
+2025-07-07T10:50:24.7725082Z Ubuntu
+2025-07-07T10:50:24.7725845Z 24.04.2
+2025-07-07T10:50:24.7726739Z LTS
+2025-07-07T10:50:24.7727461Z ##[endgroup]
+2025-07-07T10:50:24.7728292Z ##[group]Runner Image
+2025-07-07T10:50:24.7729426Z Image: ubuntu-24.04
+2025-07-07T10:50:24.7743894Z Version: 20250629.1.0
+2025-07-07T10:50:24.7745573Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20250629.1/images/ubuntu/Ubuntu2404-Readme.md
+2025-07-07T10:50:24.7748142Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20250629.1
+2025-07-07T10:50:24.7750072Z ##[endgroup]
+2025-07-07T10:50:24.7750893Z ##[group]Runner Image Provisioner
+2025-07-07T10:50:24.7752069Z 2.0.449.1
+2025-07-07T10:50:24.7752851Z ##[endgroup]
+2025-07-07T10:50:24.7754809Z ##[group]GITHUB_TOKEN Permissions
+2025-07-07T10:50:24.7757600Z Contents: read
+2025-07-07T10:50:24.7758491Z Metadata: read
+2025-07-07T10:50:24.7760118Z Packages: read
+2025-07-07T10:50:24.7761066Z ##[endgroup]
+2025-07-07T10:50:24.7764111Z Secret source: Actions
+2025-07-07T10:50:24.7765403Z Prepare workflow directory
+2025-07-07T10:50:24.8898231Z Prepare all required actions
+2025-07-07T10:50:24.9018473Z Getting action download info
+2025-07-07T10:50:25.3627132Z ##[group]Download immutable action package 'actions/checkout@v4'
+2025-07-07T10:50:25.3629291Z Version: 4.2.2
+2025-07-07T10:50:25.3631541Z Digest: sha256:ccb2698953eaebd21c7bf6268a94f9c26518a7e38e27e0b83c1fe1ad049819b1
+2025-07-07T10:50:25.3633836Z Source commit SHA: 11bd71901bbe5b1630ceea73d27597364c9af683
+2025-07-07T10:50:25.3635244Z ##[endgroup]
+2025-07-07T10:50:25.4568772Z ##[group]Download immutable action package 'actions/setup-node@v4'
+2025-07-07T10:50:25.4569913Z Version: 4.4.0
+2025-07-07T10:50:25.4570837Z Digest: sha256:9427cefe82346e992fb5b949e3569b39d537ae41aa3086483b14eceebfc16bc1
+2025-07-07T10:50:25.4571803Z Source commit SHA: 49933ea5288caeca8642d1e84afbd3f7d6820020
+2025-07-07T10:50:25.4572534Z ##[endgroup]
+2025-07-07T10:50:25.5590350Z Download action repository 'aws-actions/configure-aws-credentials@v4' (SHA:e3dd6a429d7300a6a4c196c26e071d42e0343502)
+2025-07-07T10:50:25.9798551Z ##[group]Download immutable action package 'docker/setup-buildx-action@v3'
+2025-07-07T10:50:25.9799429Z Version: 3.11.1
+2025-07-07T10:50:25.9800516Z Digest: sha256:b58e632d2d812e161c8abeba6def9f56b420aa9ae41d825a8408241bcad0f303
+2025-07-07T10:50:25.9801497Z Source commit SHA: e468171a9de216ec08956ac3ada2f0791b6bd435
+2025-07-07T10:50:25.9802227Z ##[endgroup]
+2025-07-07T10:50:26.5268926Z Complete job name: deploy
+2025-07-07T10:50:26.5952394Z ##[group]Run actions/checkout@v4
+2025-07-07T10:50:26.5953344Z with:
+2025-07-07T10:50:26.5953827Z   repository: mahtabmehek/Modulus
+2025-07-07T10:50:26.5954562Z   token: ***
+2025-07-07T10:50:26.5955028Z   ssh-strict: true
+2025-07-07T10:50:26.5955493Z   ssh-user: git
+2025-07-07T10:50:26.5955963Z   persist-credentials: true
+2025-07-07T10:50:26.5956504Z   clean: true
+2025-07-07T10:50:26.5956990Z   sparse-checkout-cone-mode: true
+2025-07-07T10:50:26.5957539Z   fetch-depth: 1
+2025-07-07T10:50:26.5958274Z   fetch-tags: false
+2025-07-07T10:50:26.5958774Z   show-progress: true
+2025-07-07T10:50:26.5959373Z   lfs: false
+2025-07-07T10:50:26.5960148Z   submodules: false
+2025-07-07T10:50:26.5960907Z   set-safe-directory: true
+2025-07-07T10:50:26.5961913Z env:
+2025-07-07T10:50:26.5962390Z   AWS_REGION: eu-west-2
+2025-07-07T10:50:26.5962894Z ##[endgroup]
+2025-07-07T10:50:26.8205956Z Syncing repository: mahtabmehek/Modulus
+2025-07-07T10:50:26.8210556Z ##[group]Getting Git version info
+2025-07-07T10:50:26.8213724Z Working directory is '/home/runner/work/Modulus/Modulus'
+2025-07-07T10:50:26.8218488Z [command]/usr/bin/git version
+2025-07-07T10:50:26.8221669Z git version 2.49.0
+2025-07-07T10:50:26.8225307Z ##[endgroup]
+2025-07-07T10:50:26.8234383Z Temporarily overriding HOME='/home/runner/work/_temp/fb68b78b-4661-451c-84b0-2937c09527d2' before making global git config changes
+2025-07-07T10:50:26.8238759Z Adding repository directory to the temporary git global config as a safe directory
+2025-07-07T10:50:26.8251594Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Modulus/Modulus
+2025-07-07T10:50:26.8293656Z Deleting the contents of '/home/runner/work/Modulus/Modulus'
+2025-07-07T10:50:26.8298701Z ##[group]Initializing the repository
+2025-07-07T10:50:26.8304115Z [command]/usr/bin/git init /home/runner/work/Modulus/Modulus
+2025-07-07T10:50:26.8383489Z hint: Using 'master' as the name for the initial branch. This default branch name
+2025-07-07T10:50:26.8385995Z hint: is subject to change. To configure the initial branch name to use in all
+2025-07-07T10:50:26.8389332Z hint: of your new repositories, which will suppress this warning, call:
+2025-07-07T10:50:26.8390909Z hint:
+2025-07-07T10:50:26.8391831Z hint: 	git config --global init.defaultBranch <name>
+2025-07-07T10:50:26.8393058Z hint:
+2025-07-07T10:50:26.8394300Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2025-07-07T10:50:26.8396373Z hint: 'development'. The just-created branch can be renamed via this command:
+2025-07-07T10:50:26.8398003Z hint:
+2025-07-07T10:50:26.8399016Z hint: 	git branch -m <name>
+2025-07-07T10:50:26.8401058Z Initialized empty Git repository in /home/runner/work/Modulus/Modulus/.git/
+2025-07-07T10:50:26.8410086Z [command]/usr/bin/git remote add origin https://github.com/mahtabmehek/Modulus
+2025-07-07T10:50:26.8446592Z ##[endgroup]
+2025-07-07T10:50:26.8448147Z ##[group]Disabling automatic garbage collection
+2025-07-07T10:50:26.8451438Z [command]/usr/bin/git config --local gc.auto 0
+2025-07-07T10:50:26.9734228Z ##[endgroup]
+2025-07-07T10:50:26.9735630Z ##[group]Setting up auth
+2025-07-07T10:50:26.9736997Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2025-07-07T10:50:26.9741047Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2025-07-07T10:50:26.9744955Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2025-07-07T10:50:26.9749222Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2025-07-07T10:50:26.9753894Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2025-07-07T10:50:26.9757370Z ##[endgroup]
+2025-07-07T10:50:26.9758985Z ##[group]Fetching the repository
+2025-07-07T10:50:26.9761369Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +2910f5bae004f0b06374dfe67f023cc457c99d9c:refs/remotes/origin/master
+2025-07-07T10:50:27.5257445Z From https://github.com/mahtabmehek/Modulus
+2025-07-07T10:50:27.5283500Z  * [new ref]         2910f5bae004f0b06374dfe67f023cc457c99d9c -> origin/master
+2025-07-07T10:50:27.5287554Z ##[endgroup]
+2025-07-07T10:50:27.5289283Z ##[group]Determining the checkout info
+2025-07-07T10:50:27.5293452Z ##[endgroup]
+2025-07-07T10:50:27.5294584Z [command]/usr/bin/git sparse-checkout disable
+2025-07-07T10:50:27.5332296Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2025-07-07T10:50:27.5370299Z ##[group]Checking out the ref
+2025-07-07T10:50:27.5373596Z [command]/usr/bin/git checkout --progress --force -B master refs/remotes/origin/master
+2025-07-07T10:50:27.5567111Z Reset branch 'master'
+2025-07-07T10:50:27.5573176Z branch 'master' set up to track 'origin/master'.
+2025-07-07T10:50:27.5584705Z ##[endgroup]
+2025-07-07T10:50:27.5627464Z [command]/usr/bin/git log -1 --format=%H
+2025-07-07T10:50:27.5653264Z 2910f5bae004f0b06374dfe67f023cc457c99d9c
+2025-07-07T10:50:27.5990994Z ##[group]Run actions/setup-node@v4
+2025-07-07T10:50:27.5992165Z with:
+2025-07-07T10:50:27.5992985Z   node-version: 18
+2025-07-07T10:50:27.5993906Z   cache: npm
+2025-07-07T10:50:27.5994760Z   always-auth: false
+2025-07-07T10:50:27.5995961Z   check-latest: false
+2025-07-07T10:50:27.5997180Z   token: ***
+2025-07-07T10:50:27.5998019Z env:
+2025-07-07T10:50:27.5998827Z   AWS_REGION: eu-west-2
+2025-07-07T10:50:27.5999932Z ##[endgroup]
+2025-07-07T10:50:27.7881587Z Found in cache @ /opt/hostedtoolcache/node/18.20.8/x64
+2025-07-07T10:50:27.7884943Z ##[group]Environment details
+2025-07-07T10:50:28.2804846Z node: v18.20.8
+2025-07-07T10:50:28.2810313Z npm: 10.8.2
+2025-07-07T10:50:28.2817182Z yarn: 1.22.22
+2025-07-07T10:50:28.2820135Z ##[endgroup]
+2025-07-07T10:50:28.2843565Z [command]/opt/hostedtoolcache/node/18.20.8/x64/bin/npm config get cache
+2025-07-07T10:50:28.4961340Z /home/runner/.npm
+2025-07-07T10:50:28.7611403Z npm cache is not found
+2025-07-07T10:50:28.7872784Z ##[group]Run aws-actions/configure-aws-credentials@v4
+2025-07-07T10:50:28.7873115Z with:
+2025-07-07T10:50:28.7873452Z   aws-access-key-id: ***
+2025-07-07T10:50:28.7873795Z   aws-secret-access-key: ***
+2025-07-07T10:50:28.7874016Z   aws-region: eu-west-2
+2025-07-07T10:50:28.7874254Z   audience: sts.amazonaws.com
+2025-07-07T10:50:28.7874469Z env:
+2025-07-07T10:50:28.7874639Z   AWS_REGION: eu-west-2
+2025-07-07T10:50:28.7874858Z ##[endgroup]
+2025-07-07T10:50:29.4606598Z Proceeding with IAM user credentials
+2025-07-07T10:50:29.4661966Z ##[group]Run docker/setup-buildx-action@v3
+2025-07-07T10:50:29.4662258Z with:
+2025-07-07T10:50:29.4662450Z   driver: docker-container
+2025-07-07T10:50:29.4662682Z   install: false
+2025-07-07T10:50:29.4662860Z   use: true
+2025-07-07T10:50:29.4663027Z   keep-state: false
+2025-07-07T10:50:29.4663224Z   cache-binary: true
+2025-07-07T10:50:29.4663415Z   cleanup: true
+2025-07-07T10:50:29.4663587Z env:
+2025-07-07T10:50:29.4663757Z   AWS_REGION: eu-west-2
+2025-07-07T10:50:29.4663965Z   AWS_DEFAULT_REGION: eu-west-2
+2025-07-07T10:50:29.4664311Z   AWS_ACCESS_KEY_ID: ***
+2025-07-07T10:50:29.4664613Z   AWS_SECRET_ACCESS_KEY: ***
+2025-07-07T10:50:29.4664825Z ##[endgroup]
+2025-07-07T10:50:29.8125996Z ##[group]Docker info
+2025-07-07T10:50:29.8135578Z [command]/usr/bin/docker version
+2025-07-07T10:50:29.8777974Z Client: Docker Engine - Community
+2025-07-07T10:50:29.8780951Z  Version:           28.0.4
+2025-07-07T10:50:29.8782443Z  API version:       1.48
+2025-07-07T10:50:29.8783768Z  Go version:        go1.23.7
+2025-07-07T10:50:29.8785005Z  Git commit:        b8034c0
+2025-07-07T10:50:29.8786219Z  Built:             Tue Mar 25 15:07:16 2025
+2025-07-07T10:50:29.8787831Z  OS/Arch:           linux/amd64
+2025-07-07T10:50:29.8788254Z  Context:           default
+2025-07-07T10:50:29.8788507Z 
+2025-07-07T10:50:29.8788764Z Server: Docker Engine - Community
+2025-07-07T10:50:29.8789246Z  Engine:
+2025-07-07T10:50:29.8789772Z   Version:          28.0.4
+2025-07-07T10:50:29.8790268Z   API version:      1.48 (minimum version 1.24)
+2025-07-07T10:50:29.8790774Z   Go version:       go1.23.7
+2025-07-07T10:50:29.8791170Z   Git commit:       6430e49
+2025-07-07T10:50:29.8791644Z   Built:            Tue Mar 25 15:07:16 2025
+2025-07-07T10:50:29.8792129Z   OS/Arch:          linux/amd64
+2025-07-07T10:50:29.8792580Z   Experimental:     false
+2025-07-07T10:50:29.8792954Z  containerd:
+2025-07-07T10:50:29.8793279Z   Version:          1.7.27
+2025-07-07T10:50:29.8793822Z   GitCommit:        05044ec0a9a75232cad458027ca83437aae3f4da
+2025-07-07T10:50:29.8794338Z  runc:
+2025-07-07T10:50:29.8794635Z   Version:          1.2.5
+2025-07-07T10:50:29.8795057Z   GitCommit:        v1.2.5-0-g59923ef
+2025-07-07T10:50:29.8795488Z  docker-init:
+2025-07-07T10:50:29.8795887Z   Version:          0.19.0
+2025-07-07T10:50:29.8796302Z   GitCommit:        de40ad0
+2025-07-07T10:50:29.8842141Z [command]/usr/bin/docker info
+2025-07-07T10:50:30.1467655Z Client: Docker Engine - Community
+2025-07-07T10:50:30.1468213Z  Version:    28.0.4
+2025-07-07T10:50:30.1468530Z  Context:    default
+2025-07-07T10:50:30.1468861Z  Debug Mode: false
+2025-07-07T10:50:30.1469182Z  Plugins:
+2025-07-07T10:50:30.1469765Z   buildx: Docker Buildx (Docker Inc.)
+2025-07-07T10:50:30.1470213Z     Version:  v0.25.0
+2025-07-07T10:50:30.1470738Z     Path:     /usr/libexec/docker/cli-plugins/docker-buildx
+2025-07-07T10:50:30.1471631Z   compose: Docker Compose (Docker Inc.)
+2025-07-07T10:50:30.1472068Z     Version:  v2.36.2
+2025-07-07T10:50:30.1472564Z     Path:     /usr/libexec/docker/cli-plugins/docker-compose
+2025-07-07T10:50:30.1472915Z 
+2025-07-07T10:50:30.1473041Z Server:
+2025-07-07T10:50:30.1473310Z  Containers: 0
+2025-07-07T10:50:30.1473633Z   Running: 0
+2025-07-07T10:50:30.1473960Z   Paused: 0
+2025-07-07T10:50:30.1474282Z   Stopped: 0
+2025-07-07T10:50:30.1474580Z  Images: 0
+2025-07-07T10:50:30.1474873Z  Server Version: 28.0.4
+2025-07-07T10:50:30.1475255Z  Storage Driver: overlay2
+2025-07-07T10:50:30.1475651Z   Backing Filesystem: extfs
+2025-07-07T10:50:30.1476069Z   Supports d_type: true
+2025-07-07T10:50:30.1476471Z   Using metacopy: false
+2025-07-07T10:50:30.1476869Z   Native Overlay Diff: false
+2025-07-07T10:50:30.1477229Z   userxattr: false
+2025-07-07T10:50:30.1477594Z  Logging Driver: json-file
+2025-07-07T10:50:30.1478001Z  Cgroup Driver: systemd
+2025-07-07T10:50:30.1478395Z  Cgroup Version: 2
+2025-07-07T10:50:30.1478729Z  Plugins:
+2025-07-07T10:50:30.1479045Z   Volume: local
+2025-07-07T10:50:30.1479765Z   Network: bridge host ipvlan macvlan null overlay
+2025-07-07T10:50:30.1480894Z   Log: awslogs fluentd gcplogs gelf journald json-file local splunk syslog
+2025-07-07T10:50:30.1484192Z  Swarm: inactive
+2025-07-07T10:50:30.1484653Z  Runtimes: io.containerd.runc.v2 runc
+2025-07-07T10:50:30.1485130Z  Default Runtime: runc
+2025-07-07T10:50:30.1485521Z  Init Binary: docker-init
+2025-07-07T10:50:30.1486120Z  containerd version: 05044ec0a9a75232cad458027ca83437aae3f4da
+2025-07-07T10:50:30.1486758Z  runc version: v1.2.5-0-g59923ef
+2025-07-07T10:50:30.1487187Z  init version: de40ad0
+2025-07-07T10:50:30.1487546Z  Security Options:
+2025-07-07T10:50:30.1487884Z   apparmor
+2025-07-07T10:50:30.1488174Z   seccomp
+2025-07-07T10:50:30.1488508Z    Profile: builtin
+2025-07-07T10:50:30.1488852Z   cgroupns
+2025-07-07T10:50:30.1489239Z  Kernel Version: 6.11.0-1015-azure
+2025-07-07T10:50:30.1490430Z  Operating System: Ubuntu 24.04.2 LTS
+2025-07-07T10:50:30.1490860Z  OSType: linux
+2025-07-07T10:50:30.1491199Z  Architecture: x86_64
+2025-07-07T10:50:30.1491526Z  CPUs: 2
+2025-07-07T10:50:30.1491800Z  Total Memory: 7.758GiB
+2025-07-07T10:50:30.1492171Z  Name: fv-az2173-989
+2025-07-07T10:50:30.1492590Z  ID: f3f57c73-cc58-4859-b84c-8d290ada94db
+2025-07-07T10:50:30.1493892Z  Docker Root Dir: /var/lib/docker
+2025-07-07T10:50:30.1494315Z  Debug Mode: false
+2025-07-07T10:50:30.1494687Z  Username: githubactions
+2025-07-07T10:50:30.1495098Z  Experimental: false
+2025-07-07T10:50:30.1495469Z  Insecure Registries:
+2025-07-07T10:50:30.1495949Z   ::1/128
+2025-07-07T10:50:30.1496245Z   127.0.0.0/8
+2025-07-07T10:50:30.1496595Z  Live Restore Enabled: false
+2025-07-07T10:50:30.1496867Z 
+2025-07-07T10:50:30.1498190Z ##[endgroup]
+2025-07-07T10:50:30.2238247Z ##[group]Buildx version
+2025-07-07T10:50:30.2270372Z [command]/usr/bin/docker buildx version
+2025-07-07T10:50:30.2726188Z github.com/docker/buildx v0.25.0 faaea65da4ba0e58a13cd9cadcb950c51cf3b3c9
+2025-07-07T10:50:30.2758629Z ##[endgroup]
+2025-07-07T10:50:30.2918098Z ##[group]Inspecting default docker context
+2025-07-07T10:50:30.3061747Z [
+2025-07-07T10:50:30.3063260Z   {
+2025-07-07T10:50:30.3064375Z     "Name": "default",
+2025-07-07T10:50:30.3066028Z     "Metadata": {},
+2025-07-07T10:50:30.3066887Z     "Endpoints": {
+2025-07-07T10:50:30.3067430Z       "docker": {
+2025-07-07T10:50:30.3068576Z         "Host": "unix:///var/run/docker.sock",
+2025-07-07T10:50:30.3070481Z         "SkipTLSVerify": false
+2025-07-07T10:50:30.3070902Z       }
+2025-07-07T10:50:30.3071216Z     },
+2025-07-07T10:50:30.3071552Z     "TLSMaterial": {},
+2025-07-07T10:50:30.3071937Z     "Storage": {
+2025-07-07T10:50:30.3072366Z       "MetadataPath": "<IN MEMORY>",
+2025-07-07T10:50:30.3072879Z       "TLSPath": "<IN MEMORY>"
+2025-07-07T10:50:30.3073276Z     }
+2025-07-07T10:50:30.3073588Z   }
+2025-07-07T10:50:30.3073881Z ]
+2025-07-07T10:50:30.3074486Z ##[endgroup]
+2025-07-07T10:50:30.3075660Z ##[group]Creating a new builder instance
+2025-07-07T10:50:30.4277141Z [command]/usr/bin/docker buildx create --name builder-0e69459c-0d07-4bf2-a987-401e866162de --driver docker-container --buildkitd-flags --allow-insecure-entitlement security.insecure --allow-insecure-entitlement network.host --use
+2025-07-07T10:50:30.4854600Z builder-0e69459c-0d07-4bf2-a987-401e866162de
+2025-07-07T10:50:30.4883264Z ##[endgroup]
+2025-07-07T10:50:30.4890880Z ##[group]Booting builder
+2025-07-07T10:50:30.4962395Z [command]/usr/bin/docker buildx inspect --bootstrap --builder builder-0e69459c-0d07-4bf2-a987-401e866162de
+2025-07-07T10:50:30.5559224Z #1 [internal] booting buildkit
+2025-07-07T10:50:30.7071987Z #1 pulling image moby/buildkit:buildx-stable-1
+2025-07-07T10:50:34.3250651Z #1 pulling image moby/buildkit:buildx-stable-1 3.8s done
+2025-07-07T10:50:34.4751139Z #1 creating container buildx_buildkit_builder-0e69459c-0d07-4bf2-a987-401e866162de0
+2025-07-07T10:50:34.6457488Z #1 creating container buildx_buildkit_builder-0e69459c-0d07-4bf2-a987-401e866162de0 0.3s done
+2025-07-07T10:50:34.6484699Z #1 DONE 4.1s
+2025-07-07T10:50:34.6899255Z Name:          builder-0e69459c-0d07-4bf2-a987-401e866162de
+2025-07-07T10:50:34.6906444Z Driver:        docker-container
+2025-07-07T10:50:34.6907376Z Last Activity: 2025-07-07 10:50:30 +0000 UTC
+2025-07-07T10:50:34.6907695Z 
+2025-07-07T10:50:34.6907812Z Nodes:
+2025-07-07T10:50:34.6908322Z Name:                  builder-0e69459c-0d07-4bf2-a987-401e866162de0
+2025-07-07T10:50:34.6908988Z Endpoint:              unix:///var/run/docker.sock
+2025-07-07T10:50:34.6909734Z Status:                running
+2025-07-07T10:50:34.6910832Z BuildKit daemon flags: --allow-insecure-entitlement security.insecure --allow-insecure-entitlement network.host
+2025-07-07T10:50:34.6911778Z BuildKit version:      v0.22.0
+2025-07-07T10:50:34.6912456Z Platforms:             linux/amd64, linux/amd64/v2, linux/amd64/v3, linux/386
+2025-07-07T10:50:34.6912988Z Labels:
+2025-07-07T10:50:34.6913456Z  org.mobyproject.buildkit.worker.executor:         oci
+2025-07-07T10:50:34.6914453Z  org.mobyproject.buildkit.worker.hostname:         7a470f29bf0f
+2025-07-07T10:50:34.6915216Z  org.mobyproject.buildkit.worker.network:          host
+2025-07-07T10:50:34.6915984Z  org.mobyproject.buildkit.worker.oci.process-mode: sandbox
+2025-07-07T10:50:34.6916759Z  org.mobyproject.buildkit.worker.selinux.enabled:  false
+2025-07-07T10:50:34.6917512Z  org.mobyproject.buildkit.worker.snapshotter:      overlayfs
+2025-07-07T10:50:34.6918087Z GC Policy rule#0:
+2025-07-07T10:50:34.6918398Z  All:            false
+2025-07-07T10:50:34.6919029Z  Filters:        type==source.local,type==exec.cachemount,type==source.git.checkout
+2025-07-07T10:50:34.6919822Z  Keep Duration:  48h0m0s
+2025-07-07T10:50:34.6920182Z  Max Used Space: 488.3MiB
+2025-07-07T10:50:34.6920532Z GC Policy rule#1:
+2025-07-07T10:50:34.6921009Z  All:            false
+2025-07-07T10:50:34.6921312Z  Keep Duration:  1440h0m0s
+2025-07-07T10:50:34.6921870Z  Reserved Space: 7.451GiB
+2025-07-07T10:50:34.6922214Z  Max Used Space: 54.02GiB
+2025-07-07T10:50:34.6922758Z  Min Free Space: 13.97GiB
+2025-07-07T10:50:34.6923871Z GC Policy rule#2:
+2025-07-07T10:50:34.6924689Z  All:            false
+2025-07-07T10:50:34.6927988Z  Reserved Space: 7.451GiB
+2025-07-07T10:50:34.6928392Z  Max Used Space: 54.02GiB
+2025-07-07T10:50:34.6928757Z  Min Free Space: 13.97GiB
+2025-07-07T10:50:34.6929128Z GC Policy rule#3:
+2025-07-07T10:50:34.6929427Z  All:            true
+2025-07-07T10:50:34.6930104Z  Reserved Space: 7.451GiB
+2025-07-07T10:50:34.6930482Z  Max Used Space: 54.02GiB
+2025-07-07T10:50:34.6930880Z  Min Free Space: 13.97GiB
+2025-07-07T10:50:34.6958041Z ##[endgroup]
+2025-07-07T10:50:34.7862284Z ##[group]Inspect builder
+2025-07-07T10:50:34.7866352Z {
+2025-07-07T10:50:34.7866683Z   "nodes": [
+2025-07-07T10:50:34.7867012Z     {
+2025-07-07T10:50:34.7867531Z       "name": "builder-0e69459c-0d07-4bf2-a987-401e866162de0",
+2025-07-07T10:50:34.7868243Z       "endpoint": "unix:///var/run/docker.sock",
+2025-07-07T10:50:34.7868760Z       "status": "running",
+2025-07-07T10:50:34.7877035Z       "buildkitd-flags": "--allow-insecure-entitlement security.insecure --allow-insecure-entitlement network.host",
+2025-07-07T10:50:34.7877979Z       "buildkit": "v0.22.0",
+2025-07-07T10:50:34.7878574Z       "platforms": "linux/amd64,linux/amd64/v2,linux/amd64/v3,linux/386",
+2025-07-07T10:50:34.7879134Z       "features": {
+2025-07-07T10:50:34.7879979Z         "Automatically load images to the Docker Engine image store": true,
+2025-07-07T10:50:34.7880552Z         "Cache export": true,
+2025-07-07T10:50:34.7880910Z         "Direct push": true,
+2025-07-07T10:50:34.7881283Z         "Docker exporter": true,
+2025-07-07T10:50:34.7881702Z         "Multi-platform build": true,
+2025-07-07T10:50:34.7882118Z         "OCI exporter": true
+2025-07-07T10:50:34.7882453Z       },
+2025-07-07T10:50:34.7882728Z       "labels": {
+2025-07-07T10:50:34.7883208Z         "org.mobyproject.buildkit.worker.executor": "oci",
+2025-07-07T10:50:34.7883917Z         "org.mobyproject.buildkit.worker.hostname": "7a470f29bf0f",
+2025-07-07T10:50:34.7884626Z         "org.mobyproject.buildkit.worker.network": "host",
+2025-07-07T10:50:34.7885388Z         "org.mobyproject.buildkit.worker.oci.process-mode": "sandbox",
+2025-07-07T10:50:34.7886428Z         "org.mobyproject.buildkit.worker.selinux.enabled": "false",
+2025-07-07T10:50:34.7887264Z         "org.mobyproject.buildkit.worker.snapshotter": "overlayfs"
+2025-07-07T10:50:34.7887798Z       },
+2025-07-07T10:50:34.7888083Z       "gcPolicy": [
+2025-07-07T10:50:34.7888375Z         {
+2025-07-07T10:50:34.7888652Z           "all": false,
+2025-07-07T10:50:34.7888970Z           "filter": [
+2025-07-07T10:50:34.7889338Z             "type==source.local",
+2025-07-07T10:50:34.7890001Z             "type==exec.cachemount",
+2025-07-07T10:50:34.7890478Z             "type==source.git.checkout"
+2025-07-07T10:50:34.7890878Z           ],
+2025-07-07T10:50:34.7891230Z           "keepDuration": "48h0m0s",
+2025-07-07T10:50:34.7891665Z           "maxUsedSpace": "488.3MiB"
+2025-07-07T10:50:34.7892045Z         },
+2025-07-07T10:50:34.7892301Z         {
+2025-07-07T10:50:34.7892588Z           "all": false,
+2025-07-07T10:50:34.7892958Z           "keepDuration": "1440h0m0s",
+2025-07-07T10:50:34.7893410Z           "reservedSpace": "7.451GiB",
+2025-07-07T10:50:34.7893855Z           "maxUsedSpace": "54.02GiB",
+2025-07-07T10:50:34.7894294Z           "minFreeSpace": "13.97GiB"
+2025-07-07T10:50:34.7894657Z         },
+2025-07-07T10:50:34.7894920Z         {
+2025-07-07T10:50:34.7895181Z           "all": false,
+2025-07-07T10:50:34.7895558Z           "reservedSpace": "7.451GiB",
+2025-07-07T10:50:34.7895999Z           "maxUsedSpace": "54.02GiB",
+2025-07-07T10:50:34.7896437Z           "minFreeSpace": "13.97GiB"
+2025-07-07T10:50:34.7896798Z         },
+2025-07-07T10:50:34.7897056Z         {
+2025-07-07T10:50:34.7897329Z           "all": true,
+2025-07-07T10:50:34.7897708Z           "reservedSpace": "7.451GiB",
+2025-07-07T10:50:34.7898165Z           "maxUsedSpace": "54.02GiB",
+2025-07-07T10:50:34.7898596Z           "minFreeSpace": "13.97GiB"
+2025-07-07T10:50:34.7898959Z         }
+2025-07-07T10:50:34.7899207Z       ]
+2025-07-07T10:50:34.7899608Z     }
+2025-07-07T10:50:34.7899866Z   ],
+2025-07-07T10:50:34.7900295Z   "name": "builder-0e69459c-0d07-4bf2-a987-401e866162de",
+2025-07-07T10:50:34.7900825Z   "driver": "docker-container",
+2025-07-07T10:50:34.7901277Z   "lastActivity": "2025-07-07T10:50:30.000Z"
+2025-07-07T10:50:34.7901675Z }
+2025-07-07T10:50:34.7902176Z ##[endgroup]
+2025-07-07T10:50:34.7902670Z ##[group]BuildKit version
+2025-07-07T10:50:34.7903229Z builder-0e69459c-0d07-4bf2-a987-401e866162de0: v0.22.0
+2025-07-07T10:50:34.7903966Z ##[endgroup]
+2025-07-07T10:50:34.8029016Z ##[group]Run npm ci --legacy-peer-deps
+2025-07-07T10:50:34.8029391Z [36;1mnpm ci --legacy-peer-deps[0m
+2025-07-07T10:50:34.8029904Z [36;1mnpm run build[0m
+2025-07-07T10:50:34.8122854Z shell: /usr/bin/bash -e {0}
+2025-07-07T10:50:34.8123104Z env:
+2025-07-07T10:50:34.8123282Z   AWS_REGION: eu-west-2
+2025-07-07T10:50:34.8123485Z   AWS_DEFAULT_REGION: eu-west-2
+2025-07-07T10:50:34.8124040Z   AWS_ACCESS_KEY_ID: ***
+2025-07-07T10:50:34.8124355Z   AWS_SECRET_ACCESS_KEY: ***
+2025-07-07T10:50:34.8124566Z ##[endgroup]
+2025-07-07T10:50:59.3414180Z 
+2025-07-07T10:50:59.3416334Z added 598 packages, and audited 599 packages in 24s
+2025-07-07T10:50:59.3417129Z 
+2025-07-07T10:50:59.3417609Z 168 packages are looking for funding
+2025-07-07T10:50:59.3419730Z   run `npm fund` for details
+2025-07-07T10:50:59.3430554Z 
+2025-07-07T10:50:59.3431067Z found 0 vulnerabilities
+2025-07-07T10:50:59.5155378Z 
+2025-07-07T10:50:59.5155889Z > modulus-lms@0.1.0 build
+2025-07-07T10:50:59.5156302Z > next build
+2025-07-07T10:50:59.5156547Z 
+2025-07-07T10:51:00.1262858Z ⚠ No build cache found. Please configure build caching for faster rebuilds. Read more: https://nextjs.org/docs/messages/no-cache
+2025-07-07T10:51:00.1466067Z Attention: Next.js now collects completely anonymous telemetry regarding usage.
+2025-07-07T10:51:00.1475817Z This information is used to shape Next.js' roadmap and prioritize features.
+2025-07-07T10:51:00.1477334Z You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+2025-07-07T10:51:00.1478358Z https://nextjs.org/telemetry
+2025-07-07T10:51:00.1478670Z 
+2025-07-07T10:51:00.2045192Z    ▲ Next.js 15.3.4
+2025-07-07T10:51:00.2047607Z 
+2025-07-07T10:51:00.2567010Z    Creating an optimized production build ...
+2025-07-07T10:51:33.9368932Z  ✓ Compiled successfully in 29.0s
+2025-07-07T10:51:33.9415192Z    Linting and checking validity of types ...
+2025-07-07T10:51:45.9790933Z    Collecting page data ...
+2025-07-07T10:51:48.0902587Z    Generating static pages (0/4) ...
+2025-07-07T10:51:49.3907222Z    Generating static pages (1/4) 
+2025-07-07T10:51:49.3909215Z    Generating static pages (2/4) 
+2025-07-07T10:51:49.3911149Z    Generating static pages (3/4) 
+2025-07-07T10:51:49.3913185Z  ✓ Generating static pages (4/4)
+2025-07-07T10:51:50.2432703Z    Finalizing page optimization ...
+2025-07-07T10:51:50.2433554Z    Collecting build traces ...
+2025-07-07T10:52:03.8147559Z 
+2025-07-07T10:52:03.8177653Z Route (app)                                 Size  First Load JS
+2025-07-07T10:52:03.8180561Z ┌ ○ /                                     152 kB         253 kB
+2025-07-07T10:52:03.8184171Z └ ○ /_not-found                            977 B         102 kB
+2025-07-07T10:52:03.8184872Z + First Load JS shared by all             101 kB
+2025-07-07T10:52:03.8187648Z   ├ chunks/4bd1b696-ad9abd2a22b3b603.js  53.2 kB
+2025-07-07T10:52:03.8188343Z   ├ chunks/684-6f53d10c017ab09b.js       45.9 kB
+2025-07-07T10:52:03.8189037Z   └ other shared chunks (total)          1.92 kB
+2025-07-07T10:52:03.8189361Z 
+2025-07-07T10:52:03.8189371Z 
+2025-07-07T10:52:03.8189982Z ○  (Static)  prerendered as static content
+2025-07-07T10:52:03.8190295Z 
+2025-07-07T10:52:03.8637338Z ##[group]Run chmod +x ./deploy.sh
+2025-07-07T10:52:03.8637649Z [36;1mchmod +x ./deploy.sh[0m
+2025-07-07T10:52:03.8637868Z [36;1m./deploy.sh[0m
+2025-07-07T10:52:03.8698041Z shell: /usr/bin/bash -e {0}
+2025-07-07T10:52:03.8698278Z env:
+2025-07-07T10:52:03.8698460Z   AWS_REGION: eu-west-2
+2025-07-07T10:52:03.8698676Z   AWS_DEFAULT_REGION: eu-west-2
+2025-07-07T10:52:03.8699188Z   AWS_ACCESS_KEY_ID: ***
+2025-07-07T10:52:03.8699743Z   AWS_SECRET_ACCESS_KEY: ***
+2025-07-07T10:52:03.8699994Z ##[endgroup]
+2025-07-07T10:52:03.8805616Z 🚀 Modulus LMS - Ultra Simple Frontend Deployment
+2025-07-07T10:52:03.8808015Z =================================================
+2025-07-07T10:52:03.8821542Z 🔄 Deployment started: Mon Jul  7 10:52:03 UTC 2025
+2025-07-07T10:52:03.8823366Z [0;34mℹ️  Step 1: Validating AWS access...[0m
+2025-07-07T10:52:07.8797746Z [0;32m✅ AWS Account ID: 376129881409[0m
+2025-07-07T10:52:07.8799425Z [0;32m✅ Region: eu-west-2[0m
+2025-07-07T10:52:07.8800541Z [0;34mℹ️  Step 2: Setting up IAM role for ECS...[0m
+2025-07-07T10:52:08.7266111Z [0;32m✅ Using existing ecsTaskExecutionRole[0m
+2025-07-07T10:52:08.7267476Z [0;34mℹ️  Step 3: Setting up network infrastructure...[0m
+2025-07-07T10:52:10.0756460Z [0;32m✅ Using VPC: vpc-04d155bb35a9ee8c5[0m
+2025-07-07T10:52:11.4151496Z [0;32m✅ Using subnets: subnet-0cc34cda0d0f7edca, subnet-040a224ccafdbf8e7[0m
+2025-07-07T10:52:11.4152922Z [0;34mℹ️  Step 4: Setting up security group...[0m
+2025-07-07T10:52:12.8191216Z [0;32m✅ Using existing security group: sg-011290af387c73063[0m
+2025-07-07T10:52:12.8193083Z [0;34mℹ️  Step 5: Setting up container registry...[0m
+2025-07-07T10:52:13.9968121Z [0;32m✅ Using existing ECR repository[0m
+2025-07-07T10:52:13.9969643Z [0;34mℹ️  Step 6: Building and pushing Docker image...[0m
+2025-07-07T10:52:13.9984070Z [0;34mℹ️  Building Docker image...[0m
+2025-07-07T10:52:14.2768197Z #0 building with "default" instance using docker driver
+2025-07-07T10:52:14.2768575Z 
+2025-07-07T10:52:14.2768846Z #1 [internal] load build definition from Dockerfile.simple
+2025-07-07T10:52:14.2769614Z #1 transferring dockerfile: 1.22kB done
+2025-07-07T10:52:14.2770068Z #1 DONE 0.0s
+2025-07-07T10:52:14.2770275Z 
+2025-07-07T10:52:14.2770647Z #2 [auth] library/node:pull token for registry-1.docker.io
+2025-07-07T10:52:14.4272203Z #2 DONE 0.0s
+2025-07-07T10:52:14.4272443Z 
+2025-07-07T10:52:14.4273108Z #3 [internal] load metadata for docker.io/library/node:18-alpine
+2025-07-07T10:52:14.8086877Z #3 DONE 0.7s
+2025-07-07T10:52:14.9329063Z 
+2025-07-07T10:52:14.9329772Z #4 [internal] load .dockerignore
+2025-07-07T10:52:14.9330427Z #4 transferring context: 594B done
+2025-07-07T10:52:14.9330829Z #4 DONE 0.0s
+2025-07-07T10:52:14.9330999Z 
+2025-07-07T10:52:14.9331258Z #5 [internal] load build context
+2025-07-07T10:52:14.9331755Z #5 transferring context: 1.10MB 0.0s done
+2025-07-07T10:52:14.9332167Z #5 DONE 0.0s
+2025-07-07T10:52:14.9332346Z 
+2025-07-07T10:52:14.9332931Z #6 [base 1/1] FROM docker.io/library/node:18-alpine@sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e
+2025-07-07T10:52:14.9333854Z #6 resolve docker.io/library/node:18-alpine@sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e done
+2025-07-07T10:52:14.9334676Z #6 sha256:ee77c6cd7c1886ecc802ad6cedef3a8ec1ea27d1fb96162bf03dd3710839b8da 6.18kB / 6.18kB done
+2025-07-07T10:52:14.9335414Z #6 sha256:dd71dde834b5c203d162902e6b8994cb2309ae049a0eabc4efea161b2b5a3d0e 0B / 40.01MB 0.1s
+2025-07-07T10:52:14.9336116Z #6 sha256:1e5a4c89cee5c0826c540ab06d4b6b491c96eda01837f430bd47f0d26702d6e3 0B / 1.26MB 0.1s
+2025-07-07T10:52:14.9336799Z #6 sha256:25ff2da83641908f65c3a74d80409d6b1b62ccfaab220b9ea70b80df5a2e0549 0B / 446B 0.1s
+2025-07-07T10:52:14.9338035Z #6 sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e 7.67kB / 7.67kB done
+2025-07-07T10:52:14.9339044Z #6 sha256:929b04d7c782f04f615cf785488fed452b6569f87c73ff666ad553a7554f0006 1.72kB / 1.72kB done
+2025-07-07T10:52:15.0331741Z #6 sha256:1e5a4c89cee5c0826c540ab06d4b6b491c96eda01837f430bd47f0d26702d6e3 1.26MB / 1.26MB 0.1s done
+2025-07-07T10:52:15.0333297Z #6 sha256:25ff2da83641908f65c3a74d80409d6b1b62ccfaab220b9ea70b80df5a2e0549 446B / 446B 0.2s done
+2025-07-07T10:52:15.2330139Z #6 sha256:dd71dde834b5c203d162902e6b8994cb2309ae049a0eabc4efea161b2b5a3d0e 35.65MB / 40.01MB 0.4s
+2025-07-07T10:52:15.4101395Z #6 sha256:dd71dde834b5c203d162902e6b8994cb2309ae049a0eabc4efea161b2b5a3d0e 40.01MB / 40.01MB 0.4s done
+2025-07-07T10:52:15.4102855Z #6 extracting sha256:dd71dde834b5c203d162902e6b8994cb2309ae049a0eabc4efea161b2b5a3d0e 0.1s
+2025-07-07T10:52:16.4276785Z #6 extracting sha256:dd71dde834b5c203d162902e6b8994cb2309ae049a0eabc4efea161b2b5a3d0e 1.1s done
+2025-07-07T10:52:16.8460765Z #6 extracting sha256:1e5a4c89cee5c0826c540ab06d4b6b491c96eda01837f430bd47f0d26702d6e3
+2025-07-07T10:52:16.9508132Z #6 extracting sha256:1e5a4c89cee5c0826c540ab06d4b6b491c96eda01837f430bd47f0d26702d6e3 0.0s done
+2025-07-07T10:52:16.9510430Z #6 extracting sha256:25ff2da83641908f65c3a74d80409d6b1b62ccfaab220b9ea70b80df5a2e0549 done
+2025-07-07T10:52:16.9511875Z #6 DONE 2.1s
+2025-07-07T10:52:16.9512176Z 
+2025-07-07T10:52:16.9512374Z #7 [deps 1/3] WORKDIR /app
+2025-07-07T10:52:17.1584713Z #7 DONE 0.0s
+2025-07-07T10:52:17.1586511Z 
+2025-07-07T10:52:17.1586870Z #8 [deps 2/3] COPY package.json package-lock.json* ./
+2025-07-07T10:52:17.1587338Z #8 DONE 0.0s
+2025-07-07T10:52:17.1587498Z 
+2025-07-07T10:52:17.1587834Z #9 [deps 3/3] RUN npm ci --only=production --legacy-peer-deps
+2025-07-07T10:52:17.3234149Z #9 0.316 npm warn config only Use `--omit=dev` to omit dev dependencies from the install.
+2025-07-07T10:52:18.3810053Z #9 ...
+2025-07-07T10:52:18.3811199Z 
+2025-07-07T10:52:18.3811566Z #10 [runner 2/7] RUN apk add --no-cache curl
+2025-07-07T10:52:18.3817230Z #10 0.228 fetch https://dl-cdn.alpinelinux.org/alpine/v3.21/main/x86_64/APKINDEX.tar.gz
+2025-07-07T10:52:18.3818479Z #10 0.526 fetch https://dl-cdn.alpinelinux.org/alpine/v3.21/community/x86_64/APKINDEX.tar.gz
+2025-07-07T10:52:18.3819399Z #10 1.058 (1/9) Installing brotli-libs (1.1.0-r2)
+2025-07-07T10:52:18.3820215Z #10 1.089 (2/9) Installing c-ares (1.34.5-r0)
+2025-07-07T10:52:18.3820794Z #10 1.106 (3/9) Installing libunistring (1.2-r0)
+2025-07-07T10:52:18.3821375Z #10 1.139 (4/9) Installing libidn2 (2.3.7-r0)
+2025-07-07T10:52:18.3821953Z #10 1.155 (5/9) Installing nghttp2-libs (1.64.0-r0)
+2025-07-07T10:52:18.3822523Z #10 1.172 (6/9) Installing libpsl (0.21.5-r3)
+2025-07-07T10:52:18.3823075Z #10 1.188 (7/9) Installing zstd-libs (1.5.6-r2)
+2025-07-07T10:52:18.3823635Z #10 1.213 (8/9) Installing libcurl (8.12.1-r1)
+2025-07-07T10:52:18.3824173Z #10 1.235 (9/9) Installing curl (8.12.1-r1)
+2025-07-07T10:52:18.3824707Z #10 1.256 Executing busybox-1.37.0-r12.trigger
+2025-07-07T10:52:18.3825231Z #10 1.266 OK: 14 MiB in 26 packages
+2025-07-07T10:52:18.3825612Z #10 DONE 1.4s
+2025-07-07T10:52:18.5311975Z 
+2025-07-07T10:52:18.5312700Z #11 [runner 3/7] RUN addgroup --system --gid 1001 nodejs
+2025-07-07T10:52:18.6430797Z #11 DONE 0.3s
+2025-07-07T10:52:18.6431519Z 
+2025-07-07T10:52:18.6431988Z #9 [deps 3/3] RUN npm ci --only=production --legacy-peer-deps
+2025-07-07T10:52:18.9186240Z #9 ...
+2025-07-07T10:52:18.9186493Z 
+2025-07-07T10:52:18.9187134Z #12 [runner 4/7] RUN adduser --system --uid 1001 nextjs
+2025-07-07T10:52:18.9187691Z #12 DONE 0.3s
+2025-07-07T10:52:19.0687178Z 
+2025-07-07T10:52:19.0687995Z #9 [deps 3/3] RUN npm ci --only=production --legacy-peer-deps
+2025-07-07T10:52:39.1200382Z #9 22.11 
+2025-07-07T10:52:39.1201012Z #9 22.11 added 366 packages, and audited 367 packages in 22s
+2025-07-07T10:52:39.2753784Z #9 22.12 
+2025-07-07T10:52:39.2755768Z #9 22.12 60 packages are looking for funding
+2025-07-07T10:52:39.2756353Z #9 22.12   run `npm fund` for details
+2025-07-07T10:52:39.2756765Z #9 22.12 
+2025-07-07T10:52:39.2757148Z #9 22.12 found 0 vulnerabilities
+2025-07-07T10:52:39.2757553Z #9 22.12 npm notice
+2025-07-07T10:52:39.2758241Z #9 22.12 npm notice New major version of npm available! 10.8.2 -> 11.4.2
+2025-07-07T10:52:39.2783947Z #9 22.12 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.4.2
+2025-07-07T10:52:39.2784928Z #9 22.12 npm notice To update run: npm install -g npm@11.4.2
+2025-07-07T10:52:39.2785467Z #9 22.12 npm notice
+2025-07-07T10:52:42.0064191Z #9 DONE 25.0s
+2025-07-07T10:52:44.7130979Z 
+2025-07-07T10:52:44.7132656Z #13 [builder 2/4] COPY --from=deps /app/node_modules ./node_modules
+2025-07-07T10:52:52.2348010Z #13 DONE 7.5s
+2025-07-07T10:52:52.4181848Z 
+2025-07-07T10:52:52.4182407Z #14 [builder 3/4] COPY . .
+2025-07-07T10:52:52.4182879Z #14 DONE 0.0s
+2025-07-07T10:52:52.4183098Z 
+2025-07-07T10:52:52.4183355Z #15 [builder 4/4] RUN npm run build
+2025-07-07T10:52:52.8436246Z #15 0.576 
+2025-07-07T10:52:52.8437541Z #15 0.576 > modulus-lms@0.1.0 build
+2025-07-07T10:52:52.8438318Z #15 0.576 > next build
+2025-07-07T10:52:52.8438812Z #15 0.576 
+2025-07-07T10:52:53.7116871Z #15 1.444    ▲ Next.js 15.3.4
+2025-07-07T10:52:53.8791433Z #15 1.444 
+2025-07-07T10:52:53.8793332Z #15 1.461    Creating an optimized production build ...
+2025-07-07T10:53:30.9167785Z #15 38.65 Failed to compile.
+2025-07-07T10:53:30.9169747Z #15 38.65 
+2025-07-07T10:53:31.1053996Z #15 38.65 ./src/app/globals.css.webpack[javascript/auto]!=!./node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[13].oneOf[10].use[2]!./node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[13].oneOf[10].use[3]!./src/app/globals.css
+2025-07-07T10:53:31.1056753Z #15 38.65 Error: Cannot find module '@tailwindcss/forms'
+2025-07-07T10:53:31.1057286Z #15 38.65 Require stack:
+2025-07-07T10:53:31.1057726Z #15 38.65 - /app/tailwind.config.js
+2025-07-07T10:53:31.1058470Z #15 38.65     at Module._resolveFilename (node:internal/modules/cjs/loader:1140:15)
+2025-07-07T10:53:31.1059297Z #15 38.65     at /app/node_modules/next/dist/server/require-hook.js:55:36
+2025-07-07T10:53:31.1060450Z #15 38.65     at Function.resolve (node:internal/modules/helpers:188:19)
+2025-07-07T10:53:31.1061285Z #15 38.65     at _resolve (/app/node_modules/jiti/dist/jiti.js:1:246378)
+2025-07-07T10:53:31.1062089Z #15 38.65     at jiti (/app/node_modules/jiti/dist/jiti.js:1:249092)
+2025-07-07T10:53:31.1062773Z #15 38.65     at /app/tailwind.config.js:104:5
+2025-07-07T10:53:31.1063500Z #15 38.65     at evalModule (/app/node_modules/jiti/dist/jiti.js:1:251913)
+2025-07-07T10:53:31.1064292Z #15 38.65     at jiti (/app/node_modules/jiti/dist/jiti.js:1:249841)
+2025-07-07T10:53:31.1065087Z #15 38.65     at /app/node_modules/tailwindcss/lib/lib/load-config.js:52:26
+2025-07-07T10:53:31.1066151Z #15 38.65     at loadConfig (/app/node_modules/tailwindcss/lib/lib/load-config.js:62:6)
+2025-07-07T10:53:31.1066778Z #15 38.65 
+2025-07-07T10:53:31.1067180Z #15 38.65 Import trace for requested module:
+2025-07-07T10:53:31.1069034Z #15 38.65 ./src/app/globals.css.webpack[javascript/auto]!=!./node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[13].oneOf[10].use[2]!./node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[13].oneOf[10].use[3]!./src/app/globals.css
+2025-07-07T10:53:31.1070391Z #15 38.65 ./src/app/globals.css
+2025-07-07T10:53:31.1070609Z #15 38.65 
+2025-07-07T10:53:31.1070818Z #15 38.65 ./src/app/globals.css
+2025-07-07T10:53:31.1071148Z #15 38.65 Error: Cannot find module '@tailwindcss/forms'
+2025-07-07T10:53:31.1071436Z #15 38.65 Require stack:
+2025-07-07T10:53:31.1071687Z #15 38.65 - /app/tailwind.config.js
+2025-07-07T10:53:31.1072125Z #15 38.65     at Module._resolveFilename (node:internal/modules/cjs/loader:1140:15)
+2025-07-07T10:53:31.1072636Z #15 38.65     at /app/node_modules/next/dist/server/require-hook.js:55:36
+2025-07-07T10:53:31.1073095Z #15 38.65     at Function.resolve (node:internal/modules/helpers:188:19)
+2025-07-07T10:53:31.1073546Z #15 38.65     at _resolve (/app/node_modules/jiti/dist/jiti.js:1:246378)
+2025-07-07T10:53:31.1073972Z #15 38.65     at jiti (/app/node_modules/jiti/dist/jiti.js:1:249092)
+2025-07-07T10:53:31.1074338Z #15 38.65     at /app/tailwind.config.js:104:5
+2025-07-07T10:53:31.1074965Z #15 38.65     at evalModule (/app/node_modules/jiti/dist/jiti.js:1:251913)
+2025-07-07T10:53:31.1075404Z #15 38.65     at jiti (/app/node_modules/jiti/dist/jiti.js:1:249841)
+2025-07-07T10:53:31.1075854Z #15 38.65     at /app/node_modules/tailwindcss/lib/lib/load-config.js:52:26
+2025-07-07T10:53:31.1076377Z #15 38.65     at loadConfig (/app/node_modules/tailwindcss/lib/lib/load-config.js:62:6)
+2025-07-07T10:53:31.1077017Z #15 38.65     at tryRunOrWebpackError (/app/node_modules/next/dist/compiled/webpack/bundle5.js:29:316142)
+2025-07-07T10:53:31.1077727Z #15 38.65     at __webpack_require_module__ (/app/node_modules/next/dist/compiled/webpack/bundle5.js:29:131548)
+2025-07-07T10:53:31.1078455Z #15 38.65     at __nested_webpack_require_161494__ (/app/node_modules/next/dist/compiled/webpack/bundle5.js:29:130983)
+2025-07-07T10:53:31.1079072Z #15 38.65     at /app/node_modules/next/dist/compiled/webpack/bundle5.js:29:131840
+2025-07-07T10:53:31.1079774Z #15 38.65     at symbolIterator (/app/node_modules/next/dist/compiled/neo-async/async.js:1:14444)
+2025-07-07T10:53:31.1080362Z #15 38.65     at done (/app/node_modules/next/dist/compiled/neo-async/async.js:1:14824)
+2025-07-07T10:53:31.1081122Z #15 38.65     at Hook.eval [as callAsync] (eval at create (/app/node_modules/next/dist/compiled/webpack/bundle5.js:14:9224), <anonymous>:15:1)
+2025-07-07T10:53:31.1083068Z #15 38.65     at Hook.CALL_ASYNC_DELEGATE [as _callAsync] (/app/node_modules/next/dist/compiled/webpack/bundle5.js:14:6378)
+2025-07-07T10:53:31.1083772Z #15 38.65     at /app/node_modules/next/dist/compiled/webpack/bundle5.js:29:130703
+2025-07-07T10:53:31.1084386Z #15 38.65     at symbolIterator (/app/node_modules/next/dist/compiled/neo-async/async.js:1:14402)
+2025-07-07T10:53:31.1084794Z #15 38.65 -- inner error --
+2025-07-07T10:53:31.1085115Z #15 38.65 Error: Cannot find module '@tailwindcss/forms'
+2025-07-07T10:53:31.1085407Z #15 38.65 Require stack:
+2025-07-07T10:53:31.1085658Z #15 38.65 - /app/tailwind.config.js
+2025-07-07T10:53:31.1086098Z #15 38.65     at Module._resolveFilename (node:internal/modules/cjs/loader:1140:15)
+2025-07-07T10:53:31.1086610Z #15 38.65     at /app/node_modules/next/dist/server/require-hook.js:55:36
+2025-07-07T10:53:31.1087069Z #15 38.65     at Function.resolve (node:internal/modules/helpers:188:19)
+2025-07-07T10:53:31.1087530Z #15 38.65     at _resolve (/app/node_modules/jiti/dist/jiti.js:1:246378)
+2025-07-07T10:53:31.1087959Z #15 38.65     at jiti (/app/node_modules/jiti/dist/jiti.js:1:249092)
+2025-07-07T10:53:31.1088322Z #15 38.65     at /app/tailwind.config.js:104:5
+2025-07-07T10:53:31.1088738Z #15 38.65     at evalModule (/app/node_modules/jiti/dist/jiti.js:1:251913)
+2025-07-07T10:53:31.1089170Z #15 38.65     at jiti (/app/node_modules/jiti/dist/jiti.js:1:249841)
+2025-07-07T10:53:31.1089793Z #15 38.65     at /app/node_modules/tailwindcss/lib/lib/load-config.js:52:26
+2025-07-07T10:53:31.1090320Z #15 38.65     at loadConfig (/app/node_modules/tailwindcss/lib/lib/load-config.js:62:6)
+2025-07-07T10:53:31.1103836Z #15 38.65     at Object.<anonymous> (/app/node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[13].oneOf[10].use[2]!/app/node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[13].oneOf[10].use[3]!/app/src/app/globals.css:1:7)
+2025-07-07T10:53:31.1106062Z #15 38.65     at /app/node_modules/next/dist/compiled/webpack/bundle5.js:29:962742
+2025-07-07T10:53:31.1107381Z #15 38.65     at Hook.eval [as call] (eval at create (/app/node_modules/next/dist/compiled/webpack/bundle5.js:14:9002), <anonymous>:7:1)
+2025-07-07T10:53:31.1108884Z #15 38.65     at Hook.CALL_DELEGATE [as _call] (/app/node_modules/next/dist/compiled/webpack/bundle5.js:14:6272)
+2025-07-07T10:53:31.1109867Z #15 38.65     at /app/node_modules/next/dist/compiled/webpack/bundle5.js:29:131581
+2025-07-07T10:53:31.1110556Z #15 38.65     at tryRunOrWebpackError (/app/node_modules/next/dist/compiled/webpack/bundle5.js:29:316096)
+2025-07-07T10:53:31.1111666Z #15 38.65     at __webpack_require_module__ (/app/node_modules/next/dist/compiled/webpack/bundle5.js:29:131548)
+2025-07-07T10:53:31.1112538Z #15 38.65     at __nested_webpack_require_161494__ (/app/node_modules/next/dist/compiled/webpack/bundle5.js:29:130983)
+2025-07-07T10:53:31.1113181Z #15 38.65     at /app/node_modules/next/dist/compiled/webpack/bundle5.js:29:131840
+2025-07-07T10:53:31.1113771Z #15 38.65     at symbolIterator (/app/node_modules/next/dist/compiled/neo-async/async.js:1:14444)
+2025-07-07T10:53:31.1114151Z #15 38.65 
+2025-07-07T10:53:31.1115385Z #15 38.65 Generated code for /app/node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[13].oneOf[10].use[2]!/app/node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[13].oneOf[10].use[3]!/app/src/app/globals.css
+2025-07-07T10:53:31.1116392Z #15 38.65 
+2025-07-07T10:53:31.1116636Z #15 38.65 Import trace for requested module:
+2025-07-07T10:53:31.1116929Z #15 38.65 ./src/app/globals.css
+2025-07-07T10:53:31.1117136Z #15 38.65 
+2025-07-07T10:53:31.1117295Z #15 38.66 
+2025-07-07T10:53:31.1117534Z #15 38.66 > Build failed because of webpack errors
+2025-07-07T10:53:31.1117809Z #15 38.69 npm notice
+2025-07-07T10:53:31.1118158Z #15 38.69 npm notice New major version of npm available! 10.8.2 -> 11.4.2
+2025-07-07T10:53:31.1118799Z #15 38.69 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.4.2
+2025-07-07T10:53:31.1119260Z #15 38.69 npm notice To update run: npm install -g npm@11.4.2
+2025-07-07T10:53:31.1119678Z #15 38.69 npm notice
+2025-07-07T10:53:31.3034409Z #15 ERROR: process "/bin/sh -c npm run build" did not complete successfully: exit code: 1
+2025-07-07T10:53:31.3187886Z ------
+2025-07-07T10:53:31.3189236Z  > [builder 4/4] RUN npm run build:
+2025-07-07T10:53:31.3190017Z 38.65 Import trace for requested module:
+2025-07-07T10:53:31.3190599Z 38.65 ./src/app/globals.css
+2025-07-07T10:53:31.3190997Z 38.65 
+2025-07-07T10:53:31.3191267Z 38.66 
+2025-07-07T10:53:31.3191713Z 38.66 > Build failed because of webpack errors
+2025-07-07T10:53:31.3192209Z 38.69 npm notice
+2025-07-07T10:53:31.3192803Z 38.69 npm notice New major version of npm available! 10.8.2 -> 11.4.2
+2025-07-07T10:53:31.3193703Z 38.69 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.4.2
+2025-07-07T10:53:31.3194540Z 38.69 npm notice To update run: npm install -g npm@11.4.2
+2025-07-07T10:53:31.3195033Z 38.69 npm notice
+2025-07-07T10:53:31.3195325Z ------
+2025-07-07T10:53:31.3229906Z Dockerfile.simple:16
+2025-07-07T10:53:31.3236582Z --------------------
+2025-07-07T10:53:31.3237141Z   14 |     ENV NEXT_TELEMETRY_DISABLED=1
+2025-07-07T10:53:31.3237725Z   15 |     ENV NODE_ENV=production
+2025-07-07T10:53:31.3238207Z   16 | >>> RUN npm run build
+2025-07-07T10:53:31.3238641Z   17 |     
+2025-07-07T10:53:31.3239021Z   18 |     # Production image
+2025-07-07T10:53:31.3239659Z --------------------
+2025-07-07T10:53:31.3240697Z ERROR: failed to build: failed to solve: process "/bin/sh -c npm run build" did not complete successfully: exit code: 1
+2025-07-07T10:53:31.3273890Z [0;31m❌ Deployment failed. Check the logs above.[0m
+2025-07-07T10:53:31.3298608Z ##[error]Process completed with exit code 1.
+2025-07-07T10:53:31.3384680Z Post job cleanup.
+2025-07-07T10:53:31.6513864Z ##[group]Removing builder
+2025-07-07T10:53:31.7599279Z [command]/usr/bin/docker buildx rm builder-0e69459c-0d07-4bf2-a987-401e866162de
+2025-07-07T10:53:31.9212182Z builder-0e69459c-0d07-4bf2-a987-401e866162de removed
+2025-07-07T10:53:31.9250845Z ##[endgroup]
+2025-07-07T10:53:31.9252724Z ##[group]Cleaning up certificates
+2025-07-07T10:53:31.9260490Z ##[endgroup]
+2025-07-07T10:53:31.9261545Z ##[group]Post cache
+2025-07-07T10:53:31.9264530Z State not set
+2025-07-07T10:53:31.9265113Z ##[endgroup]
+2025-07-07T10:53:31.9389812Z Post job cleanup.
+2025-07-07T10:53:32.0768514Z Post job cleanup.
+2025-07-07T10:53:32.1730024Z [command]/usr/bin/git version
+2025-07-07T10:53:32.1772032Z git version 2.49.0
+2025-07-07T10:53:32.1819013Z Temporarily overriding HOME='/home/runner/work/_temp/597c787c-6310-4add-ad67-5cbe8c74eea9' before making global git config changes
+2025-07-07T10:53:32.1822668Z Adding repository directory to the temporary git global config as a safe directory
+2025-07-07T10:53:32.1826206Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Modulus/Modulus
+2025-07-07T10:53:32.1870072Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2025-07-07T10:53:32.1907167Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2025-07-07T10:53:32.2155146Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2025-07-07T10:53:32.2180302Z http.https://github.com/.extraheader
+2025-07-07T10:53:32.2195314Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2025-07-07T10:53:32.2230312Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2025-07-07T10:53:32.2574988Z Cleaning up orphan processes
