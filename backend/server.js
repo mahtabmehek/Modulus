@@ -23,8 +23,17 @@ const limiter = rateLimit({
 // Middleware
 app.use(helmet());
 app.use(cors({
-  origin: process.env.FRONTEND_URL || '*',
-  credentials: true
+  origin: [
+    'http://localhost:3000',
+    'http://localhost:3001', 
+    'https://localhost:3000',
+    'https://localhost:3001',
+    process.env.FRONTEND_URL,
+    '*'
+  ].filter(Boolean),
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(limiter);
 app.use(express.json({ limit: '10mb' }));
