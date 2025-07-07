@@ -70,6 +70,14 @@ app.use('/api/health', healthRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 
+// Simple health check endpoint for ECS health checks
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'healthy',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Root API endpoint
 app.get('/api/status', (req, res) => {
   res.json({
