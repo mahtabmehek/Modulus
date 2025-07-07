@@ -29,6 +29,31 @@ log_success() { echo -e "${GREEN}✅ $1${NC}"; }
 log_warning() { echo -e "${YELLOW}⚠️  $1${NC}"; }
 log_error() { echo -e "${RED}❌ $1${NC}"; }
 
+# Function to validate and fix package.json dependencies
+validate_package_dependencies() {
+    log_info "Validating package.json dependencies..."
+    
+    # Check if Tailwind plugins are in the wrong place
+    FORMS_IN_DEV=$(grep -A 50 '"devDependencies"' package.json | grep '@tailwindcss/forms' || echo "")
+    TYPOGRAPHY_IN_DEV=$(grep -A 50 '"devDependencies"' package.json | grep '@tailwindcss/typography' || echo "")
+    
+    if [ -n "$FORMS_IN_DEV" ] || [ -n "$TYPOGRAPHY_IN_DEV" ]; then
+        log_error "Found Tailwind CSS plugins in devDependencies!"
+        log_error "These must be moved to dependencies for Docker builds to work."
+        log_info ""
+        log_info "Quick fix commands:"
+        log_info "1. Move the plugins to dependencies in package.json"
+        log_info "2. Delete package-lock.json"
+        log_info "3. Run 'npm install' to regenerate the lock file"
+        log_info "4. Commit and push the changes"
+        log_info ""
+        log_error "Please fix this before continuing deployment."
+        return 1
+    fi
+    
+    return 0
+}
+
 # Error handling
 cleanup_on_error() {
     log_error "Deployment failed. Check the logs above."
@@ -39,6 +64,29 @@ trap cleanup_on_error ERR
 echo "🚀 Modulus LMS - Ultra Simple Frontend Deployment"
 echo "================================================="
 echo "🔄 Deployment started: $(date)"
+
+# Step 0: Pre-deployment validation
+log_info "Step 0: Pre-deployment validation..."
+
+# Check if package.json exists
+if [ ! -f "package.json" ]; then
+    log_error "package.json not found. Please run from project root."
+    exit 1
+fi
+
+# Validate Tailwind CSS plugins are in dependencies (not devDependencies)
+log_info "Checking Tailwind CSS plugin configuration..."
+if ! validate_package_dependencies; then
+    exit 1
+fi
+log_success "Tailwind CSS plugins correctly configured in dependencies"
+
+# Check if Docker is available (for local testing)
+if command -v docker >/dev/null 2>&1; then
+    log_success "Docker is available"
+else
+    log_warning "Docker not found - build will happen in CI/CD"
+fi
 
 # Step 1: Validate AWS Access
 log_info "Step 1: Validating AWS access..."
@@ -206,14 +254,23 @@ fi
 
 # Step 8: CloudWatch Log Group
 log_info "Step 8: Setting up logging..."
-LOG_GROUP_EXISTS=$(aws logs describe-log-groups --log-group-name-prefix "/ecs/$APP_NAME" --region $AWS_REGION --query 'logGroups[0].logGroupName' --output text 2>/dev/null || echo "None")
-if [ "$LOG_GROUP_EXISTS" = "None" ]; then
-    log_info "Creating CloudWatch log group..."
-    aws logs create-log-group --log-group-name "/ecs/$APP_NAME" --region $AWS_REGION
-    log_success "Created log group"
-else
-    log_success "Using existing log group"
-fi
+
+# Check for all possible log group variations that might be needed
+LOG_GROUPS_TO_CREATE=("/ecs/$APP_NAME" "/ecs/${APP_NAME}-task")
+
+for LOG_GROUP in "${LOG_GROUPS_TO_CREATE[@]}"; do
+    LOG_GROUP_EXISTS=$(aws logs describe-log-groups --log-group-name-prefix "$LOG_GROUP" --region $AWS_REGION --query "logGroups[?logGroupName=='$LOG_GROUP'].logGroupName" --output text 2>/dev/null || echo "")
+    
+    if [ -z "$LOG_GROUP_EXISTS" ]; then
+        log_info "Creating CloudWatch log group: $LOG_GROUP"
+        aws logs create-log-group --log-group-name "$LOG_GROUP" --region $AWS_REGION
+        # Set retention to 7 days to stay within free tier limits
+        aws logs put-retention-policy --log-group-name "$LOG_GROUP" --retention-in-days 7 --region $AWS_REGION
+        log_success "Created log group: $LOG_GROUP"
+    else
+        log_success "Log group already exists: $LOG_GROUP"
+    fi
+done
 
 # Step 9: Application Load Balancer
 log_info "Step 9: Setting up load balancer..."
@@ -359,33 +416,80 @@ else
     log_success "Updated ECS service"
 fi
 
-# Step 12: Wait for deployment
+# Step 12: Wait for deployment with enhanced monitoring
 log_info "Step 12: Waiting for deployment to complete..."
 log_info "This may take 5-10 minutes for the first deployment..."
 
-max_attempts=30
+max_attempts=40
 attempt=0
+last_task_failures=""
+
 while [ $attempt -lt $max_attempts ]; do
     attempt=$((attempt + 1))
     
+    # Check service status
     running_count=$(aws ecs describe-services --cluster $CLUSTER_NAME --services $SERVICE_NAME --region $AWS_REGION --query 'services[0].runningCount' --output text 2>/dev/null || echo "0")
     desired_count=$(aws ecs describe-services --cluster $CLUSTER_NAME --services $SERVICE_NAME --region $AWS_REGION --query 'services[0].desiredCount' --output text 2>/dev/null || echo "1")
     
+    # Check for recent task failures
+    recent_events=$(aws ecs describe-services --cluster $CLUSTER_NAME --services $SERVICE_NAME --region $AWS_REGION --query 'services[0].events[:3]' --output text 2>/dev/null || echo "")
+    
     log_info "Deployment check $attempt/$max_attempts - Running: $running_count/$desired_count"
     
+    # Check for common failure patterns
+    if echo "$recent_events" | grep -q "ResourceInitializationError.*log group does not exist"; then
+        log_warning "Detected log group error - attempting to fix..."
+        aws logs create-log-group --log-group-name "/ecs/$APP_NAME" --region $AWS_REGION 2>/dev/null || true
+        aws ecs update-service --cluster $CLUSTER_NAME --service $SERVICE_NAME --force-new-deployment --region $AWS_REGION > /dev/null
+        log_info "Forced new deployment after log group fix"
+    fi
+    
     if [ "$running_count" = "$desired_count" ] && [ "$running_count" != "0" ]; then
-        log_success "Deployment completed successfully!"
-        break
-    else
-        if [ $attempt -lt $max_attempts ]; then
-            log_info "Waiting 30 seconds..."
-            sleep 30
+        # Double-check that tasks are actually healthy
+        sleep 10
+        final_running=$(aws ecs describe-services --cluster $CLUSTER_NAME --services $SERVICE_NAME --region $AWS_REGION --query 'services[0].runningCount' --output text 2>/dev/null || echo "0")
+        if [ "$final_running" = "$desired_count" ] && [ "$final_running" != "0" ]; then
+            log_success "Deployment completed successfully!"
+            break
         fi
+    fi
+    
+    if [ $attempt -lt $max_attempts ]; then
+        # For failed deployments, show recent service events
+        if [ "$running_count" = "0" ] && [ $attempt -gt 5 ]; then
+            log_warning "No tasks running - checking for issues..."
+            aws ecs describe-services --cluster $CLUSTER_NAME --services $SERVICE_NAME --region $AWS_REGION --query 'services[0].events[:2].message' --output text | head -2
+        fi
+        
+        log_info "Waiting 30 seconds..."
+        sleep 30
     fi
 done
 
-# Get final URL
+# Final validation
+final_running=$(aws ecs describe-services --cluster $CLUSTER_NAME --services $SERVICE_NAME --region $AWS_REGION --query 'services[0].runningCount' --output text 2>/dev/null || echo "0")
+if [ "$final_running" = "0" ]; then
+    log_error "Deployment failed - no tasks are running"
+    log_info "Recent service events:"
+    aws ecs describe-services --cluster $CLUSTER_NAME --services $SERVICE_NAME --region $AWS_REGION --query 'services[0].events[:5].message' --output text | head -5
+    exit 1
+fi
+
+# Get final URL and validate deployment
 ALB_DNS=$(aws elbv2 describe-load-balancers --load-balancer-arns $ALB_ARN --query 'LoadBalancers[0].DNSName' --output text --region $AWS_REGION)
+
+# Test connectivity (basic validation)
+log_info "Testing application connectivity..."
+if command -v curl >/dev/null 2>&1; then
+    # Try to connect to the ALB (with timeout)
+    if curl -s --max-time 10 "http://$ALB_DNS" > /dev/null 2>&1; then
+        log_success "Application is responding to HTTP requests"
+    else
+        log_warning "Application may still be starting up - this is normal for new deployments"
+    fi
+else
+    log_info "curl not available - skipping connectivity test"
+fi
 
 echo ""
 echo "================================================="
@@ -396,9 +500,15 @@ log_success "Region: $AWS_REGION"
 log_success "ECS Cluster: $CLUSTER_NAME"
 log_success "ECS Service: $SERVICE_NAME"
 echo ""
-log_info "📋 Health Check Notes:"
-log_info "• It may take 2-5 minutes for health checks to pass"
-log_info "• If the app doesn't load immediately, wait a few minutes"
-log_info "• Check ECS service events if issues persist"
+log_info "📋 Post-Deployment Notes:"
+log_info "• Application may take 2-5 minutes to become fully available"
+log_info "• ALB health checks need time to pass after deployment"
+log_info "• If the app doesn't load immediately, wait a few minutes and retry"
+log_info "• All AWS resources are configured for Free Tier usage"
 echo ""
-log_success "🚀 Simple frontend deployment completed!"
+log_info "🔍 Troubleshooting Commands:"
+log_info "• Check service: aws ecs describe-services --cluster $CLUSTER_NAME --services $SERVICE_NAME --region $AWS_REGION"
+log_info "• Check tasks: aws ecs list-tasks --cluster $CLUSTER_NAME --region $AWS_REGION"
+log_info "• Check logs: aws logs tail /ecs/$APP_NAME --region $AWS_REGION"
+echo ""
+log_success "🚀 Deployment completed successfully!"
