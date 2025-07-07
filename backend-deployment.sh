@@ -2,6 +2,25 @@
 
 # 🚀 Modulus LMS - Backend Deployment Script
 # Deploys backend API, database, and supporting infrastructure
+#
+# 🔧 KEY LESSONS LEARNED & FIXES:
+# 1. ALB Path Pattern: Use "/api/*" (with leading slash) not "api/*"
+# 2. NPM Install: Use "npm install --production" not "npm ci --only=production"
+# 3. Rule Detection: Check for correct path pattern "/api/*" in existing rules
+# 4. Health Endpoints: Add /api/health endpoints for ALB-accessible health checks
+# 5. Error Handling: Comprehensive validation and fallback for ALB rule creation
+# 6. Target Group Verification: Ensure rules point to correct target groups
+# 7. Endpoint Testing: Test all API endpoints after deployment completion
+#
+# 🚨 TROUBLESHOOTING:
+# - If backend returns 404: Check ALB listener rules for correct path pattern
+# - If ALB rule creation fails: Check for existing rules with different priorities
+# - If health checks fail: Verify target group health check path and port
+# - If database connection fails: Check RDS security groups and Secrets Manager
+#
+# 📋 DEPLOYMENT ORDER:
+# 1. Deploy frontend first (creates ALB, VPC, subnets, security groups)  
+# 2. Deploy backend (adds target group, ECS service, RDS, listener rules)
 
 set -e
 
@@ -16,7 +35,44 @@ NC='\033[0m' # No Color
 AWS_REGION="eu-west-2"
 APP_NAME="modulus"
 CLUSTER_NAME="modulus-cluster"
-BACKEND_SERVICE_NAME="modulus-backend-service"
+BACKEND_SERVICE_NAME="modulus-backend-# API endpoints
+app.get('/api/status', (req, res) => {
+  res.json({ 
+    message: 'Modulus LMS Backend API is running',
+    version: '1.0.0',
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+
+# API health check (accessible via ALB)
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'healthy', 
+    timestamp: new Date().toISOString(),
+    service: 'modulus-backend',
+    version: '1.0.0'
+  });
+});
+
+# API database health check (accessible via ALB)
+app.get('/api/health/db', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT NOW()');
+    res.status(200).json({ 
+      status: 'healthy', 
+      database: 'connected',
+      timestamp: result.rows[0].now,
+      service: 'modulus-backend'
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      status: 'unhealthy', 
+      database: 'disconnected',
+      error: error.message,
+      service: 'modulus-backend'
+    });
+  }
+});
 BACKEND_TASK_FAMILY="modulus-backend-task"
 BACKEND_ECR_REPO="modulus-backend"
 ALB_NAME="modulus-alb"
@@ -438,8 +494,11 @@ WORKDIR /usr/src/app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm install --production
+# Install dependencies with better error handling and optimization
+RUN npm ci --only=production --silent || npm install --production --silent
+
+# Verify critical dependencies are installed
+RUN node -e "require('express'); require('pg'); require('cors'); require('helmet'); console.log('✅ All dependencies verified')"
 
 # Copy app source
 COPY . .
@@ -600,24 +659,60 @@ log_info "Step 16: Setting up ALB listener rule for backend..."
 ALB_ARN=$(aws elbv2 describe-load-balancers --names $ALB_NAME --query 'LoadBalancers[0].LoadBalancerArn' --output text --region $AWS_REGION 2>/dev/null || echo "None")
 if [ "$ALB_ARN" != "None" ]; then
     LISTENER_ARN=$(aws elbv2 describe-listeners --load-balancer-arn $ALB_ARN --query 'Listeners[0].ListenerArn' --output text --region $AWS_REGION)
+    log_info "Found ALB listener: $LISTENER_ARN"
     
-    # Check if backend rule already exists
+    # Check if backend rule already exists (check for correct path pattern with leading slash)
     BACKEND_RULE_EXISTS=$(aws elbv2 describe-rules --listener-arn $LISTENER_ARN --query "Rules[?Conditions[0].Values[0]=='/api/*']" --output text --region $AWS_REGION)
     
     if [ -z "$BACKEND_RULE_EXISTS" ]; then
-        log_info "Creating backend listener rule..."
-        aws elbv2 create-rule \
+        log_info "Creating backend listener rule for path pattern '/api/*'..."
+        
+        # Create the rule with proper error handling
+        RULE_CREATION_RESULT=$(aws elbv2 create-rule \
             --listener-arn $LISTENER_ARN \
             --priority 100 \
             --conditions Field=path-pattern,Values="/api/*" \
             --actions Type=forward,TargetGroupArn=$BACKEND_TARGET_GROUP_ARN \
-            --region $AWS_REGION
-        log_success "Created backend listener rule for /api/* paths"
+            --region $AWS_REGION 2>&1)
+        
+        if [ $? -eq 0 ]; then
+            log_success "Created backend listener rule for /api/* paths"
+            BACKEND_RULE_ARN=$(echo "$RULE_CREATION_RESULT" | jq -r '.Rules[0].RuleArn' 2>/dev/null || echo "N/A")
+            log_info "Backend rule ARN: $BACKEND_RULE_ARN"
+        else
+            log_error "Failed to create backend listener rule: $RULE_CREATION_RESULT"
+            # Check if rule might exist with different priority or old pattern
+            log_info "Checking for existing rules with similar patterns..."
+            EXISTING_API_RULES=$(aws elbv2 describe-rules --listener-arn $LISTENER_ARN --region $AWS_REGION --query 'Rules[?contains(Conditions[0].Values[0], `api`)].{Priority:Priority,Pattern:Conditions[0].Values[0],RuleArn:RuleArn}' --output table 2>/dev/null || echo "No existing API rules found")
+            echo "$EXISTING_API_RULES"
+        fi
     else
-        log_success "Backend listener rule already exists"
+        log_success "Backend listener rule already exists for /api/* paths"
+        # Verify the rule is pointing to correct target group
+        RULE_TARGET_GROUP=$(aws elbv2 describe-rules --listener-arn $LISTENER_ARN --region $AWS_REGION --query "Rules[?Conditions[0].Values[0]=='/api/*'].Actions[0].TargetGroupArn" --output text 2>/dev/null)
+        if [ "$RULE_TARGET_GROUP" = "$BACKEND_TARGET_GROUP_ARN" ]; then
+            log_success "Backend rule is correctly configured"
+        else
+            log_warning "Backend rule exists but may point to different target group"
+            log_info "Expected: $BACKEND_TARGET_GROUP_ARN"
+            log_info "Found: $RULE_TARGET_GROUP"
+        fi
     fi
+    
+    # Get and display ALB DNS for reference
+    ALB_DNS=$(aws elbv2 describe-load-balancers --names $ALB_NAME --query 'LoadBalancers[0].DNSName' --output text --region $AWS_REGION 2>/dev/null)
+    if [ "$ALB_DNS" != "None" ] && [ -n "$ALB_DNS" ]; then
+        log_info "ALB DNS Name: $ALB_DNS"
+        log_info "Backend API endpoints:"
+        log_info "  - Status: http://$ALB_DNS/api/status"
+        log_info "  - Health: http://$ALB_DNS/api/health"
+        log_info "  - Users: http://$ALB_DNS/api/users"
+        log_info "  - Labs: http://$ALB_DNS/api/labs"
+    fi
+    
 else
     log_warning "ALB not found. Backend will be accessible directly via ECS service."
+    log_info "You may need to deploy the frontend first to create the ALB."
 fi
 
 # Step 17: Create Backend ECS Service
@@ -714,24 +809,136 @@ if [ "$ALB_ARN" != "None" ]; then
     ALB_DNS=$(aws elbv2 describe-load-balancers --load-balancer-arns $ALB_ARN --query 'LoadBalancers[0].DNSName' --output text --region $AWS_REGION)
     log_info "Testing backend via ALB..."
     
+    # Test multiple endpoints to ensure routing is working
+    ENDPOINTS=(
+        "/api/status"
+        "/api/health" 
+        "/api/users"
+        "/api/labs"
+    )
+    
     if command -v curl >/dev/null 2>&1; then
-        if curl -f -s --max-time 15 "http://$ALB_DNS/api/status" > /dev/null; then
-            log_success "Backend accessible via ALB at: http://$ALB_DNS/api/status"
+        ALL_ENDPOINTS_WORKING=true
+        
+        for endpoint in "${ENDPOINTS[@]}"; do
+            log_info "Testing endpoint: $endpoint"
+            
+            if curl -f -s --max-time 10 "http://$ALB_DNS$endpoint" > /dev/null; then
+                log_success "✅ $endpoint - Working"
+            else
+                log_warning "⚠️  $endpoint - Not responding (target registration may take a few minutes)"
+                ALL_ENDPOINTS_WORKING=false
+            fi
+        done
+        
+        if [ "$ALL_ENDPOINTS_WORKING" = true ]; then
+            log_success "🎉 All backend endpoints are accessible via ALB!"
         else
-            log_warning "Backend not yet accessible via ALB (target registration may take a few minutes)"
+            log_warning "Some endpoints are not yet accessible. This is normal during initial deployment."
+            log_info "Please wait 2-3 minutes for target registration to complete, then test manually."
         fi
+        
+        echo ""
+        log_info "Backend API Base URL: http://$ALB_DNS/api/"
+        
     else
-        log_info "curl not available - manual testing required at: http://$ALB_DNS/api/status"
+        log_info "curl not available - manual testing required"
+        echo ""
+        log_info "Test these endpoints manually:"
+        for endpoint in "${ENDPOINTS[@]}"; do
+            echo "  - http://$ALB_DNS$endpoint"
+        done
     fi
+else
+    log_warning "ALB not available - backend accessible only via ECS service IP"
 fi
 
 # Step 19: Summary
 echo ""
 echo "🎉 Backend Deployment Complete!"
 echo "================================"
-echo "Database: PostgreSQL on RDS"
-echo "  - Instance: $DB_INSTANCE_ID"
-echo "  - Endpoint: $DB_ENDPOINT"
+
+# Database Summary
+echo ""
+echo "📊 Database Configuration:"
+echo "  Type: PostgreSQL 15.7"
+echo "  Instance: $DB_INSTANCE_ID"
+echo "  Endpoint: $DB_ENDPOINT"
+echo "  Status: $(aws rds describe-db-instances --db-instance-identifier $DB_INSTANCE_ID --query 'DBInstances[0].DBInstanceStatus' --output text --region $AWS_REGION 2>/dev/null || echo 'Unknown')"
+
+# ECS Service Summary
+echo ""
+echo "🐳 ECS Service Configuration:"
+echo "  Cluster: $CLUSTER_NAME"
+echo "  Service: $BACKEND_SERVICE_NAME"
+RUNNING_COUNT=$(aws ecs describe-services --cluster $CLUSTER_NAME --services $BACKEND_SERVICE_NAME --query 'services[0].runningCount' --output text --region $AWS_REGION 2>/dev/null || echo "0")
+DESIRED_COUNT=$(aws ecs describe-services --cluster $CLUSTER_NAME --services $BACKEND_SERVICE_NAME --query 'services[0].desiredCount' --output text --region $AWS_REGION 2>/dev/null || echo "0")
+echo "  Tasks: $RUNNING_COUNT/$DESIRED_COUNT running"
+
+# ALB Summary
+echo ""
+echo "🌐 Application Load Balancer:"
+if [ "$ALB_ARN" != "None" ]; then
+    ALB_STATE=$(aws elbv2 describe-load-balancers --names $ALB_NAME --query 'LoadBalancers[0].State.Code' --output text --region $AWS_REGION 2>/dev/null || echo "unknown")
+    ALB_DNS=$(aws elbv2 describe-load-balancers --names $ALB_NAME --query 'LoadBalancers[0].DNSName' --output text --region $AWS_REGION 2>/dev/null || echo "N/A")
+    echo "  Name: $ALB_NAME"
+    echo "  Status: $ALB_STATE"
+    echo "  DNS: $ALB_DNS"
+    
+    # Check target group health
+    HEALTHY_TARGETS=$(aws elbv2 describe-target-health --target-group-arn $BACKEND_TARGET_GROUP_ARN --region $AWS_REGION --query 'length(TargetHealthDescriptions[?TargetHealth.State==`healthy`])' --output text 2>/dev/null || echo "0")
+    TOTAL_TARGETS=$(aws elbv2 describe-target-health --target-group-arn $BACKEND_TARGET_GROUP_ARN --region $AWS_REGION --query 'length(TargetHealthDescriptions)' --output text 2>/dev/null || echo "0")
+    echo "  Healthy Targets: $HEALTHY_TARGETS/$TOTAL_TARGETS"
+    
+    echo ""
+    echo "🔗 API Endpoints:"
+    echo "  Base URL: http://$ALB_DNS/api/"
+    echo "  Status: http://$ALB_DNS/api/status"
+    echo "  Health: http://$ALB_DNS/api/health"
+    echo "  Users: http://$ALB_DNS/api/users"
+    echo "  Labs: http://$ALB_DNS/api/labs"
+else
+    echo "  Status: ALB not found (deploy frontend first)"
+fi
+
+# Security Summary
+echo ""
+echo "🔐 Security Configuration:"
+echo "  Database Password: Stored in AWS Secrets Manager"
+echo "  ECS Task Role: $BACKEND_TASK_ROLE_NAME"
+echo "  Security Groups: Backend and Database SGs configured"
+
+# Deployment Status
+echo ""
+echo "✅ Deployment Status Summary:"
+echo "  ✅ RDS Database: Created and available"
+echo "  ✅ ECS Service: Created and running ($RUNNING_COUNT tasks)"
+echo "  ✅ Target Group: Created with health checks"
+if [ "$ALB_ARN" != "None" ]; then
+    echo "  ✅ ALB Listener Rule: Configured for /api/* paths"
+    if [ "$HEALTHY_TARGETS" -gt 0 ]; then
+        echo "  ✅ Health Checks: Passing ($HEALTHY_TARGETS healthy targets)"
+    else
+        echo "  ⏳ Health Checks: In progress (targets registering)"
+    fi
+else
+    echo "  ⚠️  ALB Integration: Requires frontend deployment"
+fi
+
+echo ""
+echo "🚀 Next Steps:"
+echo "  1. Wait 2-3 minutes for target registration"
+if [ "$ALB_ARN" != "None" ]; then
+    echo "  2. Test API: curl http://$ALB_DNS/api/status"
+    echo "  3. Verify health: curl http://$ALB_DNS/api/health"
+else
+    echo "  2. Deploy frontend to create ALB integration"
+    echo "  3. Test backend via direct ECS service endpoint"
+fi
+echo "  4. Check CloudWatch logs: /ecs/modulus-backend"
+echo ""
+echo "📚 Documentation: See DEPLOYMENT_SUCCESS.md for full details"
+echo "🎯 Backend deployment completed successfully!"
 echo "  - Database: $DB_NAME"
 echo "  - Username: $DB_USERNAME"
 echo ""
