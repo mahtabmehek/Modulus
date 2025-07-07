@@ -14,7 +14,7 @@ Write-Host ""
 # Test 1: Health Check
 Write-Host "1. Testing Health Endpoint..." -ForegroundColor Yellow
 try {
-    $response = Invoke-RestMethod -Uri "$baseUrl/status" -Method GET
+    $response = Invoke-RestMethod -Uri "$ApiBaseUrl/health" -Method GET
     Write-Host "✅ Health check passed" -ForegroundColor Green
     Write-Host "Response: $($response | ConvertTo-Json -Compress)" -ForegroundColor Gray
 } catch {
@@ -29,7 +29,7 @@ try {
         accessCode = "mahtabmehek1337"
     } | ConvertTo-Json
     
-    $response = Invoke-RestMethod -Uri "$baseUrl/auth/validate-access-code" -Method POST -Body $body -ContentType "application/json"
+    $response = Invoke-RestMethod -Uri "$ApiBaseUrl/auth/validate-access-code" -Method POST -Body $body -ContentType "application/json"
     Write-Host "✅ Access code validation passed" -ForegroundColor Green
     Write-Host "Response: $($response | ConvertTo-Json -Compress)" -ForegroundColor Gray
 } catch {
@@ -44,7 +44,7 @@ try {
         accessCode = "invalid-code"
     } | ConvertTo-Json
     
-    $response = Invoke-RestMethod -Uri "$baseUrl/auth/validate-access-code" -Method POST -Body $body -ContentType "application/json"
+    $response = Invoke-RestMethod -Uri "$ApiBaseUrl/auth/validate-access-code" -Method POST -Body $body -ContentType "application/json"
     Write-Host "❌ Invalid access code was accepted (should fail)" -ForegroundColor Red
 } catch {
     Write-Host "✅ Invalid access code properly rejected" -ForegroundColor Green
@@ -63,7 +63,7 @@ try {
         role = "student"
     } | ConvertTo-Json
     
-    $response = Invoke-RestMethod -Uri "$baseUrl/auth/register" -Method POST -Body $body -ContentType "application/json"
+    $response = Invoke-RestMethod -Uri "$ApiBaseUrl/auth/register" -Method POST -Body $body -ContentType "application/json"
     Write-Host "✅ User registration passed" -ForegroundColor Green
     Write-Host "User created: $($response.user.email)" -ForegroundColor Gray
     $testToken = $response.token
@@ -84,7 +84,7 @@ try {
         password = "testpassword123"
     } | ConvertTo-Json
     
-    $response = Invoke-RestMethod -Uri "$baseUrl/auth/login" -Method POST -Body $body -ContentType "application/json"
+    $response = Invoke-RestMethod -Uri "$ApiBaseUrl/auth/login" -Method POST -Body $body -ContentType "application/json"
     Write-Host "✅ User login passed" -ForegroundColor Green
     Write-Host "Logged in as: $($response.user.name) ($($response.user.role))" -ForegroundColor Gray
     $testToken = $response.token
@@ -101,7 +101,7 @@ if ($testToken) {
             "Authorization" = "Bearer $testToken"
         }
         
-        $response = Invoke-RestMethod -Uri "$baseUrl/auth/me" -Method GET -Headers $headers
+        $response = Invoke-RestMethod -Uri "$ApiBaseUrl/auth/me" -Method GET -Headers $headers
         Write-Host "✅ Protected endpoint access passed" -ForegroundColor Green
         Write-Host "User info: $($response.user.name) - $($response.user.email)" -ForegroundColor Gray
     } catch {
@@ -115,7 +115,7 @@ Write-Host ""
 # Test 7: Database Health Check
 Write-Host "7. Testing Database Connection..." -ForegroundColor Yellow
 try {
-    $response = Invoke-RestMethod -Uri "http://modulus-alb-2046761654.eu-west-2.elb.amazonaws.com/health/db" -Method GET
+    $response = Invoke-RestMethod -Uri "$ApiBaseUrl/health/db" -Method GET
     Write-Host "✅ Database health check passed" -ForegroundColor Green
     Write-Host "Database status: $($response.status)" -ForegroundColor Gray
 } catch {

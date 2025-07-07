@@ -97,48 +97,4 @@ router.get('/debug/tables', async (req, res) => {
   }
 });
 
-// One-time schema initialization endpoint
-router.post('/init-schema', async (req, res) => {
-  try {
-    const db = req.app.locals.db;
-    const fs = require('fs');
-    const path = require('path');
-    
-    // Read schema file
-    const schemaPath = path.join(__dirname, '..', 'schema.sql');
-    if (!fs.existsSync(schemaPath)) {
-      return res.status(500).json({ 
-        status: 'error',
-        error: 'Schema file not found' 
-      });
-    }
-    
-    const schemaSQL = fs.readFileSync(schemaPath, 'utf8');
-    
-    // Execute schema
-    await db.query(schemaSQL);
-    
-    // Verify tables were created
-    const tablesResult = await db.query(`
-      SELECT table_name 
-      FROM information_schema.tables 
-      WHERE table_schema = 'public'
-      ORDER BY table_name
-    `);
-    
-    res.json({
-      status: 'success',
-      message: 'Database schema initialized successfully',
-      tablesCreated: tablesResult.rows.map(row => row.table_name)
-    });
-    
-  } catch (error) {
-    console.error('Schema initialization error:', error);
-    res.status(500).json({ 
-      status: 'error',
-      error: error.message 
-    });
-  }
-});
-
 module.exports = router;
