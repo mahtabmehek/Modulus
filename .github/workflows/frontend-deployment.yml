@@ -3,6 +3,17 @@ name: Deploy Modulus LMS Frontend
 on:
   push:
     branches: [ master ]
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'next.config.js'
+      - 'tailwind.config.js'
+      - 'postcss.config.js'
+      - 'tsconfig.json'
+      - 'frontend-deployment.sh'
+      - '.github/workflows/frontend-deployment.yml'
   workflow_dispatch:
 
 env:
