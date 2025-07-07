@@ -1,0 +1,43 @@
+name: Deploy Modulus LMS Backend
+
+on:
+  push:
+    branches: [ master ]
+    paths:
+      - 'backend/**'
+      - 'backend-deployment.sh'
+      - '.github/workflows/backend-deployment.yml'
+  workflow_dispatch:
+
+env:
+  AWS_REGION: eu-west-2
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: 'backend/package-lock.json'
+    
+    - uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+    
+    - uses: docker/setup-buildx-action@v3
+    
+    - name: Install backend dependencies
+      run: |
+        cd backend
+        npm ci --only=production
+    
+    - name: Deploy backend infrastructure
+      run: |
+        chmod +x ./backend-deployment.sh
+        ./backend-deployment.sh

@@ -1,4 +1,4 @@
-name: Deploy Modulus LMS
+name: Deploy Modulus LMS Frontend
 
 on:
   push:
@@ -27,5 +27,5 @@ jobs:
         npm ci --legacy-peer-deps
         npm run build
     - run: |
-        chmod +x ./deploy.sh
-        ./deploy.sh
+        chmod +x ./frontend-deployment.sh
+        ./frontend-deployment.sh
