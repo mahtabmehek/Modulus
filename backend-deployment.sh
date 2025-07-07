@@ -622,8 +622,8 @@ fi
 
 # Step 17: Create Backend ECS Service
 log_info "Step 17: Creating backend ECS service..."
-BACKEND_SERVICE_EXISTS=$(aws ecs describe-services --cluster $CLUSTER_NAME --services $BACKEND_SERVICE_NAME --region $AWS_REGION 2>/dev/null && echo "true" || echo "false")
-if [ "$BACKEND_SERVICE_EXISTS" = "false" ]; then
+BACKEND_SERVICE_EXISTS=$(aws ecs describe-services --cluster $CLUSTER_NAME --services $BACKEND_SERVICE_NAME --region $AWS_REGION --query 'services[0].serviceName' --output text 2>/dev/null)
+if [ "$BACKEND_SERVICE_EXISTS" = "None" ] || [ -z "$BACKEND_SERVICE_EXISTS" ]; then
     log_info "Creating backend ECS service..."
     aws ecs create-service \
         --cluster $CLUSTER_NAME \
@@ -644,7 +644,7 @@ else
     aws ecs update-service \
         --cluster $CLUSTER_NAME \
         --service $BACKEND_SERVICE_NAME \
-        --task-definition $BACKEND_TASK_FAMILY \
+        --task-definition $BACKEND_TASK_FAMILY:1 \
         --region $AWS_REGION
     
     log_info "Waiting for backend service to stabilize..."
