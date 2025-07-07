@@ -602,14 +602,14 @@ if [ "$ALB_ARN" != "None" ]; then
     LISTENER_ARN=$(aws elbv2 describe-listeners --load-balancer-arn $ALB_ARN --query 'Listeners[0].ListenerArn' --output text --region $AWS_REGION)
     
     # Check if backend rule already exists
-    BACKEND_RULE_EXISTS=$(aws elbv2 describe-rules --listener-arn $LISTENER_ARN --query "Rules[?Conditions[0].Values[0]=='api/*']" --output text --region $AWS_REGION)
+    BACKEND_RULE_EXISTS=$(aws elbv2 describe-rules --listener-arn $LISTENER_ARN --query "Rules[?Conditions[0].Values[0]=='/api/*']" --output text --region $AWS_REGION)
     
     if [ -z "$BACKEND_RULE_EXISTS" ]; then
         log_info "Creating backend listener rule..."
         aws elbv2 create-rule \
             --listener-arn $LISTENER_ARN \
             --priority 100 \
-            --conditions Field=path-pattern,Values="api/*" \
+            --conditions Field=path-pattern,Values="/api/*" \
             --actions Type=forward,TargetGroupArn=$BACKEND_TARGET_GROUP_ARN \
             --region $AWS_REGION
         log_success "Created backend listener rule for /api/* paths"
