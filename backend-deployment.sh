@@ -47,46 +47,6 @@ DB_INSTANCE_ID="modulus-db"
 DB_NAME="modulus"
 DB_USERNAME="modulus_admin"
 
-# API health check (accessible via ALB)
-app.get('/api/health', (req, res) => {
-  res.status(200).json({ 
-    status: 'healthy', 
-    timestamp: new Date().toISOString(),
-    service: 'modulus-backend',
-    version: '1.0.0'
-  });
-});
-
-# API database health check (accessible via ALB)
-app.get('/api/health/db', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT NOW()');
-    res.status(200).json({ 
-      status: 'healthy', 
-      database: 'connected',
-      timestamp: result.rows[0].now,
-      service: 'modulus-backend'
-    });
-  } catch (error) {
-    res.status(500).json({ 
-      status: 'unhealthy', 
-      database: 'disconnected',
-      error: error.message,
-      service: 'modulus-backend'
-    });
-  }
-});
-BACKEND_TASK_FAMILY="modulus-backend-task"
-BACKEND_ECR_REPO="modulus-backend"
-ALB_NAME="modulus-alb"
-BACKEND_TARGET_GROUP_NAME="modulus-backend-tg"
-BACKEND_SECURITY_GROUP_NAME="modulus-backend-sg"
-DB_SECURITY_GROUP_NAME="modulus-db-sg"
-DB_SUBNET_GROUP_NAME="modulus-db-subnet-group"
-DB_INSTANCE_ID="modulus-db"
-DB_NAME="modulus"
-DB_USERNAME="modulus_admin"
-
 # Functions for colored output
 log_info() { echo -e "${BLUE}ℹ️  $1${NC}"; }
 log_success() { echo -e "${GREEN}✅ $1${NC}"; }
