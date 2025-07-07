@@ -5,6 +5,7 @@ import { persist } from 'zustand/middleware'
 import { useEffect } from 'react'
 import { User, ViewState, AppData, UserProgress, DesktopSession, LabSession, InviteCode, InviteSetupData } from '@/types'
 import { mockData } from '@/lib/data/mock-data'
+import { apiClient } from '@/lib/api'
 
 interface AppStore {
   // User state
@@ -57,34 +58,9 @@ interface AppStore {
 export const useAppStore = create<AppStore>()(
   persist(
     (set, get) => ({
-      // Initial state - Disable invite-only mode for development
-      user: {
-        id: 'dev-user-1',
-        name: 'Development User',
-        email: 'dev@modulus.edu',
-        role: 'admin',
-        avatar: '/api/placeholder/40/40',
-        level: 1,
-        levelName: 'Admin',
-        badges: [],
-        streakDays: 0,
-        totalPoints: 0,
-        joinedAt: new Date(),
-        lastActive: new Date(),
-        preferences: {
-          theme: 'dark',
-          language: 'en',
-          notifications: {
-            email: true,
-            push: true,
-            announcements: true,
-            labUpdates: true
-          }
-        },
-        isApproved: true,
-        approvalStatus: 'approved'
-      },
-      isAuthenticated: true,
+      // Initial state - No authenticated user
+      user: null,
+      isAuthenticated: false,
       currentView: { type: 'dashboard' },
       appData: mockData,
       userProgress: [],
@@ -247,34 +223,33 @@ export const useAppStore = create<AppStore>()(
       validateInviteCode: async (code: string) => {
         console.log('Validating invite code:', code)
         
-        // Primary access code for secure access
-        if (code === 'mahtabmehek1337') {
-          console.log('Valid access code detected')
-          return {
-            id: 'secure-invite',
-            code: 'mahtabmehek1337',
-            name: 'Authorized User',
-            email: 'user@modulus.edu',
-            role: 'admin' as const,
-            permissions: ['all'],
-            createdBy: 'system',
-            createdAt: new Date(),
-            expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year
-            isUsed: false
+        try {
+          // Use the real API to validate the access code
+          const result = await apiClient.validateAccessCode(code)
+          console.log('API validation result:', result)
+          
+          if (result.valid) {
+            // Return a mock InviteCode object that matches the expected interface
+            return {
+              id: 'validated-invite',
+              code: code,
+              name: 'Authorized User',
+              email: 'user@modulus.edu',
+              role: 'student' as const,
+              permissions: result.allowedRoles,
+              createdBy: 'system',
+              createdAt: new Date(),
+              expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year
+              isUsed: false
+            }
+          } else {
+            console.log('Invalid access code')
+            return null
           }
+        } catch (error) {
+          console.error('Error validating access code:', error)
+          return null
         }
-
-        // Check localStorage for the invite code (in real app, this would be an API call)
-        const invite = localStorage.getItem(`invite_${code}`)
-        console.log('Checking localStorage for invite:', `invite_${code}`, invite)
-        if (invite) {
-          const inviteData = JSON.parse(invite)
-          if (new Date(inviteData.expiresAt) > new Date() && !inviteData.isUsed) {
-            return inviteData
-          }
-        }
-        console.log('No valid invite found for code:', code)
-        return null
       },
 
       setupUserAccount: async (data: InviteSetupData) => {

@@ -94,7 +94,7 @@ export default function Home() {
   }
 
   // Don't show header/footer for public pages and full-screen views
-  const isPublicPage = ['invite-landing', 'password-setup'].includes(currentView.type)
+  const isPublicPage = ['invite-landing', 'password-setup'].includes(currentView.type) || !isAuthenticated
   const isFullScreenView = ['desktop', 'lab-creation'].includes(currentView.type)
 
   if (isPublicPage || isFullScreenView) {
