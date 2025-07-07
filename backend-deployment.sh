@@ -43,13 +43,25 @@ get_or_generate_db_password() {
     
     if [ "$SECRET_EXISTS" = "false" ]; then
         log_info "Creating new database password..."
-        DB_PASSWORD=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-25)
+        
+        # Generate password using available tools
+        if command -v openssl >/dev/null 2>&1; then
+            DB_PASSWORD=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-25)
+        elif command -v python3 >/dev/null 2>&1; then
+            DB_PASSWORD=$(python3 -c "import secrets, string; print(''.join(secrets.choice(string.ascii_letters + string.digits) for i in range(25)))")
+        elif command -v python >/dev/null 2>&1; then
+            DB_PASSWORD=$(python -c "import random, string; print(''.join(random.choice(string.ascii_letters + string.digits) for i in range(25)))")
+        else
+            # Fallback: use AWS CLI to generate a random string
+            DB_PASSWORD=$(aws secretsmanager get-random-password --password-length 25 --exclude-characters "\"'@/\\" --output text --region $AWS_REGION)
+        fi
         
         # Store password in AWS Secrets Manager
         aws secretsmanager create-secret \
             --name "modulus/db/password" \
             --description "Modulus LMS Database Password" \
             --secret-string "$DB_PASSWORD" \
+            --tags Key=Project,Value=Modulus \
             --region $AWS_REGION
         
         log_success "Created new database password in Secrets Manager"
@@ -129,15 +141,23 @@ if ! command -v docker >/dev/null 2>&1; then
     exit 1
 fi
 
-# Check AWS CLI access
-if ! aws sts get-caller-identity --region $AWS_REGION >/dev/null 2>&1; then
-    log_error "AWS CLI not configured or no permissions. Please configure AWS credentials."
+# Check AWS CLI access (handle different PATH configurations)
+AWS_CLI_CMD=""
+if command -v aws >/dev/null 2>&1; then
+    AWS_CLI_CMD="aws"
+elif command -v "aws.exe" >/dev/null 2>&1; then
+    AWS_CLI_CMD="aws.exe"
+elif [ -f "/c/Program Files/Amazon/AWSCLIV2/aws.exe" ]; then
+    AWS_CLI_CMD="/c/Program Files/Amazon/AWSCLIV2/aws.exe"
+else
+    log_error "AWS CLI not found. Please install AWS CLI and ensure it's in your PATH."
     exit 1
 fi
 
-# Check if openssl is available for password generation
-if ! command -v openssl >/dev/null 2>&1; then
-    log_error "OpenSSL is required for password generation but not found."
+# Test AWS CLI access
+if ! $AWS_CLI_CMD sts get-caller-identity --region $AWS_REGION >/dev/null 2>&1; then
+    log_error "AWS CLI not configured or no permissions. Please configure AWS credentials."
+    log_info "Run: aws configure"
     exit 1
 fi
 
