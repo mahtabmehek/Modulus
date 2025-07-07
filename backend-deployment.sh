@@ -35,14 +35,17 @@ NC='\033[0m' # No Color
 AWS_REGION="eu-west-2"
 APP_NAME="modulus"
 CLUSTER_NAME="modulus-cluster"
-BACKEND_SERVICE_NAME="modulus-backend-# API endpoints
-app.get('/api/status', (req, res) => {
-  res.json({ 
-    message: 'Modulus LMS Backend API is running',
-    version: '1.0.0',
-    environment: process.env.NODE_ENV || 'development'
-  });
-});
+BACKEND_SERVICE_NAME="modulus-backend-service"
+BACKEND_TASK_FAMILY="modulus-backend-task"
+BACKEND_ECR_REPO="modulus-backend"
+ALB_NAME="modulus-alb"
+BACKEND_TARGET_GROUP_NAME="modulus-backend-tg"
+BACKEND_SECURITY_GROUP_NAME="modulus-backend-sg"
+DB_SECURITY_GROUP_NAME="modulus-db-sg"
+DB_SUBNET_GROUP_NAME="modulus-db-subnet-group"
+DB_INSTANCE_ID="modulus-db"
+DB_NAME="modulus"
+DB_USERNAME="modulus_admin"
 
 # API health check (accessible via ALB)
 app.get('/api/health', (req, res) => {
@@ -810,12 +813,7 @@ if [ "$ALB_ARN" != "None" ]; then
     log_info "Testing backend via ALB..."
     
     # Test multiple endpoints to ensure routing is working
-    ENDPOINTS=(
-        "/api/status"
-        "/api/health" 
-        "/api/users"
-        "/api/labs"
-    )
+    ENDPOINTS=("/api/status" "/api/health" "/api/users" "/api/labs")
     
     if command -v curl >/dev/null 2>&1; then
         ALL_ENDPOINTS_WORKING=true
