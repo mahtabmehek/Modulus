@@ -317,175 +317,54 @@ else
     log_success "Using existing backend ECR repository"
 fi
 
-# Step 12: Create Sample Backend Application
-log_info "Step 12: Creating sample backend application..."
-mkdir -p backend
+# Step 12: Use Authentication Backend Application
+log_info "Step 12: Using authentication backend application..."
 
-# Create a simple Express.js backend
-cat > backend/package.json << 'EOF'
-{
-  "name": "modulus-backend",
-  "version": "1.0.0",
-  "description": "Modulus LMS Backend API",
-  "main": "server.js",
-  "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js"
-  },
-  "dependencies": {
-    "express": "^4.18.2",
-    "cors": "^2.8.5",
-    "helmet": "^7.0.0",
-    "pg": "^8.11.0",
-    "dotenv": "^16.3.1"
-  },
-  "engines": {
-    "node": ">=18.0.0"
-  }
-}
-EOF
+# Check if backend directory exists with new authentication code
+if [ ! -d "backend" ]; then
+    log_error "Backend directory not found. Authentication backend should be in 'backend/' directory."
+    exit 1
+fi
 
-# Create a simple Express server
-cat > backend/server.js << 'EOF'
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const { Pool } = require('pg');
-require('dotenv').config();
+if [ ! -f "backend/package.json" ]; then
+    log_error "Backend package.json not found. Please ensure authentication backend is properly set up."
+    exit 1
+fi
 
-const app = express();
-const PORT = process.env.PORT || 3001;
+if [ ! -f "backend/server.js" ]; then
+    log_error "Backend server.js not found. Please ensure authentication backend is properly set up."
+    exit 1
+fi
 
-// Database configuration
-const pool = new Pool({
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT || 5432,
-  database: process.env.DB_NAME,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-});
+log_success "Found authentication backend application"
 
-// Middleware
-app.use(helmet());
-app.use(cors());
-app.use(express.json());
-
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.status(200).json({ 
-    status: 'healthy', 
-    timestamp: new Date().toISOString(),
-    service: 'modulus-backend'
-  });
-});
-
-// Database health check
-app.get('/health/db', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT NOW()');
-    res.status(200).json({ 
-      status: 'healthy', 
-      database: 'connected',
-      timestamp: result.rows[0].now
-    });
-  } catch (error) {
-    res.status(500).json({ 
-      status: 'unhealthy', 
-      database: 'disconnected',
-      error: error.message 
-    });
-  }
-});
-
-// API endpoints
-app.get('/api/status', (req, res) => {
-  res.json({ 
-    message: 'Modulus LMS Backend API is running',
-    version: '1.0.0',
-    environment: process.env.NODE_ENV || 'development'
-  });
-});
-
-// Users endpoint (placeholder)
-app.get('/api/users', async (req, res) => {
-  try {
-    // This would typically query the database
-    res.json({ 
-      message: 'Users endpoint',
-      users: []
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Labs endpoint (placeholder)
-app.get('/api/labs', async (req, res) => {
-  try {
-    // This would typically query the database
-    res.json({ 
-      message: 'Labs endpoint',
-      labs: []
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Start server
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Modulus Backend API listening on port ${PORT}`);
-  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-});
-
-// Graceful shutdown
-process.on('SIGTERM', async () => {
-  console.log('SIGTERM received, shutting down gracefully');
-  await pool.end();
-  process.exit(0);
-});
-EOF
-
-# Create Dockerfile for backend
-cat > backend/Dockerfile << 'EOF'
-FROM node:18-alpine
-
-# Create app directory
-WORKDIR /usr/src/app
-
-# Copy package files
-COPY package*.json ./
-
-# Install dependencies with better error handling and optimization
-RUN npm ci --only=production --silent || npm install --production --silent
-
-# Verify critical dependencies are installed
-RUN node -e "require('express'); require('pg'); require('cors'); require('helmet'); console.log('✅ All dependencies verified')"
-
-# Copy app source
-COPY . .
-
-# Create non-root user
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S backend -u 1001
-
-# Change ownership of the app directory
-RUN chown -R backend:nodejs /usr/src/app
-USER backend
-
-# Expose port
-EXPOSE 3001
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3001/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => process.exit(1))"
-
-# Start the application
-CMD ["npm", "start"]
-EOF
-
-log_success "Created sample backend application"
+# Step 13: Initialize Database Schema
+log_info "Step 13: Initializing database schema..."
+if [ -f "backend/schema.sql" ]; then
+    log_info "Running database schema initialization..."
+    
+    # Get database endpoint
+    DB_ENDPOINT=$(aws rds describe-db-instances --db-instance-identifier $DB_INSTANCE_ID --query 'DBInstances[0].Endpoint.Address' --output text --region $AWS_REGION)
+    
+    # Set database environment variables
+    export PGHOST=$DB_ENDPOINT
+    export PGPORT=5432
+    export PGDATABASE=$DB_NAME
+    export PGUSER=$DB_USERNAME
+    export PGPASSWORD="$DB_PASSWORD"
+    
+    # Try to run schema using psql if available, otherwise log instruction
+    if command -v psql >/dev/null 2>&1; then
+        log_info "Running schema installation with psql..."
+        psql -f backend/schema.sql 2>/dev/null || log_warning "Schema may already exist or psql failed. This is normal for redeployment."
+    else
+        log_warning "psql not available. Database schema should be initialized manually or will be handled by the application."
+    fi
+    
+    log_success "Database schema setup completed"
+else
+    log_warning "No schema.sql found. Database will be initialized by application."
+fi
 
 # Step 13: Build and Push Backend Docker Image
 log_info "Step 13: Building and pushing backend Docker image..."
@@ -510,6 +389,9 @@ log_info "Step 14: Creating backend ECS task definition..."
 
 # Get the actual Secrets Manager ARN
 SECRET_ARN=$(aws secretsmanager describe-secret --secret-id "modulus/db/password" --query 'ARN' --output text --region $AWS_REGION)
+
+# Get ALB DNS name for frontend URL
+ALB_DNS_NAME=$(aws elbv2 describe-load-balancers --names $ALB_NAME --query 'LoadBalancers[0].DNSName' --output text --region $AWS_REGION 2>/dev/null || echo "modulus-alb-placeholder")
 
 cat > backend-task-definition.json << EOF
 {
@@ -554,6 +436,22 @@ cat > backend-task-definition.json << EOF
         {
           "name": "DB_USER",
           "value": "$DB_USERNAME"
+        },
+        {
+          "name": "JWT_SECRET",
+          "value": "modulus-lms-production-jwt-secret-$(date +%s)"
+        },
+        {
+          "name": "JWT_EXPIRES_IN",
+          "value": "24h"
+        },
+        {
+          "name": "FRONTEND_URL",
+          "value": "http://$ALB_DNS_NAME"
+        },
+        {
+          "name": "ACCESS_CODE",
+          "value": "mahtabmehek1337"
         }
       ],
       "secrets": [
