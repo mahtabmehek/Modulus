@@ -255,22 +255,19 @@ fi
 # Step 8: CloudWatch Log Group
 log_info "Step 8: Setting up logging..."
 
-# Check for all possible log group variations that might be needed
-LOG_GROUPS_TO_CREATE=("/ecs/$APP_NAME" "/ecs/${APP_NAME}-task")
+# Create the main log group for the frontend application
+LOG_GROUP="/ecs/$APP_NAME"
+LOG_GROUP_EXISTS=$(aws logs describe-log-groups --log-group-name-prefix "$LOG_GROUP" --region $AWS_REGION --query "logGroups[?logGroupName=='$LOG_GROUP'].logGroupName" --output text 2>/dev/null || echo "")
 
-for LOG_GROUP in "${LOG_GROUPS_TO_CREATE[@]}"; do
-    LOG_GROUP_EXISTS=$(aws logs describe-log-groups --log-group-name-prefix "$LOG_GROUP" --region $AWS_REGION --query "logGroups[?logGroupName=='$LOG_GROUP'].logGroupName" --output text 2>/dev/null || echo "")
-    
-    if [ -z "$LOG_GROUP_EXISTS" ]; then
-        log_info "Creating CloudWatch log group: $LOG_GROUP"
-        aws logs create-log-group --log-group-name "$LOG_GROUP" --region $AWS_REGION
-        # Set retention to 7 days to stay within free tier limits
-        aws logs put-retention-policy --log-group-name "$LOG_GROUP" --retention-in-days 7 --region $AWS_REGION
-        log_success "Created log group: $LOG_GROUP"
-    else
-        log_success "Log group already exists: $LOG_GROUP"
-    fi
-done
+if [ -z "$LOG_GROUP_EXISTS" ]; then
+    log_info "Creating CloudWatch log group: $LOG_GROUP"
+    aws logs create-log-group --log-group-name "$LOG_GROUP" --region $AWS_REGION
+    # Set retention to 7 days to stay within free tier limits
+    aws logs put-retention-policy --log-group-name "$LOG_GROUP" --retention-in-days 7 --region $AWS_REGION
+    log_success "Created log group: $LOG_GROUP"
+else
+    log_success "Log group already exists: $LOG_GROUP"
+fi
 
 # Step 9: Application Load Balancer
 log_info "Step 9: Setting up load balancer..."
@@ -438,10 +435,9 @@ while [ $attempt -lt $max_attempts ]; do
     
     # Check for common failure patterns
     if echo "$recent_events" | grep -q "ResourceInitializationError.*log group does not exist"; then
-        log_warning "Detected log group error - attempting to fix..."
-        aws logs create-log-group --log-group-name "/ecs/$APP_NAME" --region $AWS_REGION 2>/dev/null || true
+        log_warning "Detected log group error - forcing new deployment..."
         aws ecs update-service --cluster $CLUSTER_NAME --service $SERVICE_NAME --force-new-deployment --region $AWS_REGION > /dev/null
-        log_info "Forced new deployment after log group fix"
+        log_info "Forced new deployment after log group detection"
     fi
     
     if [ "$running_count" = "$desired_count" ] && [ "$running_count" != "0" ]; then
