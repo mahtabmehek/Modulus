@@ -44,4 +44,57 @@ router.get('/db', async (req, res) => {
   }
 });
 
+// Debug endpoint to check if users table exists
+router.get('/debug/tables', async (req, res) => {
+  try {
+    const db = req.app.locals.db;
+    
+    // Check if users table exists
+    const tablesResult = await db.query(`
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_schema = 'public' 
+      AND table_name = 'users'
+    `);
+    
+    const usersTableExists = tablesResult.rows.length > 0;
+    
+    // If users table exists, get its structure
+    let tableStructure = null;
+    if (usersTableExists) {
+      const structureResult = await db.query(`
+        SELECT column_name, data_type, is_nullable, column_default
+        FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'users'
+        ORDER BY ordinal_position
+      `);
+      tableStructure = structureResult.rows;
+    }
+    
+    // Get all tables in the database
+    const allTablesResult = await db.query(`
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_schema = 'public'
+    `);
+    
+    res.json({
+      status: 'success',
+      database: {
+        connected: true,
+        usersTableExists,
+        tableStructure,
+        allTables: allTablesResult.rows.map(row => row.table_name)
+      }
+    });
+    
+  } catch (error) {
+    console.error('Debug tables error:', error);
+    res.status(500).json({ 
+      status: 'error',
+      error: error.message 
+    });
+  }
+});
+
 module.exports = router;
