@@ -6,7 +6,7 @@ const { Pool } = require('pg');
 const MockDatabase = require('./mock-db');
 require('dotenv').config();
 
-// Import routes
+// Import routes - updated for deployment test
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
 const healthRoutes = require('./routes/health');
