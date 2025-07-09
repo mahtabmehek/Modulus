@@ -7,7 +7,7 @@ import {
   Users, 
   Server, 
   Shield, 
-  Activity, 
+  BarChart3 as Activity, 
   Settings, 
   AlertTriangle, 
   Database,
@@ -25,14 +25,12 @@ import {
   Clock,
   FileText,
   Download,
-  Mail,
   RefreshCw
 } from 'lucide-react'
-import InviteManagement from './invite-management'
 
 export function AdminDashboard() {
   const { user, appData, navigate } = useApp()
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'infrastructure' | 'security' | 'approvals' | 'invites'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'infrastructure' | 'security' | 'approvals'>('overview')
   
   // Use AWS metrics if configured, otherwise use mock data
   const awsMetrics = useAWSMetrics({ 
@@ -200,7 +198,6 @@ export function AdminDashboard() {
           {[
             { key: 'overview', label: 'Overview', icon: Activity },
             { key: 'users', label: 'User Management', icon: Users },
-            { key: 'invites', label: 'Invite Management', icon: Mail },
             { key: 'approvals', label: 'Instructor Approvals', icon: UserPlus },
             { key: 'infrastructure', label: 'Infrastructure', icon: Server },
             { key: 'security', label: 'Security', icon: Shield }
@@ -432,11 +429,11 @@ export function AdminDashboard() {
               </h3>
               <div className="flex gap-3">
                 <button 
-                  onClick={() => navigate('invite-management')}
-                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
+                  onClick={() => navigate('user-creation')}
+                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
                 >
-                  <Mail className="w-4 h-4" />
-                  Invite Users
+                  <UserPlus className="w-4 h-4" />
+                  Create User
                 </button>
                 <button 
                   onClick={() => navigate('user-creation')}
@@ -512,12 +509,6 @@ export function AdminDashboard() {
               </table>
             </div>
           </div>
-        </div>
-      )}
-
-      {activeTab === 'invites' && (
-        <div className="space-y-6">
-          <InviteManagement />
         </div>
       )}
 

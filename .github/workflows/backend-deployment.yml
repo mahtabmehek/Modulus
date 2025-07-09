@@ -2,10 +2,11 @@ name: Deploy Modulus LMS Backend
 
 on:
   push:
-    branches: [ master ]
+    branches: [ main, master ]
     paths:
       - 'backend/**'
-      - 'backend-deployment.sh'
+      - 'Dockerfile.backend'
+      - 'deploy-backend.sh'
       - '.github/workflows/backend-deployment.yml'
   workflow_dispatch:
 
@@ -32,5 +33,5 @@ jobs:
     
     - name: Deploy backend infrastructure
       run: |
-        chmod +x ./backend-deployment.sh
-        ./backend-deployment.sh
+        chmod +x ./deploy-backend.sh
+        ./deploy-backend.sh

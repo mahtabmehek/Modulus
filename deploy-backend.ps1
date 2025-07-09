@@ -21,7 +21,7 @@
 # 2. Deploy backend (adds target group, ECS service, RDS, listener rules)
 
 param(
-    [string]$Region = "eu-west-2"
+    [string]$Region = "us-east-1"
 )
 
 # Error handling
@@ -31,10 +31,10 @@ $ErrorActionPreference = "Stop"
 $AWS_REGION = $Region
 $APP_NAME = "modulus"
 $CLUSTER_NAME = "modulus-cluster"
-$BACKEND_SERVICE_NAME = "modulus-backend-service"
+$BACKEND_SERVICE_NAME = "modulus-backend"
 $BACKEND_TASK_FAMILY = "modulus-backend-task"
 $BACKEND_ECR_REPO = "modulus-backend"
-$ALB_NAME = "modulus-alb"
+$ALB_NAME = "modulus-backend"
 $BACKEND_TARGET_GROUP_NAME = "modulus-backend-tg"
 $BACKEND_SECURITY_GROUP_NAME = "modulus-backend-sg"
 $DB_SECURITY_GROUP_NAME = "modulus-db-sg"
@@ -42,6 +42,7 @@ $DB_SUBNET_GROUP_NAME = "modulus-db-subnet-group"
 $DB_INSTANCE_ID = "modulus-db"
 $DB_NAME = "modulus"
 $DB_USERNAME = "modulus_admin"
+$ECR_REGISTRY = "590183696703.dkr.ecr.us-east-1.amazonaws.com"
 
 # Functions for colored output
 function Write-Info {

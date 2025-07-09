@@ -1,8 +1,8 @@
-# Modulus LMS Deployment Script (PowerShell)
-Write-Host "🚀 Starting Modulus LMS Deployment..." -ForegroundColor Green
+# Modulus LMS Frontend Deployment Script (PowerShell)
+Write-Host "🚀 Starting Modulus LMS Frontend Deployment..." -ForegroundColor Green
 
 # Set AWS region
-$env:AWS_DEFAULT_REGION = "eu-west-2"
+$env:AWS_DEFAULT_REGION = "us-east-1"
 
 # Build the application
 Write-Host "📦 Building application..." -ForegroundColor Yellow
@@ -35,16 +35,24 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "✅ Docker image built successfully!" -ForegroundColor Green
 
 # Tag for ECR
-$ECR_REGISTRY = "533267404533.dkr.ecr.eu-west-2.amazonaws.com"
+$ECR_REGISTRY = "590183696703.dkr.ecr.us-east-1.amazonaws.com"
 $IMAGE_TAG = "latest"
-$FULL_IMAGE_NAME = "$ECR_REGISTRY/modulus:$IMAGE_TAG"
+$FULL_IMAGE_NAME = "$ECR_REGISTRY/modulus-frontend:$IMAGE_TAG"
 
 Write-Host "🏷️ Tagging image for ECR..." -ForegroundColor Yellow
 docker tag modulus-frontend:latest $FULL_IMAGE_NAME
 
+# Create ECR repository if it doesn't exist
+Write-Host "🏗️ Ensuring ECR repository exists..." -ForegroundColor Yellow
+aws ecr describe-repositories --repository-names modulus-frontend --region us-east-1 2>$null
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "📦 Creating ECR repository..." -ForegroundColor Yellow
+    aws ecr create-repository --repository-name modulus-frontend --region us-east-1
+}
+
 # Login to ECR
 Write-Host "🔐 Logging into ECR..." -ForegroundColor Yellow
-$loginCommand = aws ecr get-login-password --region eu-west-2
+$loginCommand = aws ecr get-login-password --region us-east-1
 if ($LASTEXITCODE -ne 0) {
     Write-Host "❌ ECR login command failed!" -ForegroundColor Red
     exit 1
@@ -70,7 +78,7 @@ Write-Host "✅ Image pushed to ECR successfully!" -ForegroundColor Green
 
 # Update ECS service
 Write-Host "🔄 Updating ECS service..." -ForegroundColor Yellow
-aws ecs update-service --cluster modulus-cluster --service modulus-service --force-new-deployment --region eu-west-2
+aws ecs update-service --cluster modulus-cluster --service modulus-frontend --force-new-deployment --region us-east-1
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "❌ ECS service update failed!" -ForegroundColor Red
@@ -81,20 +89,20 @@ Write-Host "✅ ECS service update initiated!" -ForegroundColor Green
 Write-Host "⏳ Waiting for deployment to complete..." -ForegroundColor Yellow
 
 # Wait for service to become stable
-aws ecs wait services-stable --cluster modulus-cluster --services modulus-service --region eu-west-2
+aws ecs wait services-stable --cluster modulus-cluster --services modulus-frontend --region us-east-1
 
 Write-Host "🎉 Deployment completed successfully!" -ForegroundColor Green
-Write-Host "🌐 Frontend should be available at: http://modulus-alb-2046761654.eu-west-2.elb.amazonaws.com" -ForegroundColor Cyan
+Write-Host "🌐 Frontend should be available at: http://modulus-backend-1734346092.us-east-1.elb.amazonaws.com" -ForegroundColor Cyan
 
 # Test the deployment
 Write-Host "🧪 Testing deployment..." -ForegroundColor Yellow
 Start-Sleep -Seconds 10
 
 try {
-    $response = Invoke-WebRequest -Uri "http://modulus-alb-2046761654.eu-west-2.elb.amazonaws.com" -TimeoutSec 30
+    $response = Invoke-WebRequest -Uri "http://modulus-backend-1734346092.us-east-1.elb.amazonaws.com" -TimeoutSec 30
     Write-Host "✅ Frontend is responding!" -ForegroundColor Green
 } catch {
     Write-Host "⚠️ Frontend might still be starting up. Please check in a few minutes." -ForegroundColor Yellow
 }
 
-Write-Host "✅ Deployment script completed!" -ForegroundColor Green
+Write-Host "✅ Frontend deployment script completed!" -ForegroundColor Green

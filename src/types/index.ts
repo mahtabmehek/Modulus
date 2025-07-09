@@ -235,7 +235,7 @@ export interface Announcement {
 }
 
 export interface ViewState {
-  type: 'login' | 'password-setup' | 'dashboard' | 'path' | 'module' | 'lab' | 'desktop' | 'profile' | 'lab-creation' | 'course-creation' | 'course-edit' | 'course-overview' | 'user-creation' | 'user-edit' | 'user-overview' | 'user-profile'
+  type: 'login' | 'dashboard' | 'path' | 'module' | 'lab' | 'desktop' | 'profile' | 'lab-creation' | 'course-creation' | 'course-edit' | 'course-overview' | 'user-creation' | 'user-edit' | 'user-overview' | 'user-profile'
   params?: {
     pathId?: string
     moduleId?: string
@@ -266,31 +266,6 @@ export interface CompletionStats {
   badges: number
   currentStreak: number
   totalPoints: number
-}
-
-export interface InviteCode {
-  id: string
-  code: string
-  email: string
-  name: string
-  studentId?: string
-  role: UserRole
-  permissions: string[]
-  createdBy: string
-  createdAt: Date
-  expiresAt: Date
-  isUsed: boolean
-  usedAt?: Date
-  usedBy?: string
-}
-
-export interface InviteSetupData {
-  name: string
-  email: string
-  studentId?: string
-  role: UserRole
-  password: string
-  inviteCode: string
 }
 
 export interface UserPermissions {

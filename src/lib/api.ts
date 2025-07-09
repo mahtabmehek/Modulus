@@ -1,5 +1,7 @@
 // API configuration and utilities
-const API_BASE_URL = 'http://modulus-alb-2046761654.eu-west-2.elb.amazonaws.com/api'
+const API_BASE_URL = process.env.NODE_ENV === 'production' 
+  ? 'http://modulus-backend-1734346092.eu-west-2.elb.amazonaws.com/api'
+  : 'http://localhost:3001/api'
 
 interface ApiError {
   message: string

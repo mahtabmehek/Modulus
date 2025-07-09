@@ -88,9 +88,11 @@ export const useAppStore = create<AppStore>()(
       login: async (email: string, password: string) => {
         try {
           console.log('Attempting login with:', { email })
+          console.log('NODE_ENV:', process.env.NODE_ENV)
           
           // Use real API in production, mock in development
           if (process.env.NODE_ENV === 'production') {
+            console.log('Using production API')
             const response = await apiClient.login({ email, password })
             console.log('Production login successful:', response)
 
@@ -106,18 +108,24 @@ export const useAppStore = create<AppStore>()(
             
             return { success: true }
           } else {
+            console.log('Using development mock authentication')
             // Development mock authentication
-            const testUsers = {
-              'student@test.com': { id: 'user-1', name: 'Test Student', role: 'student' as const },
-              'instructor@test.com': { id: 'user-2', name: 'Test Instructor', role: 'instructor' as const },
-              'admin@test.com': { id: 'user-3', name: 'Test Admin', role: 'admin' as const },
-              'student@modulus.com': { id: 'user-1', name: 'Test Student', role: 'student' as const },
-              'instructor@modulus.com': { id: 'user-2', name: 'Test Instructor', role: 'instructor' as const },
-              'admin@modulus.com': { id: 'user-3', name: 'Test Admin', role: 'admin' as const }
+            const testUsers: Record<string, { id: string; name: string; role: User['role'] }> = {
+              // Email format
+              'student@test.com': { id: 'user-1', name: 'Test Student', role: 'student' },
+              'instructor@test.com': { id: 'user-2', name: 'Test Instructor', role: 'instructor' },
+              'admin@test.com': { id: 'user-3', name: 'Test Admin', role: 'admin' },
+              'student@modulus.com': { id: 'user-4', name: 'Modulus Student', role: 'student' },
+              'instructor@modulus.com': { id: 'user-5', name: 'Modulus Instructor', role: 'instructor' },
+              'admin@modulus.com': { id: 'user-6', name: 'Modulus Admin', role: 'admin' },
+              // Simple username format
+              'student': { id: 'user-7', name: 'Test Student', role: 'student' },
+              'instructor': { id: 'user-8', name: 'Test Instructor', role: 'instructor' },
+              'admin': { id: 'user-9', name: 'Test Admin', role: 'admin' }
             }
             
-            const user = testUsers[email as keyof typeof testUsers]
-            const validPassword = ['student123', 'instructor123', 'admin123'].includes(password)
+            const user = testUsers[email]
+            const validPassword = password === 'Mahtabmehek@1337'
             
             if (user && validPassword) {
               console.log('Mock login successful:', user)

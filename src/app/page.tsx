@@ -16,7 +16,6 @@ import { UserCreationView } from '@/components/views/user-creation'
 import { DesktopView } from '@/components/views/desktop-view'
 import { ProfileView } from '@/components/views/profile-view'
 import { LoginView } from '@/components/views/login'
-import PasswordSetupPage from '@/components/views/password-setup'
 import { Footer } from '@/components/layout/footer'
 
 export default function Home() {
@@ -44,9 +43,6 @@ export default function Home() {
     // Public pages (no authentication required)
     if (currentView.type === 'login') {
       return <LoginView />
-    }
-    if (currentView.type === 'password-setup') {
-      return <PasswordSetupPage />
     }
 
     // Protected pages (authentication required)
@@ -91,7 +87,7 @@ export default function Home() {
   }
 
   // Don't show header/footer for public pages and full-screen views
-  const isPublicPage = ['login', 'password-setup'].includes(currentView.type) || !isAuthenticated
+  const isPublicPage = ['login'].includes(currentView.type) || !isAuthenticated
   const isFullScreenView = ['desktop', 'lab-creation'].includes(currentView.type)
 
   if (isPublicPage || isFullScreenView) {

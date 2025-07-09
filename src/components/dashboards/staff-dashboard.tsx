@@ -110,13 +110,6 @@ export function StaffDashboard() {
               <h2 className="text-xl font-semibold text-foreground">User Management</h2>
               <div className="flex space-x-2">
                 <button 
-                  onClick={() => navigate('invite-management')}
-                  className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Invite Users</span>
-                </button>
-                <button 
                   onClick={() => navigate('user-creation')}
                   className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
                 >
@@ -174,18 +167,7 @@ export function StaffDashboard() {
         {/* Quick Actions */}
         <div className="mt-8 bg-card rounded-lg p-6 border border-border">
           <h2 className="text-xl font-semibold mb-6 text-foreground">Quick Actions</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <button 
-              onClick={() => navigate('invite-management')}
-              className="flex items-center space-x-3 p-4 bg-muted hover:bg-muted/80 rounded-lg transition-colors text-left"
-            >
-              <Users className="w-6 h-6 text-blue-500" />
-              <div>
-                <h3 className="font-medium text-foreground">Manage Invites</h3>
-                <p className="text-sm text-muted-foreground">Create and manage user invitations</p>
-              </div>
-            </button>
-
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <button 
               onClick={() => navigate('course-overview')}
               className="flex items-center space-x-3 p-4 bg-muted hover:bg-muted/80 rounded-lg transition-colors text-left"

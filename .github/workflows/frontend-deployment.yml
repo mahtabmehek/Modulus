@@ -2,7 +2,7 @@ name: Deploy Modulus LMS Frontend
 
 on:
   push:
-    branches: [ master ]
+    branches: [ main, master ]
     paths:
       - 'src/**'
       - 'public/**'
@@ -12,7 +12,8 @@ on:
       - 'tailwind.config.js'
       - 'postcss.config.js'
       - 'tsconfig.json'
-      - 'frontend-deployment.sh'
+      - 'Dockerfile'
+      - 'deploy-frontend.sh'
       - '.github/workflows/frontend-deployment.yml'
   workflow_dispatch:
 
@@ -38,5 +39,5 @@ jobs:
         npm ci --legacy-peer-deps
         npm run build
     - run: |
-        chmod +x ./frontend-deployment.sh
-        ./frontend-deployment.sh
+        chmod +x ./deploy-frontend.sh
+        ./deploy-frontend.sh

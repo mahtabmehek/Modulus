@@ -6,7 +6,7 @@ import {
   Users, 
   Server, 
   Shield, 
-  Activity, 
+  BarChart3 as Activity, 
   Settings, 
   AlertTriangle, 
   Database,
