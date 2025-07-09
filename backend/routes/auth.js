@@ -330,4 +330,90 @@ router.put('/change-password', [
   }
 });
 
+// POST /api/auth/create-test-users - For development/testing only
+router.post('/create-test-users', async (req, res) => {
+  try {
+    // Only allow in development environment
+    if (process.env.NODE_ENV === 'production') {
+      return res.status(403).json({ error: 'Not available in production' });
+    }
+
+    const db = req.app.locals.db;
+    const saltRounds = 12;
+
+    const testUsers = [
+      {
+        email: 'student@test.com',
+        password: 'student123',
+        name: 'Test Student',
+        role: 'student',
+        isApproved: true
+      },
+      {
+        email: 'instructor@test.com',
+        password: 'instructor123',
+        name: 'Test Instructor',
+        role: 'instructor',
+        isApproved: true
+      },
+      {
+        email: 'admin@test.com',
+        password: 'admin123',
+        name: 'Test Admin',
+        role: 'admin',
+        isApproved: true
+      }
+    ];
+
+    const createdUsers = [];
+
+    for (const testUser of testUsers) {
+      // Check if user already exists
+      const existing = await db.query(
+        'SELECT id FROM users WHERE email = $1',
+        [testUser.email]
+      );
+
+      if (existing.rows.length === 0) {
+        // Hash password
+        const passwordHash = await bcrypt.hash(testUser.password, saltRounds);
+
+        // Insert user
+        const result = await db.query(
+          `INSERT INTO users (email, password_hash, name, role, is_approved, created_at, last_active)
+           VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+           RETURNING id, email, name, role`,
+          [testUser.email, passwordHash, testUser.name, testUser.role, testUser.isApproved]
+        );
+
+        createdUsers.push({
+          ...result.rows[0],
+          password: testUser.password // Return plain password for testing
+        });
+      } else {
+        // User already exists, just return info
+        const userInfo = await db.query(
+          'SELECT id, email, name, role FROM users WHERE email = $1',
+          [testUser.email]
+        );
+        
+        createdUsers.push({
+          ...userInfo.rows[0],
+          password: testUser.password, // Return plain password for testing
+          existed: true
+        });
+      }
+    }
+
+    res.json({
+      message: 'Test users created/verified successfully',
+      users: createdUsers
+    });
+
+  } catch (error) {
+    console.error('Create test users error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 module.exports = router;

@@ -13,10 +13,9 @@ import LabView from '@/components/views/lab-view'
 import LabCreationView from '@/components/views/lab-creation'
 import { CourseCreationView } from '@/components/views/course-creation'
 import { UserCreationView } from '@/components/views/user-creation'
-import { InviteUserView } from '@/components/views/invite-user'
 import { DesktopView } from '@/components/views/desktop-view'
 import { ProfileView } from '@/components/views/profile-view'
-import InviteLandingPage from '@/components/views/invite-landing'
+import { LoginView } from '@/components/views/login'
 import PasswordSetupPage from '@/components/views/password-setup'
 import { Footer } from '@/components/layout/footer'
 
@@ -43,8 +42,8 @@ export default function Home() {
     }
 
     // Public pages (no authentication required)
-    if (currentView.type === 'invite-landing') {
-      return <InviteLandingPage />
+    if (currentView.type === 'login') {
+      return <LoginView />
     }
     if (currentView.type === 'password-setup') {
       return <PasswordSetupPage />
@@ -52,7 +51,7 @@ export default function Home() {
 
     // Protected pages (authentication required)
     if (!isAuthenticated) {
-      return <InviteLandingPage />
+      return <LoginView />
     }
 
     switch (currentView.type) {
@@ -81,8 +80,6 @@ export default function Home() {
         return <CourseCreationView />
       case 'user-creation':
         return <UserCreationView />
-      case 'invite-management':
-        return <InviteUserView />
       case 'desktop':
         return <DesktopView />
       case 'profile':
@@ -94,7 +91,7 @@ export default function Home() {
   }
 
   // Don't show header/footer for public pages and full-screen views
-  const isPublicPage = ['invite-landing', 'password-setup'].includes(currentView.type) || !isAuthenticated
+  const isPublicPage = ['login', 'password-setup'].includes(currentView.type) || !isAuthenticated
   const isFullScreenView = ['desktop', 'lab-creation'].includes(currentView.type)
 
   if (isPublicPage || isFullScreenView) {

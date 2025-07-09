@@ -235,13 +235,12 @@ export interface Announcement {
 }
 
 export interface ViewState {
-  type: 'invite-landing' | 'password-setup' | 'dashboard' | 'path' | 'module' | 'lab' | 'desktop' | 'profile' | 'login-existing' | 'lab-creation' | 'course-creation' | 'course-edit' | 'course-overview' | 'user-creation' | 'user-edit' | 'user-overview' | 'invite-management' | 'user-profile'
+  type: 'login' | 'password-setup' | 'dashboard' | 'path' | 'module' | 'lab' | 'desktop' | 'profile' | 'lab-creation' | 'course-creation' | 'course-edit' | 'course-overview' | 'user-creation' | 'user-edit' | 'user-overview' | 'user-profile'
   params?: {
     pathId?: string
     moduleId?: string
     labId?: string
     sessionId?: string
-    inviteCode?: string
     courseId?: string
     userId?: string
     [key: string]: any

@@ -3,7 +3,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { useEffect } from 'react'
-import { User, ViewState, AppData, UserProgress, DesktopSession, LabSession, InviteCode, InviteSetupData } from '@/types'
+import { User, ViewState, AppData, UserProgress, DesktopSession, LabSession } from '@/types'
 import { mockData } from '@/lib/data/mock-data'
 import { apiClient } from '@/lib/api'
 
@@ -28,23 +28,16 @@ interface AppStore {
   labSessions: LabSession[]
   currentLabSession: LabSession | null
   
-  // Invite system
-  inviteCodes: InviteCode[]
-  
   // Actions
   setUser: (user: User | null) => void
   logout: () => void
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
   navigate: (type: ViewState['type'], params?: ViewState['params']) => void
   updateProgress: (progress: UserProgress) => void
   createDesktopSession: (labId: string) => Promise<DesktopSession>
   terminateDesktopSession: (sessionId: string) => void
   switchUserRole: (role: User['role']) => void
   initializeFromUrl: () => void
-  
-  // Invite system actions
-  validateInviteCode: (code: string) => Promise<InviteCode | null>
-  setupUserAccount: (data: InviteSetupData) => Promise<User>
-  generateInviteCode: (data: Omit<InviteCode, 'id' | 'code' | 'createdAt' | 'isUsed'>) => Promise<InviteCode>
   
   // Lab session actions
   startLabSession: (labId: string) => Promise<LabSession>
@@ -58,38 +51,124 @@ interface AppStore {
 export const useAppStore = create<AppStore>()(
   persist(
     (set, get) => ({
-      // Initial state - No authenticated user
+      // Initial state - No authenticated user, start with login
       user: null,
       isAuthenticated: false,
-      currentView: { type: 'dashboard' },
+      currentView: { type: 'login' },
       appData: mockData,
       userProgress: [],
       desktopSessions: [],
       labSessions: [],
       currentLabSession: null,
-      inviteCodes: [],
 
       // Actions
       setUser: (user) => {
         set({ user, isAuthenticated: !!user })
-        // If logging out, redirect to dashboard (invite-only disabled)
+        // If logging out, redirect to login
         if (!user) {
-          set({ currentView: { type: 'dashboard' } })
+          set({ currentView: { type: 'login' } })
         }
       },
       
       logout: () => {
-        set({ user: null, isAuthenticated: false, currentView: { type: 'invite-landing' } })
+        set({ user: null, isAuthenticated: false, currentView: { type: 'login' } })
         if (typeof window !== 'undefined') {
           const url = new URL(window.location.href)
-          url.searchParams.set('view', 'landing')
+          url.searchParams.set('view', 'login')
           // Clear all other params
           Array.from(url.searchParams.keys()).forEach(key => {
             if (key !== 'view') {
               url.searchParams.delete(key)
             }
           })
-          window.history.pushState({ view: { type: 'landing' } }, '', url.toString())
+          window.history.pushState({ view: { type: 'login' } }, '', url.toString())
+        }
+      },
+      
+      login: async (email: string, password: string) => {
+        try {
+          console.log('Attempting login with:', { email })
+          
+          // Use real API in production, mock in development
+          if (process.env.NODE_ENV === 'production') {
+            const response = await apiClient.login({ email, password })
+            console.log('Production login successful:', response)
+
+            // Set token in API client
+            apiClient.setToken(response.token)
+            
+            // Set user and redirect to dashboard
+            set({
+              user: response.user,
+              isAuthenticated: true,
+              currentView: { type: 'dashboard' }
+            })
+            
+            return { success: true }
+          } else {
+            // Development mock authentication
+            const testUsers = {
+              'student@test.com': { id: 'user-1', name: 'Test Student', role: 'student' as const },
+              'instructor@test.com': { id: 'user-2', name: 'Test Instructor', role: 'instructor' as const },
+              'admin@test.com': { id: 'user-3', name: 'Test Admin', role: 'admin' as const },
+              'student@modulus.com': { id: 'user-1', name: 'Test Student', role: 'student' as const },
+              'instructor@modulus.com': { id: 'user-2', name: 'Test Instructor', role: 'instructor' as const },
+              'admin@modulus.com': { id: 'user-3', name: 'Test Admin', role: 'admin' as const }
+            }
+            
+            const user = testUsers[email as keyof typeof testUsers]
+            const validPassword = ['student123', 'instructor123', 'admin123'].includes(password)
+            
+            if (user && validPassword) {
+              console.log('Mock login successful:', user)
+              
+              // Create mock user object
+              const mockUser: User = {
+                id: user.id,
+                email: email,
+                name: user.name,
+                role: user.role,
+                avatar: '/api/placeholder/40/40',
+                level: 1,
+                levelName: 'Beginner',
+                badges: [],
+                streakDays: 0,
+                totalPoints: 0,
+                joinedAt: new Date(),
+                lastActive: new Date(),
+                preferences: {
+                  theme: 'dark',
+                  language: 'en',
+                  notifications: {
+                    email: true,
+                    push: true,
+                    announcements: true,
+                    labUpdates: true
+                  }
+                },
+                isApproved: true,
+                approvalStatus: 'approved'
+              }
+              
+              // Set user and redirect to dashboard
+              set({
+                user: mockUser,
+                isAuthenticated: true,
+                currentView: { type: 'dashboard' }
+              })
+              
+              return { success: true }
+            } else {
+              console.log('Invalid credentials')
+              return { success: false, error: 'Invalid email or password' }
+            }
+          }
+        } catch (error) {
+          console.error('Login error:', error)
+          return { 
+            success: false, 
+            error: error instanceof Error ? error.message : 'Login failed' 
+          }
         }
       },
       
@@ -185,7 +264,7 @@ export const useAppStore = create<AppStore>()(
         if (typeof window === 'undefined') return
         
         const url = new URL(window.location.href)
-        const viewType = url.searchParams.get('view') as ViewState['type'] || 'invite-landing'
+        const viewType = url.searchParams.get('view') as ViewState['type'] || 'login'
         
         // Extract parameters from URL and build the params object correctly
         const params: ViewState['params'] = {}
@@ -217,108 +296,6 @@ export const useAppStore = create<AppStore>()(
         
         const newView: ViewState = { type: viewType, params }
         set({ currentView: newView })
-      },
-
-      // Invite system actions
-      validateInviteCode: async (code: string) => {
-        console.log('Validating invite code:', code)
-        
-        try {
-          // Use the real API to validate the access code
-          const result = await apiClient.validateAccessCode(code)
-          console.log('API validation result:', result)
-          
-          if (result.valid) {
-            // Return a mock InviteCode object that matches the expected interface
-            return {
-              id: 'validated-invite',
-              code: code,
-              name: 'Authorized User',
-              email: 'user@modulus.edu',
-              role: 'student' as const,
-              permissions: result.allowedRoles,
-              createdBy: 'system',
-              createdAt: new Date(),
-              expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year
-              isUsed: false
-            }
-          } else {
-            console.log('Invalid access code')
-            return null
-          }
-        } catch (error) {
-          console.error('Error validating access code:', error)
-          return null
-        }
-      },
-
-      setupUserAccount: async (data: InviteSetupData) => {
-        const { inviteCodes } = get()
-        
-        // Create new user from invite data
-        const newUser: User = {
-          id: `user-${Date.now()}`,
-          name: data.name,
-          email: data.email,
-          role: data.role,
-          avatar: '/api/placeholder/40/40',
-          level: 1,
-          levelName: 'Beginner',
-          badges: [],
-          streakDays: 0,
-          totalPoints: 0,
-          joinedAt: new Date(),
-          lastActive: new Date(),
-          preferences: {
-            theme: 'dark',
-            language: 'en',
-            notifications: {
-              email: true,
-              push: true,
-              announcements: true,
-              labUpdates: true
-            }
-          },
-          isApproved: true,
-          approvalStatus: 'approved',
-          studentId: data.studentId
-        }
-
-        // Mark invite as used
-        const inviteKey = `invite_${data.inviteCode}`
-        const invite = localStorage.getItem(inviteKey)
-        if (invite) {
-          const inviteData = JSON.parse(invite)
-          inviteData.isUsed = true
-          inviteData.usedAt = new Date()
-          inviteData.usedBy = newUser.id
-          localStorage.setItem(inviteKey, JSON.stringify(inviteData))
-        }
-
-        // Set user and authenticate
-        set({ user: newUser, isAuthenticated: true })
-        
-        return newUser
-      },
-
-      generateInviteCode: async (data: Omit<InviteCode, 'id' | 'code' | 'createdAt' | 'isUsed'>) => {
-        const code = Math.random().toString(36).substring(2, 10).toUpperCase()
-        const invite: InviteCode = {
-          id: `invite-${Date.now()}`,
-          code,
-          createdAt: new Date(),
-          isUsed: false,
-          ...data
-        }
-
-        // Store in localStorage (in real app, this would be saved to database)
-        localStorage.setItem(`invite_${code}`, JSON.stringify(invite))
-
-        set((state) => ({
-          inviteCodes: [...state.inviteCodes, invite]
-        }))
-
-        return invite
       },
 
       // Lab session actions
