@@ -145,8 +145,14 @@ process.on('SIGINT', () => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 Modulus Backend API listening on port ${PORT}`);
-  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`Database: ${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME}`);
-});
+// Export the app for Lambda deployment
+module.exports = app;
+
+// Only start the server if running directly (not in Lambda)
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`🚀 Modulus Backend API listening on port ${PORT}`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`Database: ${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME}`);
+  });
+}

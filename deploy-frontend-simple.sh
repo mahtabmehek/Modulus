@@ -1,14 +1,14 @@
 #!/bin/bash
 
-# Modulus LMS Frontend Deployment Script - S3 Static Hosting
+# Modulus LMS Frontend Deployment Script - S3 + CloudFront
 echo "🚀 Starting Modulus LMS Frontend Deployment..."
 
 # Set AWS region
 export AWS_DEFAULT_REGION=eu-west-2
 
 # Variables
-S3_BUCKET="modulus-frontend-${RANDOM}"
-REGION="eu-west-2"
+S3_BUCKET="modulus-frontend-$(date +%s)"
+CLOUDFRONT_DISTRIBUTION_ID=""
 
 # Build the frontend application
 echo "📦 Building frontend application..."
@@ -23,7 +23,7 @@ echo "✅ Frontend build completed successfully!"
 
 # Create S3 bucket for static hosting
 echo "📁 Creating S3 bucket for static hosting..."
-aws s3 mb s3://$S3_BUCKET --region $REGION
+aws s3 mb s3://$S3_BUCKET --region eu-west-2
 
 if [ $? -ne 0 ]; then
     echo "❌ S3 bucket creation failed!"
@@ -32,7 +32,7 @@ fi
 
 # Configure S3 bucket for static website hosting
 echo "🔧 Configuring S3 bucket for static website hosting..."
-aws s3 website s3://$S3_BUCKET --index-document index.html --error-document 404.html
+aws s3 website s3://$S3_BUCKET --index-document index.html --error-document error.html
 
 # Set bucket policy for public read access
 echo "🔐 Setting bucket policy for public access..."
@@ -65,7 +65,7 @@ fi
 echo "✅ Frontend files uploaded to S3 successfully!"
 
 # Get S3 website URL
-S3_WEBSITE_URL="http://$S3_BUCKET.s3-website.$REGION.amazonaws.com"
+S3_WEBSITE_URL="http://$S3_BUCKET.s3-website.eu-west-2.amazonaws.com"
 
 echo "🎉 Frontend deployment completed successfully!"
 echo "🌐 Frontend is available at: $S3_WEBSITE_URL"
@@ -83,5 +83,4 @@ fi
 rm -f bucket-policy.json
 
 echo "✅ Frontend deployment script completed!"
-echo "📝 S3 Bucket: $S3_BUCKET"
-echo "📝 Website URL: $S3_WEBSITE_URL"
+echo "📝 Note: For production, consider setting up CloudFront distribution for better performance and HTTPS"
