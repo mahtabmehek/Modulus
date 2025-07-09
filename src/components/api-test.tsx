@@ -34,7 +34,7 @@ export default function ApiTestPage() {
       setResult(JSON.stringify(data, null, 2))
     } catch (error) {
       console.error('API call error:', error)
-      setResult(`Error: ${error.message}`)
+      setResult(`Error: ${error instanceof Error ? error.message : String(error)}`)
     } finally {
       setLoading(false)
     }
