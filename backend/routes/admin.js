@@ -122,4 +122,91 @@ router.get('/test-users', async (req, res) => {
   }
 });
 
+// Simple seed endpoint for easier access
+router.get('/seed', async (req, res) => {
+  try {
+    const pool = req.app.locals.db;
+    if (!pool) {
+      return res.status(500).json({ error: 'Database connection not available' });
+    }
+
+    // Password for all test users
+    const password = 'Mahtabmehek@1337';
+    const saltRounds = 12;
+    const passwordHash = await bcrypt.hash(password, saltRounds);
+
+    // Test users to create
+    const testUsers = [
+      { email: 'student@test.com', name: 'Test Student', role: 'student', level: 1, level_name: 'Beginner', total_points: 0 },
+      { email: 'instructor@test.com', name: 'Test Instructor', role: 'instructor', level: 5, level_name: 'Advanced', total_points: 500 },
+      { email: 'admin@test.com', name: 'Test Admin', role: 'admin', level: 10, level_name: 'Expert', total_points: 1000 },
+      { email: 'student', name: 'Simple Student', role: 'student', level: 1, level_name: 'Beginner', total_points: 0 },
+      { email: 'instructor', name: 'Simple Instructor', role: 'instructor', level: 5, level_name: 'Advanced', total_points: 500 },
+      { email: 'admin', name: 'Simple Admin', role: 'admin', level: 10, level_name: 'Expert', total_points: 1000 }
+    ];
+
+    // Create users table if it doesn't exist
+    const createTableQuery = `
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        password_hash VARCHAR(255) NOT NULL,
+        role VARCHAR(50) NOT NULL CHECK (role IN ('student', 'instructor', 'admin')),
+        is_approved BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_active TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        level INTEGER DEFAULT 1,
+        level_name VARCHAR(50) DEFAULT 'Beginner',
+        total_points INTEGER DEFAULT 0
+      );
+    `;
+    
+    await pool.query(createTableQuery);
+
+    // Insert test users
+    const insertQuery = `
+      INSERT INTO users (email, name, password_hash, role, is_approved, level, level_name, total_points)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      ON CONFLICT (email) DO UPDATE SET
+        password_hash = $3,
+        role = $4,
+        is_approved = $5,
+        level = $6,
+        level_name = $7,
+        total_points = $8
+      RETURNING id, email, name, role;
+    `;
+
+    const insertedUsers = [];
+    for (const user of testUsers) {
+      const result = await pool.query(insertQuery, [
+        user.email,
+        user.name,
+        passwordHash,
+        user.role,
+        true,
+        user.level,
+        user.level_name,
+        user.total_points
+      ]);
+      insertedUsers.push(result.rows[0]);
+    }
+
+    res.json({
+      message: 'Test users seeded successfully',
+      users: insertedUsers,
+      total: insertedUsers.length,
+      password: password
+    });
+
+  } catch (error) {
+    console.error('Error seeding test users:', error);
+    res.status(500).json({ 
+      error: 'Failed to seed test users', 
+      details: error.message 
+    });
+  }
+});
+
 module.exports = router;

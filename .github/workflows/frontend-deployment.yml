@@ -1,8 +1,8 @@
-name: Deploy Modulus LMS Frontend (S3)
+name: Frontend Deployment
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main ]
     paths:
       - 'src/**'
       - 'public/**'
@@ -10,30 +10,219 @@ on:
       - 'package-lock.json'
       - 'next.config.js'
       - 'tailwind.config.js'
-      - 'postcss.config.js'
-      - 'tsconfig.json'
-      - 'deploy-frontend-s3.sh'
       - '.github/workflows/frontend-deployment.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'src/**'
+      - 'public/**'
   workflow_dispatch:
-
-env:
-  AWS_REGION: eu-west-2
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: production
+
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-node@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
       with:
         node-version: '18'
         cache: 'npm'
-    - uses: aws-actions/configure-aws-credentials@v4
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ env.AWS_REGION }}
-    - name: Build and Deploy Frontend to S3
+        aws-region: eu-west-2
+
+    - name: Get API Gateway URL
       run: |
-        chmod +x ./deploy-frontend-s3.sh
-        ./deploy-frontend-s3.sh
+        API_ID=$(aws apigateway get-rest-apis --query 'items[?name==`modulus-api`].id' --output text)
+        if [ -z "$API_ID" ] || [ "$API_ID" = "None" ]; then
+          echo "⚠️  API Gateway not found, deploying backend first is recommended"
+          echo "Using fallback API URL"
+          echo "NEXT_PUBLIC_API_URL=https://api.modulus.com/api" >> $GITHUB_ENV
+        else
+          echo "✅ Found API Gateway with ID: $API_ID"
+          API_URL="https://$API_ID.execute-api.eu-west-2.amazonaws.com/prod/api"
+          echo "NEXT_PUBLIC_API_URL=$API_URL" >> $GITHUB_ENV
+          echo "API_GATEWAY_URL=$API_URL" >> $GITHUB_ENV
+          
+          # Test API health before building
+          echo "Testing API health..."
+          curl -f -s "$API_URL/health" | jq . || echo "⚠️  API health check failed"
+        fi
+
+    - name: Build frontend
+      run: |
+        echo "Building with API URL: $NEXT_PUBLIC_API_URL"
+        npm run build
+        
+        # Check if build was successful
+        if [ ! -d "out" ]; then
+          echo "❌ Build failed - no 'out' directory found"
+          exit 1
+        fi
+        
+        echo "✅ Build successful"
+        ls -la out/
+
+    - name: Create or get S3 bucket
+      run: |
+        BUCKET_NAME="modulus-frontend-$(date +%s)"
+        
+        # Check if bucket exists
+        if aws s3api head-bucket --bucket modulus-frontend-1752085873 2>/dev/null; then
+          echo "Using existing bucket: modulus-frontend-1752085873"
+          echo "BUCKET_NAME=modulus-frontend-1752085873" >> $GITHUB_ENV
+        else
+          echo "Creating new bucket: $BUCKET_NAME"
+          aws s3api create-bucket \
+            --bucket $BUCKET_NAME \
+            --region eu-west-2 \
+            --create-bucket-configuration LocationConstraint=eu-west-2
+          
+          # Configure bucket for static website hosting
+          aws s3api put-bucket-website \
+            --bucket $BUCKET_NAME \
+            --website-configuration '{
+              "IndexDocument": {"Suffix": "index.html"},
+              "ErrorDocument": {"Key": "404.html"}
+            }'
+          
+          echo "BUCKET_NAME=$BUCKET_NAME" >> $GITHUB_ENV
+        fi
+
+    - name: Configure S3 bucket permissions
+      run: |
+        # Remove public access block
+        aws s3api put-public-access-block \
+          --bucket $BUCKET_NAME \
+          --public-access-block-configuration BlockPublicAcls=false,IgnorePublicAcls=false,BlockPublicPolicy=false,RestrictPublicBuckets=false
+        
+        # Apply bucket policy for public read access
+        aws s3api put-bucket-policy \
+          --bucket $BUCKET_NAME \
+          --policy '{
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Sid": "PublicReadGetObject",
+                "Effect": "Allow",
+                "Principal": "*",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::'$BUCKET_NAME'/*"
+              }
+            ]
+          }'
+
+    - name: Deploy to S3
+      run: |
+        echo "Deploying to S3 bucket: $BUCKET_NAME"
+        aws s3 sync out/ s3://$BUCKET_NAME --delete --region eu-west-2
+        
+        # List uploaded files for verification
+        echo "Files uploaded to S3:"
+        aws s3 ls s3://$BUCKET_NAME --recursive | head -20
+
+    - name: Create or update CloudFront distribution
+      run: |
+        # Check if CloudFront distribution exists
+        DISTRIBUTION_ID=$(aws cloudfront list-distributions --query 'DistributionList.Items[?Comment==`Modulus LMS Frontend`].Id' --output text)
+        
+        if [ -z "$DISTRIBUTION_ID" ] || [ "$DISTRIBUTION_ID" = "None" ]; then
+          echo "Creating new CloudFront distribution..."
+          DISTRIBUTION_ID=$(aws cloudfront create-distribution \
+            --distribution-config '{
+              "CallerReference": "'$(date +%s)'",
+              "Comment": "Modulus LMS Frontend",
+              "DefaultCacheBehavior": {
+                "TargetOriginId": "S3-'$BUCKET_NAME'",
+                "ViewerProtocolPolicy": "redirect-to-https",
+                "MinTTL": 0,
+                "ForwardedValues": {
+                  "QueryString": false,
+                  "Cookies": {"Forward": "none"}
+                },
+                "TrustedSigners": {
+                  "Enabled": false,
+                  "Quantity": 0
+                }
+              },
+              "Origins": {
+                "Quantity": 1,
+                "Items": [
+                  {
+                    "Id": "S3-'$BUCKET_NAME'",
+                    "DomainName": "'$BUCKET_NAME'.s3-website.eu-west-2.amazonaws.com",
+                    "CustomOriginConfig": {
+                      "HTTPPort": 80,
+                      "HTTPSPort": 443,
+                      "OriginProtocolPolicy": "http-only"
+                    }
+                  }
+                ]
+              },
+              "Enabled": true,
+              "PriceClass": "PriceClass_100"
+            }' \
+            --query 'Distribution.Id' \
+            --output text)
+          
+          echo "Created CloudFront distribution: $DISTRIBUTION_ID"
+        else
+          echo "Using existing CloudFront distribution: $DISTRIBUTION_ID"
+        fi
+        
+        echo "DISTRIBUTION_ID=$DISTRIBUTION_ID" >> $GITHUB_ENV
+
+    - name: Invalidate CloudFront cache
+      run: |
+        echo "Invalidating CloudFront cache for distribution: $DISTRIBUTION_ID"
+        aws cloudfront create-invalidation \
+          --distribution-id $DISTRIBUTION_ID \
+          --paths "/*"
+
+    - name: Wait for deployment
+      run: |
+        echo "Waiting for CloudFront deployment to complete..."
+        sleep 30
+
+    - name: Get distribution URL
+      run: |
+        DISTRIBUTION_URL=$(aws cloudfront get-distribution --id $DISTRIBUTION_ID --query 'Distribution.DomainName' --output text)
+        echo "DISTRIBUTION_URL=$DISTRIBUTION_URL" >> $GITHUB_ENV
+
+    - name: Test deployment
+      run: |
+        echo "Testing frontend deployment..."
+        
+        # Test S3 website endpoint
+        echo "Testing S3 website endpoint..."
+        curl -f -s "http://$BUCKET_NAME.s3-website.eu-west-2.amazonaws.com" | head -20 || echo "⚠️  S3 website test failed"
+        
+        # Test CloudFront URL
+        echo "Testing CloudFront URL..."
+        curl -f -s "https://$DISTRIBUTION_URL" | head -20 || echo "⚠️  CloudFront test failed"
+        
+        # Test API connectivity from frontend
+        if [ -n "$API_GATEWAY_URL" ]; then
+          echo "Testing API connectivity..."
+          curl -f -s "$API_GATEWAY_URL/health" | jq . || echo "⚠️  API connectivity test failed"
+        fi
+
+    - name: Output deployment info
+      run: |
+        echo "🚀 Frontend deployment completed!"
+        echo "📦 S3 Bucket: $BUCKET_NAME"
+        echo "🌐 S3 Website: http://$BUCKET_NAME.s3-website.eu-west-2.amazonaws.com"
+        echo "⚡ CloudFront: https://$DISTRIBUTION_URL"
+        echo "🔗 API URL: $NEXT_PUBLIC_API_URL"

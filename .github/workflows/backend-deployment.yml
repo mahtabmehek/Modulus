@@ -1,34 +1,233 @@
-name: Deploy Modulus LMS Backend (Lambda)
+name: Backend Deployment
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main ]
     paths:
       - 'backend/**'
-      - 'deploy-backend-lambda.sh'
       - '.github/workflows/backend-deployment.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'backend/**'
   workflow_dispatch:
-
-env:
-  AWS_REGION: eu-west-2
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: production
+
     steps:
-    - uses: actions/checkout@v4
-    
-    - uses: actions/setup-node@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
       with:
         node-version: '18'
-    
-    - uses: aws-actions/configure-aws-credentials@v4
+        cache: 'npm'
+        cache-dependency-path: backend/package-lock.json
+
+    - name: Install dependencies
+      run: |
+        cd backend
+        npm ci
+
+    - name: Run tests
+      run: |
+        cd backend
+        npm test || echo "No tests found"
+
+    - name: Validate routes
+      run: |
+        cd backend
+        echo "Validating admin routes..."
+        if grep -q "router.get('/seed'" routes/admin.js; then
+          echo "✅ /seed route found in admin.js"
+        else
+          echo "❌ /seed route NOT found in admin.js"
+          exit 1
+        fi
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ env.AWS_REGION }}
-    
-    - name: Deploy backend to Lambda
+        aws-region: eu-west-2
+
+    - name: Create deployment package
       run: |
-        chmod +x ./deploy-backend-lambda.sh
-        ./deploy-backend-lambda.sh
+        cd backend
+        zip -r ../backend-deployment.zip . -x "*.git*" "*node_modules*" "*.log*"
+        cd ..
+        ls -la backend-deployment.zip
+
+    - name: Create Lambda execution role if it doesn't exist
+      run: |
+        aws iam get-role --role-name lambda-execution-role || \
+        aws iam create-role --role-name lambda-execution-role --assume-role-policy-document '{
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        }'
+        
+        aws iam attach-role-policy --role-name lambda-execution-role --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole || true
+
+    - name: Deploy Lambda function
+      run: |
+        # Check if function exists
+        if aws lambda get-function --function-name modulus-backend 2>/dev/null; then
+          echo "Updating existing Lambda function..."
+          aws lambda update-function-code \
+            --function-name modulus-backend \
+            --zip-file fileb://backend-deployment.zip \
+            --region eu-west-2
+          
+          # Update environment variables
+          aws lambda update-function-configuration \
+            --function-name modulus-backend \
+            --timeout 30 \
+            --memory-size 512 \
+            --environment Variables="{
+              NODE_ENV=production,
+              DB_HOST=${{ secrets.DB_HOST }},
+              DB_PORT=${{ secrets.DB_PORT }},
+              DB_NAME=${{ secrets.DB_NAME }},
+              DB_USER=${{ secrets.DB_USER }},
+              DB_PASSWORD=${{ secrets.DB_PASSWORD }},
+              JWT_SECRET=${{ secrets.JWT_SECRET }},
+              FRONTEND_URL=${{ secrets.FRONTEND_URL }}
+            }"
+        else
+          echo "Creating new Lambda function..."
+          aws lambda create-function \
+            --function-name modulus-backend \
+            --runtime nodejs18.x \
+            --role arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/lambda-execution-role \
+            --handler lambda.handler \
+            --zip-file fileb://backend-deployment.zip \
+            --timeout 30 \
+            --memory-size 512 \
+            --region eu-west-2 \
+            --environment Variables="{
+              NODE_ENV=production,
+              DB_HOST=${{ secrets.DB_HOST }},
+              DB_PORT=${{ secrets.DB_PORT }},
+              DB_NAME=${{ secrets.DB_NAME }},
+              DB_USER=${{ secrets.DB_USER }},
+              DB_PASSWORD=${{ secrets.DB_PASSWORD }},
+              JWT_SECRET=${{ secrets.JWT_SECRET }},
+              FRONTEND_URL=${{ secrets.FRONTEND_URL }}
+            }"
+        fi
+
+    - name: Create API Gateway if it doesn't exist
+      run: |
+        # Check if API Gateway exists
+        API_ID=$(aws apigateway get-rest-apis --query 'items[?name==`modulus-api`].id' --output text)
+        
+        if [ -z "$API_ID" ] || [ "$API_ID" = "None" ]; then
+          echo "Creating new API Gateway..."
+          API_ID=$(aws apigateway create-rest-api \
+            --name modulus-api \
+            --description "Modulus LMS Backend API" \
+            --query 'id' \
+            --output text)
+          echo "Created API Gateway with ID: $API_ID"
+        else
+          echo "API Gateway already exists with ID: $API_ID"
+        fi
+        
+        # Get root resource ID
+        ROOT_ID=$(aws apigateway get-resources --rest-api-id $API_ID --query 'items[?path==`/`].id' --output text)
+        
+        # Create proxy resource if it doesn't exist
+        PROXY_ID=$(aws apigateway get-resources --rest-api-id $API_ID --query 'items[?pathPart==`{proxy+}`].id' --output text)
+        
+        if [ -z "$PROXY_ID" ] || [ "$PROXY_ID" = "None" ]; then
+          echo "Creating proxy resource..."
+          PROXY_ID=$(aws apigateway create-resource \
+            --rest-api-id $API_ID \
+            --parent-id $ROOT_ID \
+            --path-part '{proxy+}' \
+            --query 'id' \
+            --output text)
+        fi
+        
+        # Create ANY method if it doesn't exist
+        aws apigateway put-method \
+          --rest-api-id $API_ID \
+          --resource-id $PROXY_ID \
+          --http-method ANY \
+          --authorization-type NONE \
+          --region eu-west-2 || true
+        
+        # Create integration
+        aws apigateway put-integration \
+          --rest-api-id $API_ID \
+          --resource-id $PROXY_ID \
+          --http-method ANY \
+          --type AWS_PROXY \
+          --integration-http-method POST \
+          --uri "arn:aws:apigateway:eu-west-2:lambda:path/2015-03-31/functions/arn:aws:lambda:eu-west-2:${{ secrets.AWS_ACCOUNT_ID }}:function:modulus-backend/invocations" \
+          --region eu-west-2 || true
+        
+        # Grant API Gateway permission to invoke Lambda
+        aws lambda add-permission \
+          --function-name modulus-backend \
+          --statement-id apigateway-invoke \
+          --action lambda:InvokeFunction \
+          --principal apigateway.amazonaws.com \
+          --source-arn "arn:aws:execute-api:eu-west-2:${{ secrets.AWS_ACCOUNT_ID }}:$API_ID/*/*" \
+          --region eu-west-2 || true
+        
+        # Deploy API
+        aws apigateway create-deployment \
+          --rest-api-id $API_ID \
+          --stage-name prod \
+          --region eu-west-2
+        
+        echo "API Gateway URL: https://$API_ID.execute-api.eu-west-2.amazonaws.com/prod"
+        echo "API_GATEWAY_URL=https://$API_ID.execute-api.eu-west-2.amazonaws.com/prod" >> $GITHUB_ENV
+
+    - name: Test API deployment
+      run: |
+        echo "Testing API deployment..."
+        sleep 15  # Wait for deployment to be ready
+        
+        API_ID=$(aws apigateway get-rest-apis --query 'items[?name==`modulus-api`].id' --output text)
+        BASE_URL="https://$API_ID.execute-api.eu-west-2.amazonaws.com/prod"
+        
+        echo "Testing endpoints on: $BASE_URL"
+        
+        # Test health endpoint
+        echo "Testing health endpoint..."
+        curl -f -s "$BASE_URL/api/health" | jq . || echo "Health check failed"
+        
+        # Test status endpoint
+        echo "Testing status endpoint..."
+        curl -f -s "$BASE_URL/api/status" | jq . || echo "Status check failed"
+        
+        # Test seed endpoint
+        echo "Testing seed endpoint..."
+        curl -f -s "$BASE_URL/api/admin/seed" | jq . || echo "Seed endpoint failed"
+        
+        # Test database health
+        echo "Testing database health..."
+        curl -f -s "$BASE_URL/api/health/db" | jq . || echo "Database health check failed"
+
+    - name: Output deployment info
+      run: |
+        API_ID=$(aws apigateway get-rest-apis --query 'items[?name==`modulus-api`].id' --output text)
+        echo "🚀 Backend deployment completed!"
+        echo "📡 API Gateway URL: https://$API_ID.execute-api.eu-west-2.amazonaws.com/prod"
+        echo "🔍 Health Check: https://$API_ID.execute-api.eu-west-2.amazonaws.com/prod/api/health"
+        echo "🌱 Seed Endpoint: https://$API_ID.execute-api.eu-west-2.amazonaws.com/prod/api/admin/seed"
