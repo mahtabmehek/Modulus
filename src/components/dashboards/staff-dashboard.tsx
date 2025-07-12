@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useApp } from '@/lib/hooks/use-app'
 import { apiClient } from '@/lib/api'
-import { Users, BookOpen, GraduationCap, UserCheck, UserPlus, BarChart3 } from 'lucide-react'
+import { Users, BookOpen, GraduationCap, UserCheck, UserPlus, BarChart3, Settings, Plus } from 'lucide-react'
 
 export function StaffDashboard() {
   const { user, navigate } = useApp()
@@ -19,14 +19,13 @@ export function StaffDashboard() {
   useEffect(() => {
     const loadStats = async () => {
       try {
-        const [usersResponse, coursesResponse, approvalsResponse] = await Promise.all([
-          apiClient.adminGetUsers(),
-          apiClient.getCourses(),
-          apiClient.adminGetUsers()
+        const [usersResponse, coursesResponse] = await Promise.all([
+          apiClient.getAllUsers(),
+          apiClient.getCourses()
         ])
         
-        const users = usersResponse.success ? usersResponse.data : []
-        const courses = coursesResponse.success ? coursesResponse.data : []
+        const users = usersResponse.users || []
+        const courses = coursesResponse.courses || []
         
         const instructors = users.filter(u => u.role === 'instructor')
         const students = users.filter(u => u.role === 'student')

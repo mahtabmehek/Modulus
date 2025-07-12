@@ -224,10 +224,10 @@ export default function LabCreationView() {
       // Create the lab using the API
       const response = await apiClient.createLab({
         name: labData.title,
-        type: labData.type,
+        type: labData.labType,
         description: labData.description,
         instructions: tasks.map(task => `${task.title}: ${task.description}`).join('\n'),
-        estimatedDuration: labData.estimatedDuration,
+        estimatedDuration: labData.estimatedTime,
         difficulty: labData.difficulty,
         module_id: 1 // Default module ID - should be selected by user
       })

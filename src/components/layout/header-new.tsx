@@ -51,10 +51,10 @@ export function Header() {
   // Check if user is in a lab or desktop session
   const isInLab = currentView.type === 'lab' || currentView.type === 'desktop'
   
-  // Get IP addresses from session data
-  const currentSession = getCurrentLabSession()
+  // Get IP addresses from session data - TODO: Replace with real session data
+  const currentSession = null // Placeholder until session management is implemented
   const userMachineIP = 'Local Network'
-  const labVmIP = currentSession ? `VM-${currentSession.id.slice(0, 8)}` : 'N/A'
+  const labVmIP = currentSession ? `VM-${(currentSession as any).id.slice(0, 8)}` : 'N/A'
 
   return (
     <header className="bg-red-600 text-white">

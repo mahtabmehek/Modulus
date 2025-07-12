@@ -20,9 +20,9 @@ export function ModuleView() {
           // For now, use courses API to simulate module data
           // In the future, this would be a dedicated modules API
           const coursesResponse = await apiClient.getCourses()
-          if (coursesResponse.success && coursesResponse.data.length > 0) {
+          if (coursesResponse.courses && coursesResponse.courses.length > 0) {
             // Create a sample module from course data
-            const courseData = coursesResponse.data[0] // Use first course
+            const courseData = coursesResponse.courses[0] // Use first course
             const sampleModule = {
               id: moduleId,
               name: `${courseData.title} - Module 1`,

@@ -1,7 +1,9 @@
 // API configuration and utilities
-const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://9yr579qaz1.execute-api.eu-west-2.amazonaws.com/prod/api'
-  : 'http://localhost:3001/api'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || (
+  process.env.NODE_ENV === 'production' 
+    ? 'https://9yr579qaz1.execute-api.eu-west-2.amazonaws.com/prod/api'
+    : 'http://localhost:3001/api'
+)
 
 interface ApiError {
   message: string

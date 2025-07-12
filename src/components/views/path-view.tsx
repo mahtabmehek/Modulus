@@ -20,13 +20,13 @@ export function PathView() {
           // For now, create a learning path from available courses
           // In the future, this would be a dedicated paths API
           const coursesResponse = await apiClient.getCourses()
-          if (coursesResponse.success) {
+          if (coursesResponse.courses) {
             // Create a sample path from the courses
             const samplePath = {
               id: pathId,
               name: 'Cybersecurity Fundamentals Path',
               description: 'Master the fundamentals of cybersecurity through hands-on labs and practical exercises.',
-              courses: coursesResponse.data.slice(0, 3), // Take first 3 courses
+              courses: coursesResponse.courses.slice(0, 3), // Take first 3 courses
               estimatedDuration: '8-12 weeks',
               difficulty: 'Beginner to Intermediate'
             }

@@ -286,6 +286,55 @@ export function AdminDashboard() {
     }
   }
 
+  const handleCreateUser = async (userData: { name: string; email: string; role: string }) => {
+    try {
+      setLoading(true)
+      console.log('Creating user:', userData)
+      
+      const response = await apiClient.createUser({
+        name: userData.name,
+        email: userData.email,
+        role: userData.role,
+        password: 'tempPassword123!' // Default password that user should change
+      })
+      
+      setShowUserModal(false)
+      await loadUsers() // Refresh the list
+      alert('✅ User created successfully!')
+    } catch (error) {
+      console.error('Failed to create user:', error)
+      alert('❌ Failed to create user. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleCreateCourse = async (courseData: { title: string; code: string; department: string; academicLevel: string; totalCredits: number }) => {
+    try {
+      setLoading(true)
+      console.log('Creating course:', courseData)
+      
+      const response = await apiClient.createCourse({
+        title: courseData.title,
+        code: courseData.code,
+        department: courseData.department,
+        academicLevel: courseData.academicLevel,
+        totalCredits: courseData.totalCredits,
+        description: `${courseData.title} course`,
+        duration: 12 // Default duration in weeks
+      })
+      
+      setShowCourseModal(false)
+      await loadCourses() // Refresh the list
+      alert('✅ Course created successfully!')
+    } catch (error) {
+      console.error('Failed to create course:', error)
+      alert('❌ Failed to create course. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const toggleUserActions = (userId: string) => {
     setShowUserActions(prev => {
       // Close all other dropdowns and toggle the clicked one
