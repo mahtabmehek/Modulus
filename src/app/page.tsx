@@ -16,16 +16,21 @@ import { UserCreationView } from '@/components/views/user-creation'
 import { DesktopView } from '@/components/views/desktop-view'
 import { ProfileView } from '@/components/views/profile-view'
 import { LoginView } from '@/components/views/login'
+import { RegisterView } from '@/components/views/register-page'
+import { PendingApprovalView } from '@/components/views/pending-approval'
 import { Footer } from '@/components/layout/footer'
 
 export default function Home() {
-  const { currentView, user, isAuthenticated } = useApp()
+  const { currentView, user, isAuthenticated, initialize, logout } = useApp()
   const [isClient, setIsClient] = useState(false)
 
-  // Handle client-side hydration
+  // Handle client-side hydration and initialization
   useEffect(() => {
     setIsClient(true)
-  }, [])
+    // Initialize the app state and URL handling
+    const cleanup = initialize()
+    return cleanup
+  }, [initialize])
 
   const renderContent = () => {
     // Show loading during hydration to prevent mismatch
@@ -44,10 +49,42 @@ export default function Home() {
     if (currentView.type === 'login') {
       return <LoginView />
     }
+    
+    if (currentView.type === 'register') {
+      return <RegisterView />
+    }
+
+    if (currentView.type === 'pending-approval') {
+      return <PendingApprovalView />
+    }
 
     // Protected pages (authentication required)
     if (!isAuthenticated) {
       return <LoginView />
+    }
+
+    // Check if user is approved before allowing access to protected views
+    if (user && user.status !== 'approved') {
+      return (
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+          <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg text-center max-w-md mx-4">
+            <div className="text-yellow-500 text-5xl mb-4">⏳</div>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+              Account Pending Approval
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              Your account is currently <span className="font-medium">{user.status}</span>. 
+              Please wait for admin approval before accessing the platform.
+            </p>
+            <button 
+              onClick={logout}
+              className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors"
+            >
+              Sign Out
+            </button>
+          </div>
+        </div>
+      )
     }
 
     switch (currentView.type) {

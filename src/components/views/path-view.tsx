@@ -1,14 +1,36 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { useApp } from '@/lib/hooks/use-app'
 import { ArrowLeft, Clock, Users, Award } from 'lucide-react'
 
 export function PathView() {
-  const { appData, navigate, currentView } = useApp()
+  const { navigate, currentView } = useApp()
+  const [path, setPath] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
   
   // Get pathId from either the direct property or params
   const pathId = currentView.params?.pathId
-  const path = appData.learningPaths.find(p => p.id === pathId)
+
+  useEffect(() => {
+    // TODO: Fetch real path data from API
+    if (pathId) {
+      // For now, just show empty state until API is implemented
+      setPath(null)
+    }
+    setLoading(false)
+  }, [pathId])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading learning path...</p>
+        </div>
+      </div>
+    )
+  }
   
   if (!path) {
     return (
@@ -51,24 +73,20 @@ export function PathView() {
         <div className="flex flex-wrap gap-4 mb-4">
           <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
             <Clock className="w-4 h-4 mr-2" />
-            <span>{path.estimatedHours} hours</span>
+            <span>Self-paced</span>
           </div>
           <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
             <Users className="w-4 h-4 mr-2" />
-            <span>{path.modules.length} modules</span>
+            <span>Available modules will be shown here</span>
           </div>
           <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
             <Award className="w-4 h-4 mr-2" />
-            <span>{path.difficulty} level</span>
+            <span>All levels</span>
           </div>
         </div>
         
-        <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
-          path.difficulty === 'Beginner' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' :
-          path.difficulty === 'Intermediate' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300' :
-          'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
-        }`}>
-          {path.difficulty}
+        <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
+          Learning Path
         </span>
       </div>
 
@@ -78,50 +96,9 @@ export function PathView() {
           Modules
         </h2>
         
-        {path.modules.map((module, index) => (
-          <div 
-            key={module.id}
-            className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 ${
-              module.isLocked ? 'opacity-50' : 'cursor-pointer hover:border-red-300 dark:hover:border-red-600'
-            } transition-colors`}
-            onClick={() => !module.isLocked && navigate('module', { pathId: path.id, moduleId: module.id })}
-          >
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="flex items-center space-x-3 mb-2">
-                  <span className="flex items-center justify-center w-8 h-8 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-300 rounded-full text-sm font-medium">
-                    {index + 1}
-                  </span>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    {module.title}
-                  </h3>
-                  {module.isLocked && (
-                    <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded text-xs">
-                      Locked
-                    </span>
-                  )}
-                </div>
-                
-                <p className="text-gray-600 dark:text-gray-400 mb-4">
-                  {module.description}
-                </p>
-                
-                <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
-                  <span>{module.labs.length} labs</span>
-                  <span>{module.estimatedHours} hours</span>
-                </div>
-              </div>
-              
-              <div className="text-right">
-                <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-lg mb-2"></div>
-                <span className="text-xs text-gray-500 dark:text-gray-400">Progress</span>
-                <div className="w-16 bg-gray-200 dark:bg-gray-700 rounded-full h-1 mt-1">
-                  <div className="bg-red-500 h-1 rounded-full" style={{ width: '30%' }}></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 text-center">
+          <p className="text-gray-600 dark:text-gray-400">Modules will be loaded here from the API.</p>
+        </div>
       </div>
     </div>
   )

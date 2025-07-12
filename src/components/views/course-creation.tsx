@@ -3,9 +3,12 @@
 import { useState } from 'react'
 import { useApp } from '@/lib/hooks/use-app'
 import { ArrowLeft, Save } from 'lucide-react'
+import { apiClient } from '@/lib/api'
 
 export function CourseCreationView() {
   const { navigate } = useApp()
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -23,12 +26,34 @@ export function CourseCreationView() {
     }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Here you would typically save the course to your backend
-    console.log('Creating course:', formData)
-    // Navigate back to dashboard
-    navigate('dashboard')
+    setLoading(true)
+    setError('')
+    
+    try {
+      // Transform formData to match API expectations
+      const courseData = {
+        title: formData.title,
+        code: formData.code,
+        description: formData.description,
+        department: formData.department,
+        academicLevel: formData.level, // Transform level to academicLevel
+        duration: formData.duration,
+        totalCredits: formData.totalCredits
+      }
+      
+      console.log('Creating course:', courseData)
+      const response = await apiClient.createCourse(courseData)
+      console.log('Course created successfully:', response)
+      alert('Course created successfully!')
+      navigate('dashboard')
+    } catch (error) {
+      console.error('Failed to create course:', error)
+      setError(error instanceof Error ? error.message : 'Failed to create course')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -50,10 +75,11 @@ export function CourseCreationView() {
           </div>
           <button
             onClick={handleSubmit}
-            className="flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg transition-colors font-medium"
+            disabled={loading}
+            className="flex items-center space-x-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg transition-colors font-medium"
           >
             <Save className="w-4 h-4" />
-            <span>Create Course</span>
+            <span>{loading ? 'Creating...' : 'Create Course'}</span>
           </button>
         </div>
 
@@ -192,21 +218,30 @@ export function CourseCreationView() {
             </div>
           </div>
 
+          {/* Error Display */}
+          {error && (
+            <div className="p-4 bg-red-50 border border-red-200 rounded-lg mt-6">
+              <p className="text-red-700 text-sm">{error}</p>
+            </div>
+          )}
+
           {/* Form Actions */}
           <div className="flex items-center justify-end space-x-4 mt-8">
             <button
               type="button"
               onClick={() => navigate('dashboard')}
-              className="px-6 py-3 border border-border text-foreground hover:bg-muted rounded-lg transition-colors"
+              disabled={loading}
+              className="px-6 py-3 border border-border text-foreground hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg transition-colors font-medium"
+              disabled={loading}
+              className="flex items-center space-x-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg transition-colors font-medium"
             >
               <Save className="w-4 h-4" />
-              <span>Create Course</span>
+              <span>{loading ? 'Creating...' : 'Create Course'}</span>
             </button>
           </div>
         </form>

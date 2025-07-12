@@ -1,0 +1,7 @@
+{
+  "name": "Test Student",
+  "email": "test@student.com",
+  "password": "Test123!",
+  "role": "student",
+  "accessCode": "student2025"
+}

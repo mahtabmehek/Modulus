@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useApp } from '@/lib/hooks/use-app'
-import { useAWSMetrics, useMockAWSMetrics } from '@/lib/hooks/use-aws-metrics'
+import { apiClient } from '@/lib/api'
 import { 
   Users, 
   Server, 
@@ -29,24 +29,124 @@ import {
 } from 'lucide-react'
 
 export function AdminDashboard() {
-  const { user, appData, navigate } = useApp()
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'infrastructure' | 'security' | 'approvals'>('overview')
-  
-  // Use AWS metrics if configured, otherwise use mock data
-  const awsMetrics = useAWSMetrics({ 
-    refreshInterval: 30000, 
-    enableRealtime: true,
-    retryOnError: true 
+  const { user } = useApp()
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'approvals' | 'courses' | 'labs' | 'infrastructure' | 'security'>('overview')
+  const [realUsers, setRealUsers] = useState<any[]>([])
+  const [pendingApprovals, setPendingApprovals] = useState<any[]>([])
+  const [courses, setCourses] = useState<any[]>([])
+  const [labs, setLabs] = useState<any[]>([])
+  const [loading, setLoading] = useState(false)
+  const [showUserModal, setShowUserModal] = useState(false)
+  const [showCourseModal, setShowCourseModal] = useState(false)
+  const [userFormData, setUserFormData] = useState({
+    name: '',
+    email: '',
+    role: 'student'
   })
-  
-  // Fallback to mock metrics if AWS is not configured
-  const mockMetrics = useMockAWSMetrics()
-  
-  // Choose the appropriate metrics source
-  const metrics = awsMetrics.isConfigured ? awsMetrics : mockMetrics
-  
-  // Use real AWS data if available, otherwise fallback to mock data
-  const systemStats = metrics.systemMetrics || {
+  const [courseFormData, setCourseFormData] = useState({
+    title: '',
+    code: '',
+    department: '',
+    academicLevel: 'bachelor',
+    totalCredits: 0
+  })
+
+  // Load real user data when component mounts or users tab is selected
+  useEffect(() => {
+    if (activeTab === 'users' || activeTab === 'approvals') {
+      loadUsers()
+    } else if (activeTab === 'courses') {
+      loadCourses()
+    } else if (activeTab === 'labs') {
+      loadLabs()
+    }
+  }, [activeTab])
+
+  const loadUsers = async () => {
+    setLoading(true)
+    try {
+      const response = await apiClient.getAllUsers()
+      setRealUsers(response.users)
+      setPendingApprovals(response.users.filter((user: any) => user.status === 'pending'))
+    } catch (error) {
+      console.error('Failed to load users:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const loadCourses = async () => {
+    setLoading(true)
+    try {
+      const response = await apiClient.getCourses()
+      setCourses(response.courses)
+    } catch (error) {
+      console.error('Failed to load courses:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const loadLabs = async () => {
+    setLoading(true)
+    try {
+      // TODO: Implement lab API endpoint
+      console.log('Lab API not yet implemented')
+      setLabs([])
+    } catch (error) {
+      console.error('Failed to load labs:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleApproveUser = async (userId: string) => {
+    try {
+      await apiClient.approveUser(Number(userId))
+      await loadUsers() // Refresh the list
+      alert('User approved successfully')
+    } catch (error) {
+      console.error('Failed to approve user:', error)
+      alert('Failed to approve user')
+    }
+  }
+
+  const handleRejectUser = async (userId: string) => {
+    try {
+      await apiClient.rejectUser(Number(userId))
+      await loadUsers() // Refresh the list
+      alert('User rejected successfully')
+    } catch (error) {
+      console.error('Failed to reject user:', error)
+      alert('Failed to reject user')
+    }
+  }
+
+  const handleCreateUser = async (userData: any) => {
+    try {
+      await apiClient.createUser(userData)
+      await loadUsers() // Refresh the list
+      setShowUserModal(false)
+      alert('User created successfully')
+    } catch (error) {
+      console.error('Failed to create user:', error)
+      alert('Failed to create user')
+    }
+  }
+
+  const handleCreateCourse = async (courseData: any) => {
+    try {
+      await apiClient.createCourse(courseData)
+      await loadCourses() // Refresh the list
+      setShowCourseModal(false)
+      alert('Course created successfully')
+    } catch (error) {
+      console.error('Failed to create course:', error)
+      alert('Failed to create course')
+    }
+  }
+
+  const systemStats = {
     totalUsers: 1247,
     activeUsers: 89,
     totalInstructors: 45,
@@ -57,87 +157,52 @@ export function AdminDashboard() {
     securityAlerts: 2,
     avgSessionTime: '45 minutes',
     storageUsed: '2.3TB',
-    totalStorage: '5TB',
-    cpuUtilization: 45,
-    memoryUtilization: 62,
-    networkIn: 1250,
-    networkOut: 1180,
-    diskUtilization: 46
+    totalStorage: '5TB'
   }
 
-  const systemHealth = Object.values(metrics.infrastructureHealth || {}).map(service => ({
-    name: service.name,
-    status: service.status,
-    uptime: service.uptime,
-    instances: service.instances
-  }))
+  const systemHealth = [
+    { name: 'Web Servers', status: 'healthy', uptime: '99.9%', instances: 3 },
+    { name: 'Database Cluster', status: 'healthy', uptime: '100%', instances: 2 },
+    { name: 'Kubernetes Cluster', status: 'warning', uptime: '99.2%', instances: 5 },
+    { name: 'Load Balancer', status: 'healthy', uptime: '99.8%', instances: 2 },
+    { name: 'Container Registry', status: 'healthy', uptime: '99.5%', instances: 1 },
+    { name: 'File Storage', status: 'healthy', uptime: '99.9%', instances: 3 },
+  ]
 
-  const recentAlerts = metrics.alerts.length > 0 ? metrics.alerts : [
+  const recentAlerts = [
     { 
       id: 1, 
-      type: 'warning' as const, 
-      severity: 'medium' as const,
+      type: 'warning', 
+      severity: 'medium',
       message: 'High CPU usage on worker node 3 (85%)', 
       time: '15 mins ago',
-      action: 'Scale cluster',
-      source: 'EKS'
+      action: 'Scale cluster'
     },
     { 
       id: 2, 
-      type: 'info' as const, 
-      severity: 'low' as const,
+      type: 'info', 
+      severity: 'low',
       message: 'New user registration spike detected (+15 users)', 
       time: '1 hour ago',
-      action: 'Monitor',
-      source: 'Application'
+      action: 'Monitor'
     },
     { 
       id: 3, 
-      type: 'error' as const, 
-      severity: 'high' as const,
+      type: 'error', 
+      severity: 'high',
       message: 'Failed desktop deployment on node kube-worker-2', 
       time: '2 hours ago',
-      action: 'Investigate',
-      source: 'Kubernetes'
+      action: 'Investigate'
     },
     { 
       id: 4, 
-      type: 'warning' as const, 
-      severity: 'medium' as const,
+      type: 'warning', 
+      severity: 'medium',
       message: 'SSL certificate expires in 30 days', 
       time: '3 hours ago',
-      action: 'Renew',
-      source: 'Load Balancer'
+      action: 'Renew'
     },
   ]
-
-  // Handler functions for instructor approval
-  const handleApproveInstructor = (instructorId: string) => {
-    const instructor = appData.users.find(u => u.id === instructorId)
-    if (instructor) {
-      instructor.isApproved = true
-      instructor.approvalStatus = 'approved'
-      instructor.approvedBy = user?.id
-      instructor.approvedAt = new Date()
-      instructor.levelName = 'Security Expert' // Update level name after approval
-      
-      // In a real app, this would make an API call
-      alert(`Instructor ${instructor.name} has been approved successfully!`)
-    }
-  }
-
-  const handleRejectInstructor = (instructorId: string) => {
-    const instructor = appData.users.find(u => u.id === instructorId)
-    if (instructor) {
-      instructor.isApproved = false
-      instructor.approvalStatus = 'rejected'
-      instructor.approvedBy = user?.id
-      instructor.approvedAt = new Date()
-      
-      // In a real app, this would make an API call
-      alert(`Instructor ${instructor.name} has been rejected.`)
-    }
-  }
 
   const recentUsers = [
     { id: 'u1', name: 'Alice Smith', email: 'alice@university.edu', role: 'student', status: 'active', joinedAt: '2 hours ago' },
@@ -198,7 +263,9 @@ export function AdminDashboard() {
           {[
             { key: 'overview', label: 'Overview', icon: Activity },
             { key: 'users', label: 'User Management', icon: Users },
-            { key: 'approvals', label: 'Instructor Approvals', icon: UserPlus },
+            { key: 'approvals', label: 'Approvals', icon: UserPlus },
+            { key: 'courses', label: 'Course Management', icon: BookOpen },
+            { key: 'labs', label: 'Lab Management', icon: Monitor },
             { key: 'infrastructure', label: 'Infrastructure', icon: Server },
             { key: 'security', label: 'Security', icon: Shield }
           ].map(({ key, label, icon: Icon }) => (
@@ -220,199 +287,113 @@ export function AdminDashboard() {
 
       {/* Tab Content */}
       {activeTab === 'overview' && (
-        <div className="space-y-6">
-          {/* AWS Configuration Status */}
-          <div className={`rounded-xl p-4 border ${
-            metrics.isConfigured 
-              ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700'
-              : 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-700'
-          }`}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Cloud className={`w-5 h-5 ${
-                  metrics.isConfigured ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400'
-                }`} />
-                <div>
-                  <h4 className={`font-medium ${
-                    metrics.isConfigured 
-                      ? 'text-green-800 dark:text-green-200'
-                      : 'text-orange-800 dark:text-orange-200'
-                  }`}>
-                    AWS Integration Status
-                  </h4>
-                  <p className={`text-sm ${
-                    metrics.isConfigured 
-                      ? 'text-green-700 dark:text-green-300'
-                      : 'text-orange-700 dark:text-orange-300'
-                  }`}>
-                    {metrics.isConfigured 
-                      ? `Connected to AWS • Last updated: ${metrics.lastUpdated?.toLocaleTimeString() || 'Never'}`
-                      : 'Using mock data - AWS credentials not configured'
-                    }
-                  </p>
-                  {metrics.error && (
-                    <p className="text-sm text-red-600 dark:text-red-400 mt-1">
-                      Error: {metrics.error}
-                    </p>
-                  )}
-                </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* System Health */}
+          <div className="lg:col-span-2 space-y-6">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                System Health
+              </h3>
+              <div className="space-y-3">
+                {systemHealth.map((service, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-3 h-3 rounded-full ${
+                        service.status === 'healthy' ? 'bg-green-500' :
+                        service.status === 'warning' ? 'bg-yellow-500' : 'bg-red-500'
+                      }`}></div>
+                      <span className="font-medium text-gray-900 dark:text-white">{service.name}</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">({service.instances} instances)</span>
+                    </div>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">{service.uptime}</span>
+                  </div>
+                ))}
               </div>
-              <div className="flex items-center gap-2">
-                {metrics.error && (
-                  <button
-                    onClick={metrics.clearError}
-                    className="text-gray-600 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-                  >
-                    Clear Error
-                  </button>
-                )}
-                <button
-                  onClick={metrics.refreshMetrics}
-                  disabled={metrics.isLoading}
-                  className={`flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-                    metrics.isConfigured
-                      ? 'bg-green-600 hover:bg-green-700 text-white disabled:opacity-50'
-                      : 'bg-orange-600 hover:bg-orange-700 text-white disabled:opacity-50'
-                  }`}
-                >
-                  <RefreshCw className={`w-4 h-4 ${metrics.isLoading ? 'animate-spin' : ''}`} />
-                  {metrics.isLoading ? 'Refreshing...' : 'Refresh'}
-                </button>
+            </div>
+
+            {/* Resource Usage */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                Resource Usage
+              </h3>
+              <div className="grid grid-cols-2 gap-4">
+                {[
+                  { name: 'CPU', value: resourceUsage.cpu, icon: Cpu, color: 'bg-blue-500' },
+                  { name: 'Memory', value: resourceUsage.memory, icon: Activity, color: 'bg-green-500' },
+                  { name: 'Storage', value: resourceUsage.storage, icon: HardDrive, color: 'bg-yellow-500' },
+                  { name: 'Network', value: resourceUsage.network, icon: Network, color: 'bg-purple-500' }
+                ].map((resource) => {
+                  const Icon = resource.icon
+                  return (
+                    <div key={resource.name} className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Icon className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                          <span className="text-sm font-medium text-gray-900 dark:text-white">{resource.name}</span>
+                        </div>
+                        <span className="text-sm text-gray-600 dark:text-gray-400">{resource.value}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                        <div 
+                          className={`${resource.color} h-2 rounded-full transition-all duration-300`}
+                          style={{ width: `${resource.value}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             </div>
           </div>
 
-          {/* Pending Approvals Notification */}
-          {appData.users.filter(u => u.role === 'instructor' && u.approvalStatus === 'pending').length > 0 && (
-            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-xl p-4">
-              <div className="flex items-center gap-3">
-                <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
-                <div className="flex-1">
-                  <h4 className="font-medium text-yellow-800 dark:text-yellow-200">
-                    Pending Instructor Approvals
-                  </h4>
-                  <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                    {appData.users.filter(u => u.role === 'instructor' && u.approvalStatus === 'pending').length} instructor account(s) waiting for approval
-                  </p>
-                </div>
-                <button 
-                  onClick={() => setActiveTab('approvals')}
-                  className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                >
-                  Review Now
-                </button>
-              </div>
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* System Health */}
-            <div className="lg:col-span-2 space-y-6">
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  System Health
-                </h3>
-                <div className="space-y-3">
-                  {systemHealth.map((service, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-3 h-3 rounded-full ${
-                          service.status === 'healthy' ? 'bg-green-500' :
-                          service.status === 'warning' ? 'bg-yellow-500' : 'bg-red-500'
-                        }`}></div>
-                        <span className="font-medium text-gray-900 dark:text-white">{service.name}</span>
-                        <span className="text-xs text-gray-500 dark:text-gray-400">({service.instances} instances)</span>
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Alerts */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                Recent Alerts
+              </h3>
+              <div className="space-y-3">
+                {recentAlerts.slice(0, 4).map((alert) => (
+                  <div key={alert.id} className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                    {getAlertIcon(alert.type)}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-gray-900 dark:text-white font-medium">
+                        {alert.message}
+                      </p>
+                      <div className="flex items-center justify-between mt-1">
+                        <span className="text-xs text-gray-500 dark:text-gray-400">{alert.time}</span>
+                        <button className="text-xs text-purple-600 hover:text-purple-700 dark:text-purple-400">
+                          {alert.action}
+                        </button>
                       </div>
-                      <span className="text-sm text-gray-600 dark:text-gray-400">{service.uptime}</span>
                     </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Resource Usage */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  Resource Usage
-                </h3>
-                <div className="grid grid-cols-2 gap-4">
-                  {[
-                    { name: 'CPU', value: resourceUsage.cpu, icon: Cpu, color: 'bg-blue-500' },
-                    { name: 'Memory', value: resourceUsage.memory, icon: Activity, color: 'bg-green-500' },
-                    { name: 'Storage', value: resourceUsage.storage, icon: HardDrive, color: 'bg-yellow-500' },
-                    { name: 'Network', value: resourceUsage.network, icon: Network, color: 'bg-purple-500' }
-                  ].map((resource) => {
-                    const Icon = resource.icon
-                    return (
-                      <div key={resource.name} className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Icon className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                            <span className="text-sm font-medium text-gray-900 dark:text-white">{resource.name}</span>
-                          </div>
-                          <span className="text-sm text-gray-600 dark:text-gray-400">{resource.value}%</span>
-                        </div>
-                        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                          <div 
-                            className={`${resource.color} h-2 rounded-full transition-all duration-300`}
-                            style={{ width: `${resource.value}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
+                  </div>
+                ))}
               </div>
             </div>
 
-            {/* Sidebar */}
-            <div className="space-y-6">
-              {/* Alerts */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  Recent Alerts
-                </h3>
-                <div className="space-y-3">
-                  {recentAlerts.slice(0, 4).map((alert) => (
-                    <div key={alert.id} className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                      {getAlertIcon(alert.type)}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-gray-900 dark:text-white font-medium">
-                          {alert.message}
-                        </p>
-                        <div className="flex items-center justify-between mt-1">
-                          <span className="text-xs text-gray-500 dark:text-gray-400">{alert.time}</span>
-                          <button className="text-xs text-purple-600 hover:text-purple-700 dark:text-purple-400">
-                            {alert.action}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+            {/* Quick Stats */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                Quick Stats
+              </h3>
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Active Users</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">{systemStats.activeUsers}</span>
                 </div>
-              </div>
-
-              {/* Quick Stats */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  Quick Stats
-                </h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Active Users</span>
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">{systemStats.activeUsers}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Lab Sessions Today</span>
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">127</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Avg Session Time</span>
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">{systemStats.avgSessionTime}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Storage Used</span>
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">{systemStats.storageUsed} / {systemStats.totalStorage}</span>
-                  </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Lab Sessions Today</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">127</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Avg Session Time</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">{systemStats.avgSessionTime}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Storage Used</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">{systemStats.storageUsed} / {systemStats.totalStorage}</span>
                 </div>
               </div>
             </div>
@@ -429,85 +410,99 @@ export function AdminDashboard() {
               </h3>
               <div className="flex gap-3">
                 <button 
-                  onClick={() => navigate('user-creation')}
-                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+                  onClick={loadUsers}
+                  disabled={loading}
+                  className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg transition-colors"
                 >
-                  <UserPlus className="w-4 h-4" />
-                  Create User
+                  <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                  Refresh
                 </button>
                 <button 
-                  onClick={() => navigate('user-creation')}
-                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+                  onClick={() => setShowUserModal(true)}
+                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
                 >
                   <UserPlus className="w-4 h-4" />
                   Add User
                 </button>
-                <button className="flex items-center gap-2 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors">
+                <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
                   <Download className="w-4 h-4" />
                   Export
                 </button>
               </div>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-200 dark:border-gray-700">
-                    <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Name</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Email</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Role</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Status</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Joined</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentUsers.map((user) => (
-                    <tr key={user.id} className="border-b border-gray-100 dark:border-gray-800">
-                      <td className="py-3 px-4 text-gray-900 dark:text-white">{user.name}</td>
-                      <td className="py-3 px-4 text-gray-600 dark:text-gray-400">{user.email}</td>
-                      <td className="py-3 px-4">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          user.role === 'instructor' 
-                            ? 'bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-300'
-                            : 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300'
-                        }`}>
-                          {user.role}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          user.status === 'active' 
-                            ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300'
-                            : 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900 dark:text-yellow-300'
-                        }`}>
-                          {user.status}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-gray-600 dark:text-gray-400">{user.joinedAt}</td>
-                      <td className="py-3 px-4">
-                        <div className="flex gap-2">
-                          <button 
-                            onClick={() => navigate('user-profile', { userId: user.id })}
-                            className="text-blue-600 hover:text-blue-700 dark:text-blue-400"
-                            title="View Profile"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          <button 
-                            onClick={() => navigate('user-edit', { userId: user.id })}
-                            className="text-gray-600 hover:text-gray-700 dark:text-gray-400"
-                            title="Edit User"
-                          >
-                            <Settings className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <RefreshCw className="w-6 h-6 animate-spin text-purple-600" />
+                <span className="ml-2 text-gray-600 dark:text-gray-400">Loading users...</span>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-200 dark:border-gray-700">
+                      <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Name</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Email</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Role</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Status</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Joined</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {realUsers.length > 0 ? realUsers.map((user) => (
+                      <tr key={user.id} className="border-b border-gray-100 dark:border-gray-800">
+                        <td className="py-3 px-4 text-gray-900 dark:text-white">
+                          {user.name || 'Unknown User'}
+                        </td>
+                        <td className="py-3 px-4 text-gray-600 dark:text-gray-400">{user.email}</td>
+                        <td className="py-3 px-4">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            user.role === 'instructor' 
+                              ? 'bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-300'
+                              : user.role === 'admin'
+                              ? 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300'
+                              : 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300'
+                          }`}>
+                            {user.role}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            user.status === 'approved' 
+                              ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300'
+                              : user.status === 'pending'
+                              ? 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900 dark:text-yellow-300'
+                              : 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300'
+                          }`}>
+                            {user.status}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-gray-600 dark:text-gray-400">
+                          {new Date(user.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="flex gap-2">
+                            <button className="text-blue-600 hover:text-blue-700 dark:text-blue-400">
+                              <Eye className="w-4 h-4" />
+                            </button>
+                            <button className="text-gray-600 hover:text-gray-700 dark:text-gray-400">
+                              <Settings className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    )) : (
+                      <tr>
+                        <td colSpan={6} className="py-8 text-center text-gray-500 dark:text-gray-400">
+                          No users found. Click refresh to load users from the API.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -516,85 +511,87 @@ export function AdminDashboard() {
         <div className="space-y-6">
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
             <div className="flex items-center justify-between mb-6">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Instructor Account Approvals
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  Review and approve instructor account requests
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-600 dark:bg-yellow-900 dark:text-yellow-300">
-                  {appData.users.filter(u => u.role === 'instructor' && u.approvalStatus === 'pending').length} Pending
-                </span>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Pending User Approvals
+              </h3>
+              <div className="flex gap-3">
+                <button 
+                  onClick={loadUsers}
+                  disabled={loading}
+                  className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg transition-colors"
+                >
+                  <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                  Refresh
+                </button>
               </div>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-200 dark:border-gray-700">
-                    <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Name</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Email</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Applied Date</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Status</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {appData.users
-                    .filter(u => u.role === 'instructor')
-                    .map((instructor) => (
-                      <tr key={instructor.id} className="border-b border-gray-100 dark:border-gray-800">
-                        <td className="py-3 px-4 text-gray-900 dark:text-white">{instructor.name}</td>
-                        <td className="py-3 px-4 text-gray-600 dark:text-gray-400">{instructor.email}</td>
-                        <td className="py-3 px-4 text-gray-600 dark:text-gray-400">
-                          {new Date(instructor.joinedAt).toLocaleDateString()}
-                        </td>
-                        <td className="py-3 px-4">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            instructor.approvalStatus === 'approved' 
-                              ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300'
-                              : instructor.approvalStatus === 'pending'
-                              ? 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900 dark:text-yellow-300'
-                              : 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300'
-                          }`}>
-                            {instructor.approvalStatus}
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <RefreshCw className="w-6 h-6 animate-spin text-purple-600" />
+                <span className="ml-2 text-gray-600 dark:text-gray-400">Loading pending approvals...</span>
+              </div>
+            ) : pendingApprovals.length > 0 ? (
+              <div className="space-y-4">
+                {pendingApprovals.map((user) => (
+                  <div key={user.id} className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900 rounded-full flex items-center justify-center">
+                          <span className="text-purple-600 dark:text-purple-300 font-semibold">
+                            {user.firstName?.[0]}{user.lastName?.[0]}
                           </span>
-                        </td>
-                        <td className="py-3 px-4">
-                          <div className="flex gap-2">
-                            {instructor.approvalStatus === 'pending' && (
-                              <>
-                                <button 
-                                  onClick={() => handleApproveInstructor(instructor.id)}
-                                  className="flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs transition-colors"
-                                >
-                                  <CheckCircle className="w-3 h-3" />
-                                  Approve
-                                </button>
-                                <button 
-                                  onClick={() => handleRejectInstructor(instructor.id)}
-                                  className="flex items-center gap-1 bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs transition-colors"
-                                >
-                                  <AlertCircle className="w-3 h-3" />
-                                  Reject
-                                </button>
-                              </>
-                            )}
-                            {instructor.approvalStatus === 'approved' && (
-                              <span className="text-xs text-gray-500 dark:text-gray-400">
-                                Approved {instructor.approvedAt ? new Date(instructor.approvedAt).toLocaleDateString() : ''}
-                              </span>
-                            )}
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-gray-900 dark:text-white">
+                            {user.firstName} {user.lastName}
+                          </h4>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">{user.email}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              user.role === 'instructor' 
+                                ? 'bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-300'
+                                : 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300'
+                            }`}>
+                              {user.role}
+                            </span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              Registered {new Date(user.createdAt).toLocaleDateString()}
+                            </span>
                           </div>
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleApproveUser(user.id)}
+                          className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
+                        >
+                          <CheckCircle className="w-4 h-4" />
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => handleRejectUser(user.id)}
+                          className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
+                        >
+                          <AlertCircle className="w-4 h-4" />
+                          Reject
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4" />
+                <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                  All caught up!
+                </h4>
+                <p className="text-gray-600 dark:text-gray-400">
+                  No pending user approvals at the moment.
+                </p>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -716,6 +713,381 @@ export function AdminDashboard() {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'labs' && (
+        <div className="space-y-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Lab Management
+              </h3>
+              <div className="flex gap-3">
+                <button 
+                  onClick={loadLabs}
+                  disabled={loading}
+                  className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg transition-colors"
+                >
+                  <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                  Refresh
+                </button>
+                <button className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors">
+                  <BookOpen className="w-4 h-4" />
+                  Create Lab
+                </button>
+                <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
+                  <Download className="w-4 h-4" />
+                  Export Reports
+                </button>
+              </div>
+            </div>
+
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <RefreshCw className="w-6 h-6 animate-spin text-purple-600" />
+                <span className="ml-2 text-gray-600 dark:text-gray-400">Loading labs...</span>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {labs.map((lab) => (
+                  <div key={lab.id} className="bg-gray-50 dark:bg-gray-900 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="font-semibold text-gray-900 dark:text-white">{lab.name}</h4>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        lab.status === 'active' 
+                          ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300'
+                          : lab.status === 'draft'
+                          ? 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900 dark:text-yellow-300'
+                          : 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300'
+                      }`}>
+                        {lab.status}
+                      </span>
+                    </div>
+                    
+                    <div className="space-y-2 mb-4">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600 dark:text-gray-400">Type:</span>
+                        <span className="text-gray-900 dark:text-white">{lab.type}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600 dark:text-gray-400">Students:</span>
+                        <span className="text-gray-900 dark:text-white">{lab.students}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600 dark:text-gray-400">Avg Duration:</span>
+                        <span className="text-gray-900 dark:text-white">{lab.avgDuration}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600 dark:text-gray-400">Success Rate:</span>
+                        <span className="text-gray-900 dark:text-white">{lab.successRate}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg transition-colors text-sm">
+                        <Eye className="w-4 h-4" />
+                        View
+                      </button>
+                      <button className="flex-1 flex items-center justify-center gap-2 bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg transition-colors text-sm">
+                        <Settings className="w-4 h-4" />
+                        Edit
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {!loading && labs.length === 0 && (
+              <div className="text-center py-8">
+                <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                  No labs found
+                </h4>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  Create your first lab to get started.
+                </p>
+                <button className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors mx-auto">
+                  <BookOpen className="w-4 h-4" />
+                  Create First Lab
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'courses' && (
+        <div className="space-y-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Course Management
+              </h3>
+              <div className="flex gap-3">
+                <button 
+                  onClick={loadCourses}
+                  disabled={loading}
+                  className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg transition-colors"
+                >
+                  <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                  Refresh
+                </button>
+                <button 
+                  onClick={() => setShowCourseModal(true)}
+                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
+                >
+                  <BookOpen className="w-4 h-4" />
+                  Create Course
+                </button>
+                <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
+                  <Download className="w-4 h-4" />
+                  Export
+                </button>
+              </div>
+            </div>
+
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <RefreshCw className="w-6 h-6 animate-spin text-purple-600" />
+                <span className="ml-2 text-gray-600 dark:text-gray-400">Loading courses...</span>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-200 dark:border-gray-700">
+                      <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Course</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Code</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Department</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Level</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Credits</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Students</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {courses.length > 0 ? courses.map((course) => (
+                      <tr key={course.id} className="border-b border-gray-100 dark:border-gray-800">
+                        <td className="py-3 px-4">
+                          <div>
+                            <div className="font-medium text-gray-900 dark:text-white">{course.title}</div>
+                            <div className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-xs">
+                              {course.description}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 text-gray-900 dark:text-white font-mono">{course.code}</td>
+                        <td className="py-3 px-4 text-gray-600 dark:text-gray-400">{course.department}</td>
+                        <td className="py-3 px-4">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            course.academicLevel === 'Bachelor' 
+                              ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300'
+                              : course.academicLevel === 'Master'
+                              ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300'
+                              : 'bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-300'
+                          }`}>
+                            {course.academicLevel}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-gray-600 dark:text-gray-400">{course.totalCredits}</td>
+                        <td className="py-3 px-4 text-gray-600 dark:text-gray-400">
+                          {course.enrolledStudents || 0}
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="flex gap-2">
+                            <button className="text-blue-600 hover:text-blue-700 dark:text-blue-400 p-1">
+                              <Eye className="w-4 h-4" />
+                            </button>
+                            <button className="text-gray-600 hover:text-gray-700 dark:text-gray-400 p-1">
+                              <Settings className="w-4 h-4" />
+                            </button>
+                            <button className="text-red-600 hover:text-red-700 dark:text-red-400 p-1">
+                              <AlertTriangle className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    )) : (
+                      <tr>
+                        <td colSpan={7} className="py-8 text-center text-gray-500 dark:text-gray-400">
+                          No courses found. Click refresh to load courses from the API.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* User Modal */}
+      {showUserModal && (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div className="bg-black/50 absolute inset-0" onClick={() => setShowUserModal(false)}></div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg max-w-lg w-full p-6 z-10">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Add New User
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Name
+                </label>
+                <input
+                  type="text"
+                  value={userFormData.name}
+                  onChange={(e) => setUserFormData({...userFormData, name: e.target.value})}
+                  className="block w-full border-gray-300 dark:border-gray-700 rounded-lg shadow-sm focus:ring-purple-500 focus:border-purple-500"
+                  placeholder="Enter full name"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={userFormData.email}
+                  onChange={(e) => setUserFormData({...userFormData, email: e.target.value})}
+                  className="block w-full border-gray-300 dark:border-gray-700 rounded-lg shadow-sm focus:ring-purple-500 focus:border-purple-500"
+                  placeholder="Enter email address"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Role
+                </label>
+                <select 
+                  value={userFormData.role}
+                  onChange={(e) => setUserFormData({...userFormData, role: e.target.value})}
+                  className="block w-full border-gray-300 dark:border-gray-700 rounded-lg shadow-sm focus:ring-purple-500 focus:border-purple-500"
+                >
+                  <option value="student">Student</option>
+                  <option value="instructor">Instructor</option>
+                  <option value="staff">Staff</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={() => setShowUserModal(false)}
+                  className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    if (userFormData.name && userFormData.email) {
+                      handleCreateUser(userFormData)
+                      setUserFormData({ name: '', email: '', role: 'student' })
+                    }
+                  }}
+                  className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+                >
+                  Create User
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Course Modal */}
+      {showCourseModal && (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div className="bg-black/50 absolute inset-0" onClick={() => setShowCourseModal(false)}></div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg max-w-lg w-full p-6 z-10">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Create New Course
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Title
+                </label>
+                <input
+                  type="text"
+                  value={courseFormData.title}
+                  onChange={(e) => setCourseFormData({...courseFormData, title: e.target.value})}
+                  className="block w-full border-gray-300 dark:border-gray-700 rounded-lg shadow-sm focus:ring-purple-500 focus:border-purple-500"
+                  placeholder="Enter course title"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Code
+                </label>
+                <input
+                  type="text"
+                  value={courseFormData.code}
+                  onChange={(e) => setCourseFormData({...courseFormData, code: e.target.value})}
+                  className="block w-full border-gray-300 dark:border-gray-700 rounded-lg shadow-sm focus:ring-purple-500 focus:border-purple-500"
+                  placeholder="Enter course code"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Department
+                </label>
+                <input
+                  type="text"
+                  value={courseFormData.department}
+                  onChange={(e) => setCourseFormData({...courseFormData, department: e.target.value})}
+                  className="block w-full border-gray-300 dark:border-gray-700 rounded-lg shadow-sm focus:ring-purple-500 focus:border-purple-500"
+                  placeholder="Enter department name"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Level
+                </label>
+                <select 
+                  value={courseFormData.academicLevel}
+                  onChange={(e) => setCourseFormData({...courseFormData, academicLevel: e.target.value})}
+                  className="block w-full border-gray-300 dark:border-gray-700 rounded-lg shadow-sm focus:ring-purple-500 focus:border-purple-500"
+                >
+                  <option value="bachelor">Bachelor</option>
+                  <option value="master">Master</option>
+                  <option value="phd">PhD</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Credits
+                </label>
+                <input
+                  type="number"
+                  value={courseFormData.totalCredits}
+                  onChange={(e) => setCourseFormData({...courseFormData, totalCredits: parseInt(e.target.value) || 0})}
+                  className="block w-full border-gray-300 dark:border-gray-700 rounded-lg shadow-sm focus:ring-purple-500 focus:border-purple-500"
+                  placeholder="Enter total credits"
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={() => setShowCourseModal(false)}
+                  className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    if (courseFormData.title && courseFormData.code) {
+                      handleCreateCourse(courseFormData)
+                      setCourseFormData({ title: '', code: '', department: '', academicLevel: 'bachelor', totalCredits: 0 })
+                    }
+                  }}
+                  className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+                >
+                  Create Course
+                </button>
+              </div>
             </div>
           </div>
         </div>

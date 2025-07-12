@@ -7,27 +7,14 @@ import { User as UserType, UserRole } from '@/types'
 import { getUserPermissions, canEditUserData } from '@/lib/permissions'
 
 export function ProfileView() {
-  const { user: currentUser, currentView, navigate, appData } = useApp()
+  const { user: currentUser, navigate } = useApp()
   const [isEditing, setIsEditing] = useState(false)
-  const [profileUser, setProfileUser] = useState<UserType | null>(null)
   const [showPasswordForm, setShowPasswordForm] = useState(false)
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
     newPassword: '',
     confirmPassword: ''
   })
-
-  // Get target user (viewing own profile or someone else's)
-  const targetUserId = currentView.params?.userId || currentUser?.id
-  const isOwnProfile = targetUserId === currentUser?.id
-
-  useEffect(() => {
-    if (targetUserId) {
-      const user = appData.users.find((u: UserType) => u.id === targetUserId)
-      setProfileUser(user || null)
-    }
-  }, [targetUserId, appData.users])
-
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -46,16 +33,46 @@ export function ProfileView() {
   })
 
   useEffect(() => {
-    if (profileUser) {
+    if (currentUser) {
       setFormData({
-        name: profileUser.name,
-        email: profileUser.email,
-        studentId: profileUser.studentId || '',
-        department: profileUser.role === 'student' ? 'Computer Science' : 'Faculty',
-        preferences: profileUser.preferences
+        name: currentUser.name || '',
+        email: currentUser.email || '',
+        studentId: currentUser.id?.toString() || '',
+        department: currentUser.role === 'student' ? 'Computer Science' : 'Faculty',
+        preferences: currentUser.preferences || {
+          theme: 'system' as 'light' | 'dark' | 'system',
+          language: 'en',
+          notifications: {
+            email: true,
+            push: true,
+            announcements: true,
+            labUpdates: true
+          }
+        }
       })
     }
-  }, [profileUser])
+  }, [currentUser])
+
+  // Safety check for user data
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="text-white text-center">
+          <p className="text-lg mb-4">Please log in to view your profile</p>
+          <button 
+            onClick={() => navigate('login')}
+            className="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg transition-colors"
+          >
+            Go to Login
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // Only show current user's profile for now
+  const profileUser = currentUser
+  const isOwnProfile = true // Since we only show current user's profile
 
   if (!currentUser || !profileUser) {
     return (
@@ -73,9 +90,26 @@ export function ProfileView() {
     )
   }
 
-  const permissions = getUserPermissions(currentUser.role)
-  const canEdit = isOwnProfile ? permissions.canEditOwnProfile : canEditUserData(currentUser.role, profileUser.role)
-  const canResetPassword = isOwnProfile ? permissions.canResetOwnPassword : canEditUserData(currentUser.role, profileUser.role)
+  // Show error if user not found
+  if (!profileUser) {
+    return (
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-foreground mb-4">User not found</h1>
+          <button
+            onClick={() => navigate('dashboard')}
+            className="text-red-600 hover:text-red-700 font-medium"
+          >
+            Return to Dashboard
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  const permissions = getUserPermissions(currentUser?.role)
+  const canEdit = isOwnProfile ? permissions?.canEditOwnProfile : canEditUserData(currentUser?.role, profileUser?.role)
+  const canResetPassword = isOwnProfile ? permissions?.canResetOwnPassword : canEditUserData(currentUser?.role, profileUser?.role)
 
   const handleInputChange = (field: string, value: any) => {
     if (field.includes('.')) {
@@ -156,7 +190,7 @@ export function ProfileView() {
             </button>
             <div>
               <h1 className="text-3xl font-bold text-foreground">
-                {isOwnProfile ? 'My Profile' : `${profileUser.name}'s Profile`}
+                {isOwnProfile ? 'My Profile' : `${profileUser.name || 'Unknown User'}'s Profile`}
               </h1>
               <p className="text-muted-foreground">
                 {isOwnProfile ? 'Manage your account settings' : 'View user information'}
@@ -200,7 +234,7 @@ export function ProfileView() {
             <div className="bg-card rounded-lg border border-border p-6 text-center">
               <div className="relative mb-4">
                 <div className="w-24 h-24 mx-auto bg-red-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
-                  {profileUser.name.split(' ').map(n => n[0]).join('')}
+                  {profileUser.name ? profileUser.name.split(' ').map(n => n[0]).join('') : '?'}
                 </div>
                 {canEdit && isEditing && (
                   <button className="absolute bottom-0 right-1/2 transform translate-x-1/2 translate-y-1/2 bg-red-600 hover:bg-red-700 text-white p-2 rounded-full transition-colors">
@@ -208,31 +242,29 @@ export function ProfileView() {
                   </button>
                 )}
               </div>
-              <h2 className="text-xl font-bold text-foreground mb-2">{profileUser.name}</h2>
+              <h2 className="text-xl font-bold text-foreground mb-2">{profileUser.name || 'Unknown User'}</h2>
               <div className={`inline-flex items-center space-x-2 px-3 py-1 rounded-full text-sm font-medium ${getRoleColor(profileUser.role)}`}>
                 <span>{getRoleIcon(profileUser.role)}</span>
                 <span className="capitalize">{profileUser.role}</span>
               </div>
-              {profileUser.studentId && (
-                <p className="text-muted-foreground mt-2">ID: {profileUser.studentId}</p>
-              )}
+              <p className="text-muted-foreground mt-2">User ID: {profileUser.id}</p>
               
               {/* Stats */}
               <div className="grid grid-cols-2 gap-4 mt-6 pt-6 border-t border-border">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-red-600">{profileUser.level}</div>
+                  <div className="text-2xl font-bold text-red-600">{profileUser.level || 1}</div>
                   <div className="text-sm text-muted-foreground">Level</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-red-600">{profileUser.badges.length}</div>
+                  <div className="text-2xl font-bold text-red-600">{profileUser.badges?.length || 0}</div>
                   <div className="text-sm text-muted-foreground">Badges</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-red-600">{profileUser.streakDays}</div>
+                  <div className="text-2xl font-bold text-red-600">{profileUser.streakDays || 0}</div>
                   <div className="text-sm text-muted-foreground">Day Streak</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-red-600">{profileUser.totalPoints.toLocaleString()}</div>
+                  <div className="text-2xl font-bold text-red-600">{(profileUser.totalPoints || 0).toLocaleString()}</div>
                   <div className="text-sm text-muted-foreground">Points</div>
                 </div>
               </div>
@@ -252,7 +284,7 @@ export function ProfileView() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Level Name</span>
-                  <span className="text-foreground">{profileUser.levelName}</span>
+                  <span className="text-foreground">{profileUser.levelName || 'Beginner'}</span>
                 </div>
               </div>
             </div>

@@ -1,0 +1,77 @@
+{
+  "test_cases": [
+    {
+      "name": "Admin registration with correct access code",
+      "request": {
+        "name": "Admin User",
+        "email": "admin.test@example.com",
+        "password": "AdminTest123!",
+        "role": "admin",
+        "accessCode": "mahtabmehek1337"
+      },
+      "expected": {
+        "role": "admin",
+        "isAutoApproved": true,
+        "requiresApproval": false
+      }
+    },
+    {
+      "name": "Admin registration with wrong access code",
+      "request": {
+        "name": "Fake Admin",
+        "email": "fake.admin@example.com", 
+        "password": "FakeAdmin123!",
+        "role": "admin",
+        "accessCode": "student2025"
+      },
+      "expected": {
+        "error": "Role mismatch - should be rejected"
+      }
+    },
+    {
+      "name": "Student registration with correct access code",
+      "request": {
+        "name": "Student User",
+        "email": "student.test@example.com",
+        "password": "StudentTest123!",
+        "role": "student", 
+        "accessCode": "student2025"
+      },
+      "expected": {
+        "role": "student",
+        "isAutoApproved": false,
+        "requiresApproval": true
+      }
+    },
+    {
+      "name": "Instructor registration with correct access code",
+      "request": {
+        "name": "Instructor User",
+        "email": "instructor.test@example.com",
+        "password": "InstructorTest123!",
+        "role": "instructor",
+        "accessCode": "instructor2025"
+      },
+      "expected": {
+        "role": "instructor", 
+        "isAutoApproved": false,
+        "requiresApproval": true
+      }
+    },
+    {
+      "name": "Staff registration with correct access code",
+      "request": {
+        "name": "Staff User",
+        "email": "staff.test@example.com",
+        "password": "StaffTest123!",
+        "role": "staff",
+        "accessCode": "staff2025"
+      },
+      "expected": {
+        "role": "staff",
+        "isAutoApproved": false,
+        "requiresApproval": true
+      }
+    }
+  ]
+}

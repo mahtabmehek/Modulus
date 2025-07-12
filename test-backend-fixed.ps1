@@ -51,7 +51,7 @@ if (Test-Path $BACKEND_DIR) {
     $adminFile = Join-Path $BACKEND_DIR "routes\admin.js"
     if (Test-Path $adminFile) {
         $content = Get-Content $adminFile -Raw
-        if ($content -match "router\.get\('/seed'") {
+        if ($content -like "*router.get('/seed*") {
             Write-Host "✅ /seed route found in admin.js" -ForegroundColor Green
         } else {
             Write-Host "❌ /seed route NOT found in admin.js" -ForegroundColor Red
@@ -73,7 +73,7 @@ Test-Endpoint "/health/db" "Database Health Check"
 # Test status endpoint
 Test-Endpoint "/status" "API Status"
 
-# Test seed endpoint (this is the main one we're fixing)
+# Test seed endpoint (this is the main one we are fixing)
 Test-Endpoint "/admin/seed" "Seed Endpoint (Database Seeding)"
 
 # Test seed endpoint with detailed output

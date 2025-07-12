@@ -2,14 +2,46 @@
 
 import { useState } from 'react'
 import { useApp } from '@/lib/hooks/use-app'
-import { AlertCircle, Users, Shield, Award } from 'lucide-react'
+import { AlertCircle } from 'lucide-react'
 
 export function LoginView() {
-  const { login } = useApp()
+  const { login, navigate } = useApp()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  const getUserFriendlyError = (error: any) => {
+    // If the error has a specific message from the backend, use it
+    if (error && typeof error === 'object' && error.message) {
+      return error.message;
+    }
+    
+    // If the error has an errorType, provide specific messages
+    if (error && typeof error === 'object' && error.errorType) {
+      switch (error.errorType) {
+        case 'USER_NOT_FOUND':
+          return 'No account found with this email address. Please check your email or register for a new account.';
+        case 'INVALID_PASSWORD':
+          return 'The password you entered is incorrect. Please try again.';
+        default:
+          return error.error || 'Login failed. Please try again.';
+      }
+    }
+    
+    // Fallback for string errors
+    if (typeof error === 'string') {
+      if (error.includes('User not found')) {
+        return 'No account found with this email address. Please check your email or register for a new account.';
+      }
+      if (error.includes('Incorrect password')) {
+        return 'The password you entered is incorrect. Please try again.';
+      }
+      return error;
+    }
+    
+    return 'Login failed. Please try again.';
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -21,7 +53,7 @@ export function LoginView() {
     const result = await login(email, password)
     
     if (!result.success) {
-      setError(result.error || 'Login failed')
+      setError(getUserFriendlyError(result.error))
     }
     
     setLoading(false)
@@ -96,24 +128,18 @@ export function LoginView() {
               {loading ? 'Signing In...' : 'Sign In'}
             </button>
           </form>
-        </div>
-
-        {/* Features */}
-        <div className="mt-8 text-center">
-          <p className="text-gray-300 text-sm mb-4">What makes Modulus LMS special:</p>
-          <div className="space-y-2 text-sm text-gray-300">
-            <div className="flex items-center justify-center">
-              <Shield className="w-4 h-4 text-red-400 mr-2" />
-              Interactive Cybersecurity Labs
-            </div>
-            <div className="flex items-center justify-center">
-              <Users className="w-4 h-4 text-red-400 mr-2" />
-              Desktop-as-a-Service Virtual Environments
-            </div>
-            <div className="flex items-center justify-center">
-              <Award className="w-4 h-4 text-red-400 mr-2" />
-              Gamified Learning with Badges & Streaks
-            </div>
+          
+          {/* Register Link */}
+          <div className="mt-6 text-center">
+            <p className="text-gray-600 text-sm">
+              Don&apos;t have an account?{' '}
+              <button 
+                onClick={() => navigate('register')}
+                className="text-red-600 hover:text-red-700 font-medium"
+              >
+                Sign up here
+              </button>
+            </p>
           </div>
         </div>
       </div>

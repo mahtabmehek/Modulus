@@ -219,13 +219,22 @@ export default function LabCreationView() {
   const handleSave = async () => {
     setIsSaving(true)
     
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      // TODO: Implement lab API endpoints
+      // For now, just simulate the save
       console.log('Lab saved:', { labData, tasks })
-      setIsSaving(false)
-      alert('Lab created successfully!')
+      
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 2000))
+      
+      alert('Lab created successfully! (Note: Lab API endpoints need to be implemented)')
       navigate('dashboard')
-    }, 2000)
+    } catch (error) {
+      console.error('Failed to save lab:', error)
+      alert('Failed to save lab. Please try again.')
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const academicCategories = [

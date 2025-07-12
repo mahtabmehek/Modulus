@@ -17,8 +17,10 @@ export interface User {
   preferences: UserPreferences
   isApproved?: boolean
   approvalStatus?: 'pending' | 'approved' | 'rejected'
+  status: 'pending' | 'approved' | 'rejected' // Add this field
   approvedBy?: string
   approvedAt?: Date
+  department?: string
 }
 
 export interface UserPreferences {
@@ -235,7 +237,7 @@ export interface Announcement {
 }
 
 export interface ViewState {
-  type: 'login' | 'dashboard' | 'path' | 'module' | 'lab' | 'desktop' | 'profile' | 'lab-creation' | 'course-creation' | 'course-edit' | 'course-overview' | 'user-creation' | 'user-edit' | 'user-overview' | 'user-profile'
+  type: 'login' | 'register' | 'dashboard' | 'path' | 'module' | 'lab' | 'desktop' | 'profile' | 'lab-creation' | 'course-creation' | 'course-edit' | 'course-overview' | 'user-creation' | 'user-edit' | 'user-overview' | 'user-profile' | 'pending-approval'
   params?: {
     pathId?: string
     moduleId?: string

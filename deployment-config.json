@@ -1,0 +1,89 @@
+{
+  "deployment": {
+    "name": "Modulus LMS",
+    "version": "1.0.0",
+    "aws": {
+      "region": "eu-west-2",
+      "lambdaFunction": "modulus-backend",
+      "s3Bucket": "modulus-frontend-1370267358",
+      "apiGatewayName": "modulus-api"
+    },
+    "paths": {
+      "backend": "./backend",
+      "frontend": "./frontend",
+      "packageName": "modulus-backend.zip"
+    },
+    "build": {
+      "backend": {
+        "installCommand": "npm install",
+        "excludePatterns": [
+          "node_modules/*",
+          "*.zip", 
+          "test/*",
+          ".git/*",
+          "*.log"
+        ]
+      },
+      "frontend": {
+        "installCommand": "npm install",
+        "buildCommand": "npm run build",
+        "outputDir": "dist"
+      }
+    },
+    "s3": {
+      "cacheControl": "public, max-age=86400",
+      "indexDocument": "index.html",
+      "errorDocument": "index.html"
+    }
+  },
+  "testing": {
+    "healthEndpoint": "/api/health",
+    "testUsers": {
+      "student": {
+        "role": "student",
+        "accessCode": "student2025",
+        "requiresApproval": false
+      },
+      "instructor": {
+        "role": "instructor", 
+        "accessCode": "instructor2025",
+        "requiresApproval": true
+      },
+      "staff": {
+        "role": "staff",
+        "accessCode": "staff2025",
+        "requiresApproval": true
+      },
+      "admin": {
+        "role": "admin",
+        "accessCode": "mahtabmehek1337",
+        "requiresApproval": false
+      }
+    }
+  },
+  "endpoints": {
+    "auth": {
+      "register": "/api/auth/register",
+      "login": "/api/auth/login"
+    },
+    "admin": {
+      "initDb": "/api/admin/init-db",
+      "users": "/api/admin/users",
+      "approve": "/api/admin/approve",
+      "createUser": "/api/admin/create-user"
+    },
+    "courses": {
+      "list": "/api/courses",
+      "create": "/api/courses",
+      "update": "/api/courses/:id",
+      "delete": "/api/courses/:id"
+    }
+  },
+  "features": {
+    "roleBasedAccess": true,
+    "approvalWorkflow": true,
+    "courseManagement": true,
+    "labManagement": true,
+    "userManagement": true
+  }
+}

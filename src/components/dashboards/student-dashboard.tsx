@@ -4,7 +4,7 @@ import { useApp } from '@/lib/hooks/use-app'
 import { BookOpen, Trophy, Flame, Clock, Play, ArrowRight, User } from 'lucide-react'
 
 export function StudentDashboard() {
-  const { user, appData, navigate } = useApp()
+  const { user, navigate } = useApp()
 
   const stats = {
     totalLabs: 10,

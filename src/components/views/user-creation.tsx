@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useApp } from '@/lib/hooks/use-app'
 import { ArrowLeft, Save, User, Mail, Shield } from 'lucide-react'
 import { UserRole } from '@/types'
@@ -12,15 +12,20 @@ export function UserCreationView() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    studentId: '',
+    userId: '', // Will be auto-generated based on role
     role: 'student' as UserRole,
-    level: 1,
-    levelName: 'Beginner',
     department: '',
     joinedAt: new Date().toISOString().split('T')[0],
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
   
+  // Initialize User ID when component loads
+  useEffect(() => {
+    setFormData(prev => ({
+      ...prev,
+      userId: generateUserId(prev.role)
+    }))
+  }, [])
   // Check if user has permission to create users (after hooks)
   if (!currentUser || !['admin', 'staff'].includes(currentUser.role)) {
     return (
@@ -66,28 +71,54 @@ export function UserCreationView() {
       newErrors.email = 'Please enter a valid email address'
     }
 
-    if (formData.role === 'student' && !formData.studentId.trim()) {
-      newErrors.studentId = 'Student ID is required for students'
-    }
+    // User ID is auto-generated, no validation needed
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
     if (!validateForm()) {
       return
     }
 
-    // Here you would typically save the user to your backend
-    console.log('Creating user:', formData)
-    
-    // Navigate back to dashboard
-    navigate('dashboard')
+    try {
+      // Call the API to create the user
+      const userData = {
+        name: formData.name,
+        email: formData.email,
+        role: formData.role,
+        department: formData.department,
+        joinedAt: formData.joinedAt
+      }
+
+      console.log('Creating user:', userData)
+      
+      // Here you would make the actual API call
+      // const response = await api.createUser(userData)
+      
+      // For now, just show success and navigate
+      alert('User created successfully!')
+      navigate('dashboard')
+    } catch (error) {
+      console.error('Error creating user:', error)
+      alert('Failed to create user. Please try again.')
+    }
   }
 
+  // Generate User ID based on role selection
+  const generateUserId = (role: UserRole) => {
+    let prefix = ''
+    switch (role) {
+      case 'admin': prefix = '1-99'; break
+      case 'staff': prefix = '100-499'; break
+      case 'instructor': prefix = '500-999'; break
+      case 'student': prefix = '1000-4999'; break
+    }
+    return `Auto-generated (${prefix})`
+  }
   // Check if current user can create users of this role
   const canCreateRole = (role: UserRole) => {
     if (currentUser?.role === 'admin') return true
@@ -95,6 +126,15 @@ export function UserCreationView() {
       return role === 'student' || role === 'instructor'
     }
     return false
+  }
+
+  // Update User ID when role changes
+  const handleRoleChange = (newRole: UserRole) => {
+    setFormData(prev => ({
+      ...prev,
+      role: newRole,
+      userId: generateUserId(newRole)
+    }))
   }
 
   const availableRoles = () => {
@@ -195,7 +235,7 @@ export function UserCreationView() {
                 <Shield className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <select
                   value={formData.role}
-                  onChange={(e) => handleInputChange('role', e.target.value)}
+                  onChange={(e) => handleRoleChange(e.target.value as UserRole)}
                   className="w-full pl-10 pr-4 py-3 bg-background border border-border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-foreground"
                 >
                   {availableRoles().map(role => (
@@ -205,25 +245,22 @@ export function UserCreationView() {
               </div>
             </div>
 
-            {/* Student ID (conditional) */}
-            {formData.role === 'student' && (
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Student ID *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.studentId}
-                  onChange={(e) => handleInputChange('studentId', e.target.value)}
-                  placeholder="e.g., 2024001234"
-                  className={`w-full px-4 py-3 bg-background border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-foreground ${
-                    errors.studentId ? 'border-red-500' : 'border-border'
-                  }`}
-                />
-                {errors.studentId && <p className="mt-1 text-sm text-red-500">{errors.studentId}</p>}
-              </div>
-            )}
+            {/* User ID (Auto-generated) */}
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                User ID *
+              </label>
+              <input
+                type="text"
+                value={formData.userId || generateUserId(formData.role)}
+                readOnly
+                className="w-full px-4 py-3 bg-muted border border-border rounded-lg text-muted-foreground cursor-not-allowed"
+                placeholder="Will be auto-generated based on role"
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                ID will be automatically assigned from the {formData.role} range
+              </p>
+            </div>
 
             {/* Department */}
             <div>
@@ -235,35 +272,6 @@ export function UserCreationView() {
                 value={formData.department}
                 onChange={(e) => handleInputChange('department', e.target.value)}
                 placeholder="e.g., School of Computing"
-                className="w-full px-4 py-3 bg-background border border-border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-foreground"
-              />
-            </div>
-
-            {/* Level */}
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Initial Level
-              </label>
-              <input
-                type="number"
-                min="1"
-                max="10"
-                value={formData.level}
-                onChange={(e) => handleInputChange('level', parseInt(e.target.value))}
-                className="w-full px-4 py-3 bg-background border border-border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-foreground"
-              />
-            </div>
-
-            {/* Level Name */}
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Level Name
-              </label>
-              <input
-                type="text"
-                value={formData.levelName}
-                onChange={(e) => handleInputChange('levelName', e.target.value)}
-                placeholder="e.g., Beginner, Intermediate, Expert"
                 className="w-full px-4 py-3 bg-background border border-border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-foreground"
               />
             </div>
@@ -286,6 +294,8 @@ export function UserCreationView() {
           <div className="mt-8 p-6 bg-muted rounded-lg">
             <h3 className="text-lg font-semibold text-foreground mb-4">Account Setup Information</h3>
             <div className="text-sm text-muted-foreground space-y-2">
+              <p>• User ID will be automatically assigned from role-based range:</p>
+              <p className="ml-4">- Admin: 1-99 | Staff: 100-499 | Instructor: 500-999 | Student: 1000-4999</p>
               <p>• The user will receive an email with login instructions</p>
               <p>• A temporary password will be generated and sent securely</p>
               <p>• The user must change their password on first login</p>

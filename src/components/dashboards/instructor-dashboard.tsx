@@ -4,7 +4,7 @@ import { useApp } from '@/lib/hooks/use-app'
 import { Users, BookOpen, Plus, TrendingUp, Calendar, Eye } from 'lucide-react'
 
 export function InstructorDashboard() {
-  const { user, appData, navigate } = useApp()
+  const { user, navigate } = useApp()
 
   const stats = {
     totalStudents: 156,
@@ -100,39 +100,9 @@ export function InstructorDashboard() {
                 Create Module Content
               </button>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {appData.learningPaths.map((path) => (
-                <div 
-                  key={path.id}
-                  className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6"
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="px-3 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 rounded-full text-xs font-medium">
-                      {path.modules.length} modules
-                    </span>
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {path.estimatedHours}h total
-                    </span>
-                  </div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
-                    {path.title}
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
-                    {path.description}
-                  </p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {path.modules.reduce((acc, module) => acc + module.labs.length, 0)} labs
-                    </span>
-                    <button 
-                      onClick={() => navigate('path', { pathId: path.id })}
-                      className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium text-sm"
-                    >
-                      Manage →
-                    </button>
-                  </div>
-                </div>
-              ))}
+            <div className="p-6 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 text-center text-gray-500 dark:text-gray-400">
+              <p>Learning path management features will be available soon.</p>
+              <p className="text-sm">Paths are managed through the backend API.</p>
             </div>
           </section>
         </div>

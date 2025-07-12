@@ -225,25 +225,21 @@ class AWSMetricsService {
 
   private async getUserStatistics() {
     // This would typically come from your application database
-    // For now, we'll return mock data that would be replaced with real DB queries
+    // Real implementation would query the database for actual user statistics
     return {
-      totalUsers: 1247,
-      activeUsers: 89,
-      totalInstructors: 45,
-      totalLabs: 156,
-      completedLabSessions: 3842,
-      sessionData: [
-        { duration: 45, userId: 'user1' },
-        { duration: 52, userId: 'user2' },
-        // ... more session data
-      ]
+      totalUsers: 0,
+      activeUsers: 0,
+      totalInstructors: 0,
+      totalLabs: 0,
+      completedLabSessions: 0,
+      sessionData: []
     }
   }
 
   private async getStorageStatistics() {
     try {
       if (!this.config.s3BucketName) {
-        return { used: '2.3TB', total: '5TB', utilization: 46 }
+        return { used: '0TB', total: '0TB', utilization: 0 }
       }
 
       // Get S3 bucket metrics

@@ -41,11 +41,108 @@ jobs:
     - name: Validate routes
       run: |
         cd backend
-        echo "Validating admin routes..."
-        if grep -q "router.get('/seed'" routes/admin.js; then
-          echo "✅ /seed route found in admin.js"
+        echo "🔍 Validating backend routes..."
+        
+        # Check auth routes with role-based access codes
+        if grep -q "ROLE_ACCESS_CODES" routes/auth.js; then
+          echo "✅ Role-based access codes found"
         else
-          echo "❌ /seed route NOT found in admin.js"
+          echo "❌ Role-based access codes missing"
+          exit 1
+        fi
+        
+        if grep -q "router.post('/register'" routes/auth.js; then
+          echo "✅ Registration route found"
+        else
+          echo "❌ Registration route missing"
+          exit 1
+        fi
+        
+        if grep -q "router.post('/login'" routes/auth.js; then
+          echo "✅ Login route found"
+        else
+          echo "❌ Login route missing"
+          exit 1
+        fi
+        
+        # Check admin routes
+        if [ -f "routes/admin.js" ]; then
+          if grep -q "router.get('/users'" routes/admin.js; then
+            echo "✅ User management route found"
+          else
+            echo "❌ User management route missing"
+          fi
+          
+          if grep -q "router.post('/approve'" routes/admin.js; then
+            echo "✅ User approval route found"
+          else
+            echo "❌ User approval route missing"
+          fi
+          
+          if grep -q "router.post('/users'" routes/admin.js; then
+            echo "✅ User creation route found"
+          else
+            echo "❌ User creation route missing"
+          fi
+        else
+          echo "❌ Admin routes file missing"
+          exit 1
+        fi
+        
+        # Check course routes
+        if [ -f "routes/courses.js" ]; then
+          if grep -q "router.get('/'" routes/courses.js; then
+            echo "✅ Course listing route found"
+          else
+            echo "❌ Course listing route missing"
+          fi
+          
+          if grep -q "router.post('/'" routes/courses.js; then
+            echo "✅ Course creation route found"
+          else
+            echo "❌ Course creation route missing"
+          fi
+          
+          if grep -q "router.put('/:id'" routes/courses.js; then
+            echo "✅ Course update route found"
+          else
+            echo "❌ Course update route missing"
+          fi
+          
+          if grep -q "router.delete('/:id'" routes/courses.js; then
+            echo "✅ Course delete route found"
+          else
+            echo "❌ Course delete route missing"
+          fi
+        else
+          echo "❌ Course routes file missing"
+          exit 1
+        fi
+        
+        # Check health route
+        if [ -f "routes/health.js" ]; then
+          if grep -q "router.get('/'" routes/health.js; then
+            echo "✅ Health check route found"
+          else
+            echo "❌ Health check route missing"
+          fi
+        else
+          echo "❌ Health routes file missing"
+          exit 1
+        fi
+        
+        # Check labs route
+        if [ -f "routes/labs.js" ]; then
+          echo "✅ Labs routes file found"
+        else
+          echo "⚠️  Labs routes file not found"
+        fi
+        
+        # Validate main server file includes all routes
+        if grep -q "auth.*courses.*health" server.js; then
+          echo "✅ Server includes required route modules"
+        else
+          echo "❌ Server missing required route modules"
           exit 1
         fi
 
@@ -216,13 +313,74 @@ jobs:
         echo "Testing status endpoint..."
         curl -f -s "$BASE_URL/api/status" | jq . || echo "Status check failed"
         
-        # Test seed endpoint
-        echo "Testing seed endpoint..."
-        curl -f -s "$BASE_URL/api/admin/seed" | jq . || echo "Seed endpoint failed"
-        
         # Test database health
         echo "Testing database health..."
         curl -f -s "$BASE_URL/api/health/db" | jq . || echo "Database health check failed"
+        
+        # Test seed endpoint
+        echo "Testing seed endpoint..."
+        curl -f -s -X POST "$BASE_URL/api/admin/seed" | jq . || echo "Seed endpoint failed"
+        
+        # Test student registration with role-based access code
+        echo "Testing student registration..."
+        curl -f -s -X POST "$BASE_URL/api/auth/register" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "name": "Test Student CI",
+            "email": "test.student.ci@university.edu",
+            "password": "testpassword123",
+            "role": "student",
+            "accessCode": "STUDENT2024"
+          }' | jq . || echo "Student registration test failed"
+        
+        # Test instructor registration (should require approval)
+        echo "Testing instructor registration..."
+        curl -f -s -X POST "$BASE_URL/api/auth/register" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "name": "Test Instructor CI",
+            "email": "test.instructor.ci@university.edu",
+            "password": "testpassword123",
+            "role": "instructor",
+            "accessCode": "INSTRUCTOR2024"
+          }' | jq . || echo "Instructor registration test failed"
+        
+        # Test admin login
+        echo "Testing admin login..."
+        ADMIN_TOKEN=$(curl -f -s -X POST "$BASE_URL/api/auth/login" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "email": "admin@modulus.edu",
+            "password": "admin123"
+          }' | jq -r '.token' 2>/dev/null || echo "")
+        
+        if [ -n "$ADMIN_TOKEN" ] && [ "$ADMIN_TOKEN" != "null" ]; then
+          echo "✅ Admin login successful"
+          
+          # Test admin endpoints with token
+          echo "Testing admin user listing..."
+          curl -f -s "$BASE_URL/api/admin/users" \
+            -H "Authorization: Bearer $ADMIN_TOKEN" | jq . || echo "Admin user listing failed"
+          
+          echo "Testing course listing..."
+          curl -f -s "$BASE_URL/api/courses" \
+            -H "Authorization: Bearer $ADMIN_TOKEN" | jq . || echo "Course listing failed"
+          
+          echo "Testing course creation..."
+          curl -f -s -X POST "$BASE_URL/api/courses" \
+            -H "Authorization: Bearer $ADMIN_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "name": "Test Course CI",
+              "code": "TEST101",
+              "description": "Test course for CI",
+              "credits": 3,
+              "level": "undergraduate"
+            }' | jq . || echo "Course creation test failed"
+          
+        else
+          echo "⚠️  Admin login failed, skipping admin endpoint tests"
+        fi
 
     - name: Output deployment info
       run: |

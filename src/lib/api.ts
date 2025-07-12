@@ -58,7 +58,11 @@ class ApiClient {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.message || `HTTP ${response.status}`)
+      // Throw the entire error object so frontend can access errorType and message
+      const error = new Error(errorData.message || `HTTP ${response.status}`)
+      // Attach the error data to the error object
+      Object.assign(error, errorData)
+      throw error
     }
 
     return response.json()
@@ -95,6 +99,10 @@ class ApiClient {
     })
   }
 
+  async checkSession(): Promise<{ user: any; valid: boolean }> {
+    return this.request('/auth/session')
+  }
+
   async getUserProfile(userId: string): Promise<{ user: any }> {
     return this.request(`/users/${userId}`)
   }
@@ -108,6 +116,112 @@ class ApiClient {
 
   async healthCheck(): Promise<{ status: string; message: string }> {
     return this.request('/health')
+  }
+
+  // Admin endpoints
+  async getPendingApprovals(): Promise<{ pendingApprovals: any[] }> {
+    return this.request('/auth/admin/pending-approvals')
+  }
+
+  async approveUser(userId: number): Promise<{ message: string; user: any }> {
+    return this.request('/auth/admin/approve-user', {
+      method: 'POST',
+      body: JSON.stringify({ userId }),
+    })
+  }
+
+  async rejectUser(userId: number): Promise<{ message: string; user: any }> {
+    return this.request('/auth/admin/reject-user', {
+      method: 'POST',
+      body: JSON.stringify({ userId }),
+    })
+  }
+
+  async getAllUsers(): Promise<{ users: any[] }> {
+    return this.request('/auth/admin/users')
+  }
+
+  async createUser(userData: {
+    name: string
+    email: string
+    password: string
+    role: string
+  }): Promise<{ message: string; user: any }> {
+    return this.request('/auth/admin/create-user', {
+      method: 'POST',
+      body: JSON.stringify(userData),
+    })
+  }
+
+  // Course endpoints
+  async getCourses(): Promise<{ courses: any[] }> {
+    return this.request('/courses')
+  }
+
+  async getCourse(courseId: string): Promise<{ course: any }> {
+    return this.request(`/courses/${courseId}`)
+  }
+
+  async createCourse(courseData: {
+    title: string
+    code: string
+    description: string
+    department: string
+    academicLevel: string
+    duration: number
+    totalCredits: number
+  }): Promise<{ message: string; course: any }> {
+    return this.request('/courses', {
+      method: 'POST',
+      body: JSON.stringify(courseData),
+    })
+  }
+
+  async updateCourse(courseId: string, courseData: any): Promise<{ message: string; course: any }> {
+    return this.request(`/courses/${courseId}`, {
+      method: 'PUT',
+      body: JSON.stringify(courseData),
+    })
+  }
+
+  async deleteCourse(courseId: string): Promise<{ message: string; course: any }> {
+    return this.request(`/courses/${courseId}`, {
+      method: 'DELETE',
+    })
+  }
+
+  // Lab endpoints (placeholder for future implementation)
+  async getLabs(): Promise<{ labs: any[] }> {
+    // For now, return empty array since backend doesn't have lab endpoints yet
+    return { labs: [] }
+  }
+
+  async createLab(labData: {
+    name: string
+    type: string
+    description: string
+    instructions: string
+    estimatedDuration: number
+    difficulty: string
+  }): Promise<{ message: string; lab: any }> {
+    // Placeholder for future lab creation API
+    return this.request('/labs', {
+      method: 'POST',
+      body: JSON.stringify(labData),
+    })
+  }
+
+  async updateLab(labId: string, labData: any): Promise<{ message: string; lab: any }> {
+    return this.request(`/labs/${labId}`, {
+      method: 'PUT',
+      body: JSON.stringify(labData),
+    })
+  }
+
+  async deleteLab(labId: string): Promise<{ message: string }> {
+    return this.request(`/labs/${labId}`, {
+      method: 'DELETE',
+    })
   }
 }
 

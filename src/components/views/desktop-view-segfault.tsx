@@ -6,35 +6,41 @@ import {
   Monitor, 
   Maximize2, 
   Minimize2, 
-  Download, 
-  Upload, 
+  Power, 
   Settings, 
-  Volume2,
-  Wifi,
-  Battery,
-  Clock,
+  Upload, 
+  Download, 
+  Terminal, 
+  FolderOpen, 
+  Clock, 
+  Wifi, 
+  Volume2, 
+  User,
   ArrowLeft,
+  ExternalLink,
+  Copy,
+  RefreshCw,
   Share,
-  Terminal,
-  FileText
+  FileText,
+  Battery
 } from 'lucide-react'
 
-export function DesktopView() {
+export function DesktopViewSegfault() {
   const { navigate } = useApp()
   const [isConnected, setIsConnected] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [sessionTime, setSessionTime] = useState(0)
   const [activeMenu, setActiveMenu] = useState('desktop')
 
-  // Mock desktop session data
+  // Desktop session would come from API
   const session = {
-    id: 'session-123',
-    status: isConnected ? 'running' : 'starting',
-    osType: 'Kali Linux',
-    ipAddress: '10.0.1.15',
-    vncPort: 5901,
-    sshPort: 22,
-    expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000), // 2 hours from now
+    id: '',
+    status: 'disconnected',
+    osType: '',
+    ipAddress: '',
+    vncPort: 0,
+    sshPort: 0,
+    expiresAt: new Date(),
   }
 
   useEffect(() => {

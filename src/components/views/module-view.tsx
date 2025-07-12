@@ -1,14 +1,36 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { useApp } from '@/lib/hooks/use-app'
 import { ArrowLeft, BookOpen, Code, GraduationCap } from 'lucide-react'
 
 export function ModuleView() {
-  const { navigate, appData, currentView } = useApp()
+  const { navigate, currentView } = useApp()
+  const [currentModule, setCurrentModule] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
   
   // Get moduleId from either the direct property or params
   const moduleId = currentView.params?.moduleId
-  const currentModule = appData.modules.find(m => m.id === moduleId)
+
+  useEffect(() => {
+    // TODO: Fetch real module data from API
+    if (moduleId) {
+      // For now, just show empty state until API is implemented
+      setCurrentModule(null)
+    }
+    setLoading(false)
+  }, [moduleId])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading module...</p>
+        </div>
+      </div>
+    )
+  }
   
   if (!currentModule) {
     return (
@@ -39,7 +61,7 @@ export function ModuleView() {
           </button>
           <span>&gt;</span>
           <button 
-            onClick={() => navigate('path', { pathId: currentModule.pathId })}
+            onClick={() => navigate('dashboard')}
             className="hover:text-foreground transition-colors"
           >
             Learning Path
@@ -60,39 +82,11 @@ export function ModuleView() {
         <div>
           <h2 className="text-xl font-semibold mb-6">Labs in this Module</h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {currentModule.labs.map((lab) => (
-              <div 
-                key={lab.id}
-                className="bg-card rounded-lg p-6 border border-border cursor-pointer hover:border-border/80 transition-colors"
-                onClick={() => navigate('lab', { labId: lab.id, moduleId: currentModule.id })}
-              >
-                <div className="flex justify-center mb-4">
-                  <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center">
-                    <Code className="w-8 h-8 text-muted-foreground" />
-                  </div>
-                </div>
-                <h3 className="text-lg font-semibold text-center mb-2">
-                  {lab.title}
-                </h3>
-                <div className="flex justify-between items-center mt-4">
-                  <span className={`text-sm px-3 py-1 rounded-full ${
-                    lab.difficulty === 'Easy' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300' :
-                    lab.difficulty === 'Medium' ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-300' :
-                    'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-300'
-                  }`}>
-                    {lab.difficulty}
-                  </span>
-                  <span className={`text-sm px-3 py-1 rounded-full ${
-                    lab.type === 'Mandatory' ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300' : 
-                    lab.type === 'Challenge' ? 'bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-300' :
-                    'bg-muted text-muted-foreground'
-                  }`}>
-                    {lab.type}
-                  </span>
-                </div>
-              </div>
-            ))}
+          <div className="bg-card rounded-lg p-6 border border-border text-center">
+            <p className="text-muted-foreground">Labs will be loaded here from the API.</p>
+            <p className="text-sm text-muted-foreground mt-2">
+              Module ID: {moduleId}
+            </p>
           </div>
         </div>
       </div>

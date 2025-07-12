@@ -7,7 +7,7 @@ import { useTheme } from 'next-themes'
 import { userProgress, getStreakEmoji, getLevelInfo, achievements } from '@/demo/achievements'
 
 export function Header() {
-  const { user, navigate, switchUserRole, logout, currentView } = useApp()
+  const { user, navigate, logout, currentView } = useApp()
   const { theme, setTheme } = useTheme()
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
@@ -38,11 +38,6 @@ export function Header() {
     }
   }, [])
 
-  const handleRoleSwitch = (role: 'student' | 'instructor' | 'admin') => {
-    switchUserRole(role)
-    setShowUserMenu(false)
-  }
-
   const themeIcons = {
     light: Sun,
     dark: Moon,
@@ -53,10 +48,11 @@ export function Header() {
   const levelInfo = getLevelInfo(userProgress.level)
   const earnedAchievements = achievements.filter(a => a.earned)
 
-  // Mock lab/desktop session data - in real app this would come from context/state
+  // Check if user is in a lab or desktop session
   const isInLab = currentView.type === 'lab' || currentView.type === 'desktop'
-  const userMachineIP = '192.168.1.100'
-  const labVmIP = '10.0.1.15'
+  // TODO: Get real IP addresses from session data
+  const userMachineIP = 'N/A'
+  const labVmIP = 'N/A'
 
   return (
     <header className="bg-red-600 text-white">
@@ -226,30 +222,6 @@ export function Header() {
                     <p className="text-sm text-gray-500 dark:text-gray-400">{user?.email}</p>
                   </div>
                   
-                  <div className="p-2">
-                    <h4 className="px-2 py-1 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Switch Role
-                    </h4>
-                    <button
-                      onClick={() => handleRoleSwitch('student')}
-                      className="w-full text-left px-2 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-                    >
-                      Student View
-                    </button>
-                    <button
-                      onClick={() => handleRoleSwitch('instructor')}
-                      className="w-full text-left px-2 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-                    >
-                      Instructor View
-                    </button>
-                    <button
-                      onClick={() => handleRoleSwitch('admin')}
-                      className="w-full text-left px-2 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-                    >
-                      Admin View
-                    </button>
-                  </div>
-
                   <div className="p-2 border-t border-gray-200 dark:border-gray-700">
                     <button
                       onClick={() => navigate('profile')}

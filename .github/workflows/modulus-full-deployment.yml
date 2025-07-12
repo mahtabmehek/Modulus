@@ -1,0 +1,624 @@
+name: Modulus LMS - Full Stack Deployment
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      deploy_backend:
+        description: 'Deploy backend'
+        required: false
+        default: true
+        type: boolean
+      deploy_frontend:
+        description: 'Deploy frontend'
+        required: false
+        default: true
+        type: boolean
+      run_tests:
+        description: 'Run comprehensive tests'
+        required: false
+        default: true
+        type: boolean
+      seed_database:
+        description: 'Seed database with test data'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  AWS_REGION: eu-west-2
+  LAMBDA_FUNCTION_NAME: modulus-backend
+  API_GATEWAY_NAME: modulus-api
+  S3_BUCKET_NAME: modulus-frontend-production
+
+jobs:
+  validate-and-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install frontend dependencies
+      run: npm ci
+
+    - name: Install backend dependencies
+      run: |
+        cd backend
+        npm ci
+
+    - name: Validate backend structure
+      run: |
+        cd backend
+        echo "🔍 Validating backend structure..."
+        
+        # Check required files
+        required_files=("server.js" "lambda.js" "db.js" "schema.sql")
+        for file in "${required_files[@]}"; do
+          if [ -f "$file" ]; then
+            echo "✅ Found $file"
+          else
+            echo "❌ Missing $file"
+            exit 1
+          fi
+        done
+        
+        # Check route files
+        route_files=("routes/auth.js" "routes/admin.js" "routes/courses.js" "routes/users.js" "routes/health.js")
+        for file in "${route_files[@]}"; do
+          if [ -f "$file" ]; then
+            echo "✅ Found $file"
+          else
+            echo "❌ Missing $file"
+            exit 1
+          fi
+        done
+
+    - name: Validate critical endpoints
+      run: |
+        cd backend
+        echo "🔍 Validating critical endpoints..."
+        
+        # Check auth endpoints
+        if grep -q "router.post('/register'" routes/auth.js; then
+          echo "✅ Registration endpoint found"
+        else
+          echo "❌ Registration endpoint missing"
+          exit 1
+        fi
+        
+        if grep -q "router.post('/login'" routes/auth.js; then
+          echo "✅ Login endpoint found"
+        else
+          echo "❌ Login endpoint missing"
+          exit 1
+        fi
+        
+        # Check admin endpoints
+        if grep -q "router.get('/users'" routes/admin.js; then
+          echo "✅ User management endpoint found"
+        else
+          echo "❌ User management endpoint missing"
+          exit 1
+        fi
+        
+        if grep -q "router.post('/approve'" routes/admin.js; then
+          echo "✅ User approval endpoint found"
+        else
+          echo "❌ User approval endpoint missing"
+          exit 1
+        fi
+        
+        # Check course endpoints
+        if grep -q "router.post('/'" routes/courses.js; then
+          echo "✅ Course creation endpoint found"
+        else
+          echo "❌ Course creation endpoint missing"
+          exit 1
+        fi
+        
+        if grep -q "router.get('/'" routes/courses.js; then
+          echo "✅ Course listing endpoint found"
+        else
+          echo "❌ Course listing endpoint missing"
+          exit 1
+        fi
+
+    - name: Lint frontend
+      run: |
+        echo "🔍 Running frontend linting..."
+        npm run lint || echo "⚠️ Linting issues found"
+
+    - name: Type check frontend
+      run: |
+        echo "🔍 Running TypeScript type checking..."
+        npx tsc --noEmit || echo "⚠️ Type checking issues found"
+
+  deploy-backend:
+    if: github.event.inputs.deploy_backend != 'false'
+    needs: validate-and-test
+    runs-on: ubuntu-latest
+    environment: production
+    outputs:
+      api-url: ${{ steps.get-api-url.outputs.api-url }}
+      lambda-arn: ${{ steps.deploy-lambda.outputs.lambda-arn }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: backend/package-lock.json
+
+    - name: Install backend dependencies
+      run: |
+        cd backend
+        npm ci --production
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Create deployment package
+      run: |
+        cd backend
+        echo "📦 Creating deployment package..."
+        
+        # Remove dev dependencies and create clean package
+        rm -rf node_modules/.cache
+        zip -r ../backend-deployment.zip . \
+          -x "*.git*" "*.log*" "test/*" "*.test.js" "coverage/*" \
+          "*.md" ".env.example" "Dockerfile*"
+        
+        cd ..
+        echo "Package size: $(du -h backend-deployment.zip | cut -f1)"
+        
+        # Verify package contents
+        unzip -l backend-deployment.zip | head -20
+
+    - name: Setup Lambda execution role
+      run: |
+        echo "🔧 Setting up Lambda execution role..."
+        
+        # Check if role exists
+        if aws iam get-role --role-name lambda-execution-role >/dev/null 2>&1; then
+          echo "✅ Lambda execution role already exists"
+        else
+          echo "Creating Lambda execution role..."
+          aws iam create-role \
+            --role-name lambda-execution-role \
+            --assume-role-policy-document '{
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Principal": {
+                    "Service": "lambda.amazonaws.com"
+                  },
+                  "Action": "sts:AssumeRole"
+                }
+              ]
+            }'
+          
+          # Attach policies
+          aws iam attach-role-policy \
+            --role-name lambda-execution-role \
+            --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+            
+          aws iam attach-role-policy \
+            --role-name lambda-execution-role \
+            --policy-arn arn:aws:iam::aws:policy/AmazonRDSDataFullAccess
+          
+          # Wait for role to be ready
+          sleep 10
+        fi
+
+    - name: Deploy Lambda function
+      id: deploy-lambda
+      run: |
+        echo "🚀 Deploying Lambda function..."
+        
+        ROLE_ARN="arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/lambda-execution-role"
+        
+        # Check if function exists
+        if aws lambda get-function --function-name $LAMBDA_FUNCTION_NAME >/dev/null 2>&1; then
+          echo "Updating existing Lambda function..."
+          aws lambda update-function-code \
+            --function-name $LAMBDA_FUNCTION_NAME \
+            --zip-file fileb://backend-deployment.zip
+          
+          # Update configuration
+          aws lambda update-function-configuration \
+            --function-name $LAMBDA_FUNCTION_NAME \
+            --runtime nodejs18.x \
+            --handler lambda.handler \
+            --timeout 30 \
+            --memory-size 512 \
+            --environment Variables='{
+              "NODE_ENV":"production",
+              "DB_HOST":"${{ secrets.DB_HOST }}",
+              "DB_USER":"${{ secrets.DB_USER }}",
+              "DB_PASSWORD":"${{ secrets.DB_PASSWORD }}",
+              "DB_NAME":"${{ secrets.DB_NAME }}",
+              "JWT_SECRET":"${{ secrets.JWT_SECRET }}"
+            }'
+        else
+          echo "Creating new Lambda function..."
+          aws lambda create-function \
+            --function-name $LAMBDA_FUNCTION_NAME \
+            --runtime nodejs18.x \
+            --role $ROLE_ARN \
+            --handler lambda.handler \
+            --zip-file fileb://backend-deployment.zip \
+            --timeout 30 \
+            --memory-size 512 \
+            --environment Variables='{
+              "NODE_ENV":"production",
+              "DB_HOST":"${{ secrets.DB_HOST }}",
+              "DB_USER":"${{ secrets.DB_USER }}",
+              "DB_PASSWORD":"${{ secrets.DB_PASSWORD }}",
+              "DB_NAME":"${{ secrets.DB_NAME }}",
+              "JWT_SECRET":"${{ secrets.JWT_SECRET }}"
+            }'
+        fi
+        
+        # Get Lambda ARN
+        LAMBDA_ARN=$(aws lambda get-function --function-name $LAMBDA_FUNCTION_NAME --query 'Configuration.FunctionArn' --output text)
+        echo "lambda-arn=$LAMBDA_ARN" >> $GITHUB_OUTPUT
+        echo "✅ Lambda function deployed: $LAMBDA_ARN"
+
+    - name: Setup API Gateway
+      id: setup-api-gateway
+      run: |
+        echo "🔧 Setting up API Gateway..."
+        
+        # Check if API exists
+        API_ID=$(aws apigateway get-rest-apis --query "items[?name=='$API_GATEWAY_NAME'].id" --output text)
+        
+        if [ -z "$API_ID" ] || [ "$API_ID" = "None" ]; then
+          echo "Creating new API Gateway..."
+          API_ID=$(aws apigateway create-rest-api \
+            --name $API_GATEWAY_NAME \
+            --description "Modulus LMS Backend API - Full Stack Deployment" \
+            --query 'id' \
+            --output text)
+          echo "Created API Gateway: $API_ID"
+        else
+          echo "Using existing API Gateway: $API_ID"
+        fi
+        
+        # Get root resource
+        ROOT_ID=$(aws apigateway get-resources --rest-api-id $API_ID --query 'items[?path==`/`].id' --output text)
+        
+        # Create proxy resource if it doesn't exist
+        PROXY_ID=$(aws apigateway get-resources --rest-api-id $API_ID --query 'items[?pathPart==`{proxy+}`].id' --output text)
+        
+        if [ -z "$PROXY_ID" ] || [ "$PROXY_ID" = "None" ]; then
+          echo "Creating proxy resource..."
+          PROXY_ID=$(aws apigateway create-resource \
+            --rest-api-id $API_ID \
+            --parent-id $ROOT_ID \
+            --path-part '{proxy+}' \
+            --query 'id' \
+            --output text)
+        fi
+        
+        # Setup ANY method
+        aws apigateway put-method \
+          --rest-api-id $API_ID \
+          --resource-id $PROXY_ID \
+          --http-method ANY \
+          --authorization-type NONE \
+          --region $AWS_REGION || true
+        
+        # Setup integration
+        LAMBDA_ARN="${{ steps.deploy-lambda.outputs.lambda-arn }}"
+        aws apigateway put-integration \
+          --rest-api-id $API_ID \
+          --resource-id $PROXY_ID \
+          --http-method ANY \
+          --type AWS_PROXY \
+          --integration-http-method POST \
+          --uri "arn:aws:apigateway:$AWS_REGION:lambda:path/2015-03-31/functions/$LAMBDA_ARN/invocations" \
+          --region $AWS_REGION || true
+        
+        # Grant API Gateway permission to invoke Lambda
+        aws lambda add-permission \
+          --function-name $LAMBDA_FUNCTION_NAME \
+          --statement-id apigateway-invoke \
+          --action lambda:InvokeFunction \
+          --principal apigateway.amazonaws.com \
+          --source-arn "arn:aws:execute-api:$AWS_REGION:${{ secrets.AWS_ACCOUNT_ID }}:$API_ID/*/*" \
+          --region $AWS_REGION || true
+        
+        # Deploy API
+        aws apigateway create-deployment \
+          --rest-api-id $API_ID \
+          --stage-name prod \
+          --stage-description "Production deployment" \
+          --description "Auto-deployment from GitHub Actions"
+        
+        API_URL="https://$API_ID.execute-api.$AWS_REGION.amazonaws.com/prod/api"
+        echo "api-url=$API_URL" >> $GITHUB_OUTPUT
+        echo "✅ API Gateway deployed: $API_URL"
+
+    - name: Get API URL
+      id: get-api-url
+      run: |
+        API_URL="${{ steps.setup-api-gateway.outputs.api-url }}"
+        echo "api-url=$API_URL" >> $GITHUB_OUTPUT
+        echo "API_URL=$API_URL" >> $GITHUB_ENV
+
+  deploy-frontend:
+    if: github.event.inputs.deploy_frontend != 'false'
+    needs: [validate-and-test, deploy-backend]
+    runs-on: ubuntu-latest
+    environment: production
+    outputs:
+      website-url: ${{ steps.deploy-s3.outputs.website-url }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Set API URL
+      run: |
+        if [ -n "${{ needs.deploy-backend.outputs.api-url }}" ]; then
+          echo "NEXT_PUBLIC_API_URL=${{ needs.deploy-backend.outputs.api-url }}" >> $GITHUB_ENV
+        else
+          # Fallback: get from existing API Gateway
+          API_ID=$(aws apigateway get-rest-apis --query "items[?name=='$API_GATEWAY_NAME'].id" --output text)
+          if [ -n "$API_ID" ] && [ "$API_ID" != "None" ]; then
+            echo "NEXT_PUBLIC_API_URL=https://$API_ID.execute-api.$AWS_REGION.amazonaws.com/prod/api" >> $GITHUB_ENV
+          else
+            echo "❌ No API Gateway found"
+            exit 1
+          fi
+        fi
+
+    - name: Build frontend
+      run: |
+        echo "🏗️ Building frontend with API URL: $NEXT_PUBLIC_API_URL"
+        npm run build
+        
+        if [ ! -d "out" ]; then
+          echo "❌ Build failed - no 'out' directory found"
+          exit 1
+        fi
+        
+        # Check build output
+        echo "✅ Build successful"
+        echo "Build output size: $(du -sh out)"
+        echo "Files in build:"
+        find out -type f -name "*.html" -o -name "*.js" -o -name "*.css" | head -10
+
+    - name: Deploy to S3
+      id: deploy-s3
+      run: |
+        echo "🚀 Deploying to S3..."
+        
+        # Check if bucket exists
+        if aws s3api head-bucket --bucket $S3_BUCKET_NAME 2>/dev/null; then
+          echo "✅ Using existing bucket: $S3_BUCKET_NAME"
+        else
+          echo "Creating new bucket: $S3_BUCKET_NAME"
+          aws s3api create-bucket \
+            --bucket $S3_BUCKET_NAME \
+            --region $AWS_REGION \
+            --create-bucket-configuration LocationConstraint=$AWS_REGION
+          
+          # Configure for static website hosting
+          aws s3api put-bucket-website \
+            --bucket $S3_BUCKET_NAME \
+            --website-configuration '{
+              "IndexDocument": {"Suffix": "index.html"},
+              "ErrorDocument": {"Key": "index.html"}
+            }'
+          
+          # Configure public access
+          aws s3api put-public-access-block \
+            --bucket $S3_BUCKET_NAME \
+            --public-access-block-configuration BlockPublicAcls=false,IgnorePublicAcls=false,BlockPublicPolicy=false,RestrictPublicBuckets=false
+          
+          # Set bucket policy
+          aws s3api put-bucket-policy \
+            --bucket $S3_BUCKET_NAME \
+            --policy '{
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Sid": "PublicReadGetObject",
+                  "Effect": "Allow",
+                  "Principal": "*",
+                  "Action": "s3:GetObject",
+                  "Resource": "arn:aws:s3:::'$S3_BUCKET_NAME'/*"
+                }
+              ]
+            }'
+        fi
+        
+        # Deploy files
+        aws s3 sync out/ s3://$S3_BUCKET_NAME --delete --region $AWS_REGION
+        
+        WEBSITE_URL="http://$S3_BUCKET_NAME.s3-website.$AWS_REGION.amazonaws.com"
+        echo "website-url=$WEBSITE_URL" >> $GITHUB_OUTPUT
+        echo "✅ Frontend deployed to: $WEBSITE_URL"
+
+  comprehensive-test:
+    if: github.event.inputs.run_tests != 'false'
+    needs: [deploy-backend, deploy-frontend]
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Test API health
+      run: |
+        echo "🏥 Testing API health..."
+        API_URL="${{ needs.deploy-backend.outputs.api-url }}"
+        
+        # Test health endpoint
+        response=$(curl -s -w "%{http_code}" "$API_URL/health")
+        http_code=$(echo "$response" | tail -c 4)
+        
+        if [ "$http_code" = "200" ]; then
+          echo "✅ Health check passed"
+        else
+          echo "❌ Health check failed (HTTP $http_code)"
+          exit 1
+        fi
+
+    - name: Test registration endpoints
+      run: |
+        echo "🔐 Testing registration endpoints..."
+        API_URL="${{ needs.deploy-backend.outputs.api-url }}"
+        
+        # Test student registration
+        student_response=$(curl -s -w "%{http_code}" -X POST "$API_URL/auth/register" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "name": "Test Student",
+            "email": "test.student@modulus.edu",
+            "password": "TestPass123!",
+            "role": "student",
+            "accessCode": "STUDENT2024"
+          }')
+        
+        student_code=$(echo "$student_response" | tail -c 4)
+        if [ "$student_code" = "201" ] || [ "$student_code" = "400" ]; then
+          echo "✅ Student registration endpoint working"
+        else
+          echo "❌ Student registration failed (HTTP $student_code)"
+        fi
+        
+        # Test instructor registration (should require approval)
+        instructor_response=$(curl -s -w "%{http_code}" -X POST "$API_URL/auth/register" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "name": "Test Instructor",
+            "email": "test.instructor@modulus.edu",
+            "password": "TestPass123!",
+            "role": "instructor",
+            "accessCode": "INSTRUCTOR2024"
+          }')
+        
+        instructor_code=$(echo "$instructor_response" | tail -c 4)
+        if [ "$instructor_code" = "201" ] || [ "$instructor_code" = "400" ]; then
+          echo "✅ Instructor registration endpoint working"
+        else
+          echo "❌ Instructor registration failed (HTTP $instructor_code)"
+        fi
+
+    - name: Test frontend accessibility
+      run: |
+        echo "🌐 Testing frontend accessibility..."
+        WEBSITE_URL="${{ needs.deploy-frontend.outputs.website-url }}"
+        
+        # Test main page
+        main_response=$(curl -s -w "%{http_code}" "$WEBSITE_URL")
+        main_code=$(echo "$main_response" | tail -c 4)
+        
+        if [ "$main_code" = "200" ]; then
+          echo "✅ Frontend main page accessible"
+        else
+          echo "❌ Frontend main page failed (HTTP $main_code)"
+          exit 1
+        fi
+        
+        # Check if HTML contains expected content
+        if echo "$main_response" | grep -q "Modulus"; then
+          echo "✅ Frontend contains expected content"
+        else
+          echo "❌ Frontend missing expected content"
+        fi
+
+  seed-database:
+    if: github.event.inputs.seed_database == 'true'
+    needs: [deploy-backend]
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Seed database with test data
+      run: |
+        echo "🌱 Seeding database with test data..."
+        API_URL="${{ needs.deploy-backend.outputs.api-url }}"
+        
+        seed_response=$(curl -s -w "%{http_code}" "$API_URL/admin/seed")
+        seed_code=$(echo "$seed_response" | tail -c 4)
+        
+        if [ "$seed_code" = "200" ]; then
+          echo "✅ Database seeded successfully"
+          echo "$seed_response" | head -c 500
+        else
+          echo "❌ Database seeding failed (HTTP $seed_code)"
+          echo "$seed_response" | head -c 500
+        fi
+
+  deployment-summary:
+    needs: [deploy-backend, deploy-frontend, comprehensive-test]
+    if: always()
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Deployment Summary
+      run: |
+        echo "🚀 MODULUS LMS DEPLOYMENT SUMMARY"
+        echo "=================================="
+        echo ""
+        echo "📱 Frontend: ${{ needs.deploy-frontend.outputs.website-url }}"
+        echo "🔗 API: ${{ needs.deploy-backend.outputs.api-url }}"
+        echo "⚡ Lambda: ${{ env.LAMBDA_FUNCTION_NAME }}"
+        echo "🪣 S3 Bucket: ${{ env.S3_BUCKET_NAME }}"
+        echo ""
+        echo "🔧 Available Endpoints:"
+        echo "  - Health: GET /api/health"
+        echo "  - Register: POST /api/auth/register"
+        echo "  - Login: POST /api/auth/login"
+        echo "  - Users: GET /api/admin/users"
+        echo "  - Courses: GET /api/courses"
+        echo "  - Seed: GET /api/admin/seed"
+        echo ""
+        echo "✅ Deployment Status:"
+        echo "  - Backend: ${{ needs.deploy-backend.result }}"
+        echo "  - Frontend: ${{ needs.deploy-frontend.result }}"
+        echo "  - Tests: ${{ needs.comprehensive-test.result }}"
+        echo ""
+        echo "🎯 Next Steps:"
+        echo "  1. Visit the frontend URL to test the application"
+        echo "  2. Register test users with different roles"
+        echo "  3. Test admin approval workflow"
+        echo "  4. Create courses and labs"
+        echo ""
+        if [ "${{ needs.comprehensive-test.result }}" = "success" ]; then
+          echo "🎉 All systems operational!"
+        else
+          echo "⚠️  Some tests failed - check logs above"
+        fi

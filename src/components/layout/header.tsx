@@ -7,7 +7,7 @@ import { useTheme } from 'next-themes'
 import { userProgress, getStreakEmoji, getLevelInfo, achievements } from '@/demo/achievements'
 
 export function Header() {
-  const { user, navigate, switchUserRole, logout, currentView, getCurrentLabSession, updateLabInteraction, cleanupExpiredSessions, appData } = useApp()
+  const { user, navigate, logout, currentView, getCurrentLabSession, updateLabInteraction, cleanupExpiredSessions } = useApp()
   const { theme, setTheme, resolvedTheme } = useTheme()
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
@@ -99,8 +99,7 @@ export function Header() {
   const handleLabVMClick = () => {
     if (currentLabSession) {
       navigate('lab', { 
-        labId: currentLabSession.labId, 
-        moduleId: appData.labs.find((l: any) => l.id === currentLabSession.labId)?.moduleId 
+        labId: currentLabSession.labId
       })
     }
   }
@@ -120,11 +119,6 @@ export function Header() {
   const handleDesktopClick = () => {
     // Navigate to desktop view
     navigate('desktop')
-  }
-
-  const handleRoleSwitch = (role: 'student' | 'instructor' | 'staff' | 'admin') => {
-    switchUserRole(role)
-    setShowUserMenu(false)
   }
 
   const themeIcons = {
@@ -364,36 +358,6 @@ export function Header() {
                           </span>
                         )}
                       </div>
-                    </button>
-                  </div>
-
-                  <div className="p-2 border-t border-gray-200 dark:border-gray-700">
-                    <h4 className="px-2 py-1 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Switch Role
-                    </h4>
-                    <button
-                      onClick={() => handleRoleSwitch('student')}
-                      className="w-full text-left px-2 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-                    >
-                      Student View
-                    </button>
-                    <button
-                      onClick={() => handleRoleSwitch('instructor')}
-                      className="w-full text-left px-2 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-                    >
-                      Instructor View
-                    </button>
-                    <button
-                      onClick={() => handleRoleSwitch('staff')}
-                      className="w-full text-left px-2 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-                    >
-                      Staff View
-                    </button>
-                    <button
-                      onClick={() => handleRoleSwitch('admin')}
-                      className="w-full text-left px-2 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-                    >
-                      Admin View
                     </button>
                   </div>
 

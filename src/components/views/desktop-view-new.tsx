@@ -26,15 +26,15 @@ export function DesktopView() {
   const [sessionTime, setSessionTime] = useState(0)
   const [uploadProgress, setUploadProgress] = useState(0)
 
-  // Mock desktop session data
+  // Desktop session would come from API
   const session = {
-    id: 'session-123',
-    status: isConnected ? 'running' : 'starting',
-    osType: 'Kali Linux',
-    ipAddress: '10.0.1.15',
-    vncPort: 5901,
-    sshPort: 22,
-    expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000), // 2 hours from now
+    id: '',
+    status: 'disconnected',
+    osType: '',
+    ipAddress: '',
+    vncPort: 0,
+    sshPort: 0,
+    expiresAt: new Date(),
   }
 
   useEffect(() => {
@@ -162,7 +162,7 @@ export function DesktopView() {
 
       {/* Desktop Container */}
       <div className={`bg-black rounded-lg overflow-hidden ${isFullscreen ? 'fixed inset-0 z-50' : 'relative'}`}>
-        {/* Mock Desktop Interface */}
+        {/* Desktop Interface */}
         <div className="relative w-full h-[600px] bg-gradient-to-br from-purple-900 via-blue-900 to-blue-800">
           {/* Desktop Taskbar */}
           <div className="absolute bottom-0 left-0 right-0 bg-gray-900 bg-opacity-90 backdrop-blur-sm h-12 flex items-center justify-between px-4">
@@ -200,7 +200,7 @@ export function DesktopView() {
             </div>
           </div>
 
-          {/* Mock Terminal Window */}
+          {/* Terminal Window */}
           <div className="absolute top-8 left-8 w-96 h-64 bg-black bg-opacity-90 rounded border border-gray-600">
             <div className="bg-gray-800 px-3 py-1 flex items-center justify-between text-white text-xs">
               <span>Terminal</span>
@@ -226,7 +226,7 @@ export function DesktopView() {
             </div>
           </div>
 
-          {/* Mock File Manager */}
+          {/* File Manager */}
           <div className="absolute top-8 right-8 w-80 h-48 bg-white bg-opacity-95 rounded border border-gray-300">
             <div className="bg-gray-100 px-3 py-2 flex items-center justify-between text-gray-800 text-xs border-b">
               <span>Files</span>

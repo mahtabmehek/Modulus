@@ -8,71 +8,21 @@ export default function LabView() {
   const { navigate } = useApp()
   const [answers, setAnswers] = useState<Record<string, string>>({})
 
-  // Mock lab data - in real app would come from props or API
+  // Lab data would come from props or API
   const lab = {
-    id: 'lab-network-security',
-    title: 'Network Security Fundamentals',
-    description: 'Learn the basics of network security through hands-on exercises including port scanning, vulnerability assessment, and network monitoring.',
-    difficulty: 'Medium',
-    duration: '2-3 hours',
-    participants: 1247,
-    rating: 4.8,
-    objectives: [
-      'Understand network scanning techniques',
-      'Identify common network vulnerabilities', 
-      'Learn basic penetration testing methodology',
-      'Practice using security tools like Nmap'
-    ],
-    tags: ['Network Security', 'Penetration Testing', 'Nmap', 'Vulnerability Assessment'],
-    tasks: [
-      {
-        id: 'task-1',
-        title: 'Network Discovery',
-        content: 'Use Nmap to discover hosts and services on the target network.',
-        completed: false,
-        questions: [
-          {
-            id: 'q1',
-            text: 'How many hosts are discovered on the network?',
-            type: 'text' as const,
-            answer: '5',
-            points: 20
-          }
-        ]
-      },
-      {
-        id: 'task-2', 
-        title: 'Vulnerability Assessment',
-        content: 'Analyze the discovered services for potential vulnerabilities.',
-        completed: false,
-        questions: [
-          {
-            id: 'q2',
-            text: 'What is the version of the SSH service running?',
-            type: 'text' as const,
-            answer: 'OpenSSH 7.4',
-            points: 25
-          }
-        ]
-      }
-    ],
-    resources: [
-      {
-        id: 'r1',
-        name: 'Network Security Guide',
-        type: 'pdf' as const,
-        url: '/resources/network-security-guide.pdf',
-        description: 'Comprehensive guide to network security fundamentals'
-      },
-      {
-        id: 'r2',
-        name: 'Nmap Reference',
-        type: 'link' as const,
-        url: 'https://nmap.org/book/man.html',
-        description: 'Official Nmap documentation'
-      }
-    ],
-    hint: 'Start with a basic Nmap scan to discover live hosts'
+    id: '',
+    title: '',
+    description: '',
+    difficulty: '',
+    duration: '',
+    participants: 0,
+    rating: 0,
+    objectives: [],
+    flags: [],
+    hints: [],
+    resources: [],
+    tags: [],
+    tasks: []
   }
 
   const handleStartDesktop = () => {
@@ -190,155 +140,24 @@ export default function LabView() {
 
             {/* Tasks */}
             <div className="space-y-4">
-              {lab.tasks.map((task, index) => (
-                <div key={task.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
-                      <span className="w-8 h-8 bg-red-600 text-white rounded-full flex items-center justify-center text-sm font-medium mr-3">
-                        {index + 1}
-                      </span>
-                      {task.title}
-                    </h3>
-                    {task.completed && (
-                      <div className="flex items-center space-x-2 text-green-600">
-                        <Award className="w-5 h-5" />
-                        <span className="text-sm font-medium">Completed</span>
-                      </div>
-                    )}
-                  </div>
-                  
-                  <p className="text-gray-600 dark:text-gray-400 mb-6">
-                    {task.content}
-                  </p>
-
-                  {/* Questions */}
-                  <div className="space-y-4">
-                    {task.questions.map((question) => (
-                      <div key={question.id} className="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
-                        <div className="flex items-center justify-between mb-3">
-                          <h4 className="font-medium text-gray-900 dark:text-white">
-                            {question.text}
-                          </h4>
-                          <span className="text-sm text-gray-500 dark:text-gray-400">
-                            {question.points} points
-                          </span>
-                        </div>
-                        
-                        <input
-                          type="text"
-                          value={answers[question.id] || ''}
-                          onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                          placeholder="Enter your answer..."
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                        />
-                        
-                        <div className="flex items-center justify-between mt-3">
-                          <button className="text-sm text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 flex items-center space-x-1">
-                            <Lightbulb className="w-4 h-4" />
-                            <span>Need a hint?</span>
-                          </button>
-                          
-                          <div className="flex items-center space-x-2">
-                            <button className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
-                              Skip
-                            </button>
-                            <button className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors">
-                              <Award className="w-4 h-4" />
-                              <span>Submit</span>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Progress */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Progress
-              </h3>
-              <div className="space-y-4">
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Overall</span>
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">25%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                    <div className="bg-red-600 h-2 rounded-full w-1/4"></div>
-                  </div>
-                </div>
-                
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">Tasks completed</span>
-                    <span className="font-medium">1/4</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">Points earned</span>
-                    <span className="font-medium">20/100</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">Time spent</span>
-                    <span className="font-medium">45 min</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Resources */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
-                <FileText className="w-5 h-5 mr-2" />
-                Resources
-              </h3>
-              <div className="space-y-3">
-                {lab.resources.map((resource) => (
-                  <a
-                    key={resource.id}
-                    href={resource.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                  >
-                    <div className="flex-shrink-0">
-                      {resource.type === 'pdf' ? (
-                        <FileText className="w-5 h-5 text-red-600" />
-                      ) : (
-                        <ExternalLink className="w-5 h-5 text-blue-600" />
-                      )}
+              {lab.tasks.length > 0 ? (
+                lab.tasks.map((task: any, index: number) => (
+                  <div key={task.id || index} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
+                        <span className="w-8 h-8 bg-red-600 text-white rounded-full flex items-center justify-center text-sm font-medium mr-3">
+                          {index + 1}
+                        </span>
+                        {task.title || 'Untitled Task'}
+                      </h3>
                     </div>
-                    <div>
-                      <h4 className="font-medium text-gray-900 dark:text-white text-sm">
-                        {resource.name}
-                      </h4>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        {resource.description}
-                      </p>
-                    </div>
-                  </a>
-                ))}
-              </div>
-            </div>
-
-            {/* Hint */}
-            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-              <div className="flex items-start space-x-3">
-                <Lightbulb className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="font-medium text-blue-900 dark:text-blue-200 text-sm">
-                    Lab Hint
-                  </h4>
-                  <p className="text-blue-700 dark:text-blue-300 text-xs mt-1">
-                    {lab.hint}
-                  </p>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                  No tasks available for this lab
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>

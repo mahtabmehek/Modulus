@@ -1,0 +1,24 @@
+# Aurora Serverless Environment Configuration
+# Update your Lambda environment variables with these values
+
+# Database Configuration
+DB_HOST=modulus-aurora-cluster.cluster-cziw68k8m79u.eu-west-2.rds.amazonaws.com
+DB_PORT=5432
+DB_NAME=modulus
+DB_USER=modulus_admin
+DB_PASSWORD=ModulusAurora2025!
+
+# Aurora Specific
+DB_CLUSTER_ARN=arn:aws:rds:eu-west-2:376129881409:cluster:modulus-aurora-cluster
+SECRET_ARN=arn:aws:secretsmanager:eu-west-2:376129881409:secret:modulus-aurora-credentials
+
+# JWT Configuration
+JWT_SECRET=modulus-lms-secret-key-change-in-production
+JWT_EXPIRES_IN=24h
+
+# Environment
+NODE_ENV=production
+FRONTEND_URL=https://your-frontend-domain.com
+
+# AWS Region
+AWS_REGION=eu-west-2

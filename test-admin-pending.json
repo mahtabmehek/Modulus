@@ -1,0 +1,9 @@
+{
+  "httpMethod": "GET",
+  "path": "/api/auth/admin/pending-approvals",
+  "headers": {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjksImVtYWlsIjoidGVzdGFkbWluQHRlc3QuY29tIiwicm9sZSI6ImFkbWluIiwiaXNBcHByb3ZlZCI6dHJ1ZSwiaWF0IjoxNzUyMTczNjMxLCJleHAiOjE3NTIyNjAwMzF9.oEpCQrqYQcr7u6YLgRsH8MjEWjwrv8vZAtyZpjxZ3IM"
+  },
+  "body": "{}"
+}

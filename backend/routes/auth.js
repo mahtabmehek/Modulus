@@ -8,8 +8,77 @@ const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'modulus-lms-secret-key-change-in-production';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h';
 
-// Access code for registration (your requirement)
+// Access codes for different roles
+const ROLE_ACCESS_CODES = {
+  'student': 'student2025',
+  'instructor': 'instructor2025', 
+  'staff': 'staff2025',
+  'admin': 'mahtabmehek1337'
+};
+
+// Legacy access code (still works for backward compatibility)
 const VALID_ACCESS_CODE = 'mahtabmehek1337';
+
+// Function to update PostgreSQL sequence after manual ID insertion
+const updateUserIdSequence = async (db) => {
+  try {
+    // Get the maximum ID from users table
+    const maxIdResult = await db.query('SELECT MAX(id) as max_id FROM users');
+    const maxId = maxIdResult.rows[0].max_id || 0;
+    
+    // Update the sequence to start from max_id + 1
+    await db.query(`SELECT setval('users_id_seq', $1, true)`, [maxId]);
+    
+    console.log(`Updated users_id_seq to ${maxId}`);
+  } catch (error) {
+    console.error('Error updating user ID sequence:', error);
+    // Don't throw - this is not critical for the operation
+  }
+};
+
+// Function to generate role-based user ID
+const generateRoleBasedUserId = async (role, db) => {
+  let minId, maxId;
+  
+  switch (role) {
+    case 'staff':
+      minId = 100;
+      maxId = 499;
+      break;
+    case 'instructor':
+      minId = 500;
+      maxId = 999;
+      break;
+    case 'student':
+      minId = 1000;
+      maxId = 4999;
+      break;
+    case 'admin':
+      // Admins can use the system generated IDs or staff range
+      minId = 1;
+      maxId = 99;
+      break;
+    default:
+      throw new Error('Invalid role for ID generation');
+  }
+
+  // More efficient approach: Get all existing IDs in range and find the first gap
+  const result = await db.query(
+    'SELECT id FROM users WHERE id >= $1 AND id <= $2 ORDER BY id',
+    [minId, maxId]
+  );
+  
+  const existingIds = new Set(result.rows.map(row => row.id));
+  
+  // Find the first available ID in the range
+  for (let id = minId; id <= maxId; id++) {
+    if (!existingIds.has(id)) {
+      return id;
+    }
+  }
+  
+  throw new Error(`No available IDs in range ${minId}-${maxId} for role ${role}`);
+};
 
 // Middleware to verify JWT token
 const authenticateToken = (req, res, next) => {
@@ -34,8 +103,15 @@ const validateRegistration = [
   body('email').isEmail().normalizeEmail().withMessage('Valid email required'),
   body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
   body('name').trim().isLength({ min: 2 }).withMessage('Name must be at least 2 characters'),
-  body('accessCode').equals(VALID_ACCESS_CODE).withMessage('Invalid access code'),
-  body('role').optional().isIn(['student', 'instructor']).withMessage('Invalid role')
+  body('accessCode').custom((value, { req }) => {
+    const role = req.body.role || 'student';
+    const validCode = ROLE_ACCESS_CODES[role];
+    if (value === VALID_ACCESS_CODE || value === validCode) {
+      return true;
+    }
+    throw new Error(`Invalid access code for ${role} role`);
+  }),
+  body('role').optional().isIn(['student', 'instructor', 'admin', 'staff']).withMessage('Invalid role')
 ];
 
 const validateLogin = [
@@ -59,8 +135,21 @@ router.post('/validate-access-code', [
     if (accessCode === VALID_ACCESS_CODE) {
       return res.json({
         valid: true,
-        message: 'Access code is valid',
-        allowedRoles: ['student', 'instructor']
+        message: 'Master access code is valid',
+        allowedRoles: ['student', 'instructor', 'staff', 'admin']
+      });
+    }
+
+    // Check role-specific access codes
+    const roleForCode = Object.keys(ROLE_ACCESS_CODES).find(role => 
+      ROLE_ACCESS_CODES[role] === accessCode
+    );
+
+    if (roleForCode) {
+      return res.json({
+        valid: true,
+        message: `Access code is valid for ${roleForCode} role`,
+        allowedRoles: [roleForCode]
       });
     }
 
@@ -91,6 +180,26 @@ router.post('/validate-access-code', [
   }
 });
 
+// Helper function to determine role from access code
+const getRoleFromAccessCode = (accessCode) => {
+  // Check role-specific access codes
+  const roleForCode = Object.keys(ROLE_ACCESS_CODES).find(role => 
+    ROLE_ACCESS_CODES[role] === accessCode
+  );
+  
+  if (roleForCode) {
+    return roleForCode;
+  }
+  
+  // Legacy access code defaults to admin
+  if (accessCode === VALID_ACCESS_CODE) {
+    return 'admin';
+  }
+  
+  // Default to student for any other code
+  return 'student';
+};
+
 // POST /api/auth/register
 router.post('/register', validateRegistration, async (req, res) => {
   try {
@@ -99,7 +208,24 @@ router.post('/register', validateRegistration, async (req, res) => {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { email, password, name, role = 'student' } = req.body;
+    const { email, password, name, role: requestedRole, accessCode } = req.body;
+    
+    // Determine role from access code
+    const roleFromAccessCode = getRoleFromAccessCode(accessCode);
+    
+    // Validate that the requested role matches the access code
+    if (requestedRole && requestedRole !== roleFromAccessCode) {
+      console.log(`🚫 Role mismatch - Requested: ${requestedRole}, Access code allows: ${roleFromAccessCode}`);
+      return res.status(400).json({
+        error: 'Access code does not match requested role',
+        errorType: 'ROLE_MISMATCH',
+        message: `The access code provided is for ${roleFromAccessCode} role, but you selected ${requestedRole}. Please use the correct access code.`
+      });
+    }
+    
+    const role = roleFromAccessCode;
+    console.log(`🔧 Access code: ${accessCode} mapped to role: ${role}`);
+    
     const db = req.app.locals.db;
 
     // Check if user already exists
@@ -109,22 +235,36 @@ router.post('/register', validateRegistration, async (req, res) => {
     );
 
     if (existingUser.rows.length > 0) {
-      return res.status(400).json({ error: 'User already exists with this email' });
+      return res.status(400).json({ 
+        error: 'User already exists',
+        errorType: 'USER_EXISTS',
+        message: 'An account with this email already exists. Try logging in instead.'
+      });
     }
 
     // Hash password
     const saltRounds = 12;
     const passwordHash = await bcrypt.hash(password, saltRounds);
 
-    // Insert new user
+    // Generate role-based user ID
+    const userId = await generateRoleBasedUserId(role, db);
+
+    // Insert new user with specific ID
+    // Only admin accounts are auto-approved, all others require staff approval
+    const isAutoApproved = (role === 'admin');
+    console.log(`🔧 User registration - Role: ${role}, Auto-approved: ${isAutoApproved}`);
+    
     const result = await db.query(
-      `INSERT INTO users (email, password_hash, name, role, is_approved, created_at, last_active)
-       VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+      `INSERT INTO users (id, email, password_hash, name, role, is_approved, created_at, last_active)
+       VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
        RETURNING id, email, name, role, is_approved, created_at`,
-      [email, passwordHash, name, role, role === 'student'] // Auto-approve students, instructors need approval
+      [userId, email, passwordHash, name, role, isAutoApproved] // Only auto-approve admins, others need staff approval
     );
 
     const user = result.rows[0];
+
+    // Update the PostgreSQL sequence to prevent conflicts
+    await updateUserIdSequence(db);
 
     // Generate JWT token
     const token = jwt.sign(
@@ -149,7 +289,7 @@ router.post('/register', validateRegistration, async (req, res) => {
         joinedAt: user.created_at
       },
       token,
-      requiresApproval: role === 'instructor'
+      requiresApproval: (role !== 'admin')
     });
 
   } catch (error) {
@@ -176,7 +316,11 @@ router.post('/login', validateLogin, async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      return res.status(401).json({ error: 'Invalid email or password' });
+      return res.status(401).json({ 
+        error: 'User not found',
+        errorType: 'USER_NOT_FOUND',
+        message: 'No account found with this email address. Please check your email or register for a new account.'
+      });
     }
 
     const user = result.rows[0];
@@ -184,16 +328,23 @@ router.post('/login', validateLogin, async (req, res) => {
     // Verify password
     const isValidPassword = await bcrypt.compare(password, user.password_hash);
     if (!isValidPassword) {
-      return res.status(401).json({ error: 'Invalid email or password' });
-    }
-
-    // Check if user is approved (for instructors)
-    if (user.role === 'instructor' && !user.is_approved) {
-      return res.status(403).json({ 
-        error: 'Account pending approval',
-        message: 'Your instructor account is pending approval from an administrator'
+      return res.status(401).json({ 
+        error: 'Incorrect password',
+        errorType: 'INVALID_PASSWORD',
+        message: 'The password you entered is incorrect. Please try again.'
       });
     }
+
+    // Check if user is approved (only admins are auto-approved, all others need approval)
+    if (user.role !== 'admin' && !user.is_approved) {
+      console.log(`🚫 Login blocked - ${user.role} user ${user.email} not approved`);
+      return res.status(403).json({ 
+        error: 'Account pending approval',
+        message: `Your ${user.role} account is pending approval from staff or administrator`
+      });
+    }
+    
+    console.log(`✅ Login successful - ${user.role} user ${user.email}`);
 
     // Update last active
     await db.query(
@@ -415,5 +566,188 @@ router.post('/create-test-users', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+// Admin middleware to check if user is admin
+const requireAdmin = (req, res, next) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  next();
+};
+
+// GET /api/auth/admin/pending-approvals - Get users pending approval
+router.get('/admin/pending-approvals', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const db = req.app.locals.db;
+    
+    const result = await db.query(
+      `SELECT id, email, name, role, created_at 
+       FROM users 
+       WHERE is_approved = false AND (role = 'instructor' OR role = 'staff')
+       ORDER BY created_at DESC`
+    );
+
+    res.json({
+      pendingApprovals: result.rows.map(user => ({
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        appliedDate: user.created_at
+      }))
+    });
+
+  } catch (error) {
+    console.error('Get pending approvals error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// POST /api/auth/admin/approve-user - Approve a user
+router.post('/admin/approve-user', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { userId } = req.body;
+    const db = req.app.locals.db;
+    
+    const result = await db.query(
+      `UPDATE users 
+       SET is_approved = true 
+       WHERE id = $1 AND is_approved = false
+       RETURNING id, email, name, role`,
+      [userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found or already approved' });
+    }
+
+    res.json({
+      message: 'User approved successfully',
+      user: result.rows[0]
+    });
+
+  } catch (error) {
+    console.error('Approve user error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// POST /api/auth/admin/reject-user - Reject a user
+router.post('/admin/reject-user', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { userId } = req.body;
+    const database = req.app.locals.db;
+    
+    const deleteResult = await database.query(
+      `DELETE FROM users 
+       WHERE id = $1 AND is_approved = false
+       RETURNING id, email, name, role`,
+      [userId]
+    );
+
+    if (deleteResult.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found or already approved' });
+    }
+
+    res.json({
+      message: 'User rejected and removed successfully',
+      user: deleteResult.rows[0]
+    });
+
+  } catch (error) {
+    console.error('Reject user error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// GET /api/auth/admin/users - Get all users (admin only)
+router.get('/admin/users', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const database = req.app.locals.db;
+    
+    const usersResult = await database.query(
+      `SELECT id, email, name, role, is_approved, created_at, last_active 
+       FROM users 
+       ORDER BY created_at DESC`
+    );
+
+    res.json({
+      users: usersResult.rows.map(user => ({
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        isApproved: user.is_approved,
+        joinedAt: user.created_at,
+        lastActive: user.last_active
+      }))
+    });
+
+  } catch (error) {
+    console.error('Get users error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// POST /api/auth/admin/create-user - Create a new user (admin only)
+router.post('/admin/create-user', authenticateToken, requireAdmin, 
+  [
+    body('email').isEmail().normalizeEmail().withMessage('Valid email required'),
+    body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
+    body('name').trim().isLength({ min: 2 }).withMessage('Name must be at least 2 characters'),
+    body('role').isIn(['student', 'instructor', 'staff', 'admin']).withMessage('Valid role required')
+  ],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+      }
+
+      const { email, password, name, role } = req.body;
+      const db = req.app.locals.db;
+
+      // Check if user already exists
+      const existingUser = await db.query(
+        'SELECT id FROM users WHERE email = $1',
+        [email]
+      );
+
+      if (existingUser.rows.length > 0) {
+        return res.status(400).json({ error: 'User already exists with this email' });
+      }
+
+      // Hash password
+      const saltRounds = 12;
+      const passwordHash = await bcrypt.hash(password, saltRounds);
+
+      // Insert new user (admin-created users are auto-approved)
+      const result = await db.query(
+        `INSERT INTO users (email, password_hash, name, role, is_approved, created_at, last_active)
+         VALUES ($1, $2, $3, $4, true, NOW(), NOW())
+         RETURNING id, email, name, role, is_approved, created_at`,
+        [email, passwordHash, name, role]
+      );
+
+      const user = result.rows[0];
+
+      res.status(201).json({
+        message: 'User created successfully',
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          isApproved: user.is_approved,
+          joinedAt: user.created_at
+        }
+      });
+
+    } catch (error) {
+      console.error('Create user error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+);
 
 module.exports = router;

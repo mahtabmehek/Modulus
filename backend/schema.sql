@@ -51,20 +51,26 @@ CREATE TABLE IF NOT EXISTS access_codes (
 CREATE TABLE IF NOT EXISTS courses (
     id SERIAL PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
-    description TEXT,
-    instructor_id INTEGER REFERENCES users(id),
-    is_published BOOLEAN DEFAULT FALSE,
+    code VARCHAR(50) UNIQUE NOT NULL,
+    description TEXT NOT NULL,
+    department VARCHAR(255) NOT NULL,
+    academic_level VARCHAR(50) NOT NULL CHECK (academic_level IN ('bachelor', 'master', 'phd', 'certificate')),
+    duration INTEGER NOT NULL CHECK (duration > 0), -- Duration in years
+    total_credits INTEGER NOT NULL CHECK (total_credits > 0),
+    created_by INTEGER REFERENCES users(id),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
-    -- Course metadata
+    -- Course settings
+    is_published BOOLEAN DEFAULT FALSE,
+    requires_approval BOOLEAN DEFAULT FALSE,
+    
+    -- Legacy fields for compatibility
+    instructor_id INTEGER REFERENCES users(id),
     difficulty_level VARCHAR(50) DEFAULT 'beginner' CHECK (difficulty_level IN ('beginner', 'intermediate', 'advanced')),
     estimated_hours INTEGER,
     tags TEXT[],
-    
-    -- Course settings
-    auto_enroll BOOLEAN DEFAULT FALSE,
-    requires_approval BOOLEAN DEFAULT FALSE
+    auto_enroll BOOLEAN DEFAULT FALSE
 );
 
 -- Learning paths table

@@ -2,9 +2,7 @@
 
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { useEffect } from 'react'
-import { User, ViewState, AppData, UserProgress, DesktopSession, LabSession } from '@/types'
-import { mockData } from '@/lib/data/mock-data'
+import { User, ViewState, UserProgress, DesktopSession, LabSession } from '@/types'
 import { apiClient } from '@/lib/api'
 
 interface AppStore {
@@ -14,9 +12,6 @@ interface AppStore {
   
   // View state
   currentView: ViewState
-  
-  // App data
-  appData: AppData
   
   // Progress tracking
   userProgress: UserProgress[]
@@ -31,13 +26,15 @@ interface AppStore {
   // Actions
   setUser: (user: User | null) => void
   logout: () => void
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: any }>
+  register: (name: string, email: string, password: string, role: string, accessCode: string) => Promise<{ success: boolean; error?: any }>
   navigate: (type: ViewState['type'], params?: ViewState['params']) => void
   updateProgress: (progress: UserProgress) => void
   createDesktopSession: (labId: string) => Promise<DesktopSession>
   terminateDesktopSession: (sessionId: string) => void
-  switchUserRole: (role: User['role']) => void
   initializeFromUrl: () => void
+  initialize: () => void // Add initialization function
+  checkSession: () => Promise<boolean> // Add session check function
   
   // Lab session actions
   startLabSession: (labId: string) => Promise<LabSession>
@@ -55,7 +52,6 @@ export const useAppStore = create<AppStore>()(
       user: null,
       isAuthenticated: false,
       currentView: { type: 'login' },
-      appData: mockData,
       userProgress: [],
       desktopSessions: [],
       labSessions: [],
@@ -84,98 +80,90 @@ export const useAppStore = create<AppStore>()(
           window.history.pushState({ view: { type: 'login' } }, '', url.toString())
         }
       },
-      
-      login: async (email: string, password: string) => {
+        login: async (email: string, password: string) => {
         try {
           console.log('Attempting login with:', { email })
-          console.log('NODE_ENV:', process.env.NODE_ENV)
           
-          // Use real API in production, mock in development
-          if (process.env.NODE_ENV === 'production') {
-            console.log('Using production API')
-            const response = await apiClient.login({ email, password })
-            console.log('Production login successful:', response)
+          const response = await apiClient.login({ email, password })
+          console.log('Login successful:', response)
 
-            // Set token in API client
-            apiClient.setToken(response.token)
-            
-            // Set user and redirect to dashboard
+          // Check if user is approved
+          if (!response.user.isApproved) {
+            // Show pending approval screen for unapproved users
+            set({
+              user: response.user,
+              isAuthenticated: true,
+              currentView: { type: 'pending-approval' }
+            })
+            return { success: true }
+          }
+
+          // Set token in API client
+          apiClient.setToken(response.token)
+          
+          // Set user and redirect to dashboard
+          set({
+            user: response.user,
+            isAuthenticated: true,
+            currentView: { type: 'dashboard' }
+          })
+
+          // Update browser URL to dashboard
+          if (typeof window !== 'undefined') {
+            const url = new URL(window.location.href)
+            url.searchParams.set('view', 'dashboard')
+            // Clear other view params
+            Array.from(url.searchParams.keys()).forEach(key => {
+              if (key !== 'view') {
+                url.searchParams.delete(key)
+              }
+            })
+            window.history.pushState({ view: { type: 'dashboard' } }, '', url.toString())
+          }
+          
+          return { success: true }
+        } catch (error) {
+          console.error('Login error:', error)
+          return { 
+            success: false, 
+            error: error // Pass the entire error object
+          }
+        }
+      },
+      
+      register: async (name: string, email: string, password: string, role: string, accessCode: string) => {
+        try {
+          console.log('Attempting registration with:', { name, email, role })
+          
+          const response = await apiClient.register({ name, email, password, role, accessCode })
+          console.log('Registration successful:', response)
+
+          // Set token in API client
+          apiClient.setToken(response.token)
+          
+          // Check if user requires approval
+          if (response.user.isApproved) {
+            // Auto-approved users (admins) go straight to dashboard
             set({
               user: response.user,
               isAuthenticated: true,
               currentView: { type: 'dashboard' }
             })
-            
-            return { success: true }
           } else {
-            console.log('Using development mock authentication')
-            // Development mock authentication
-            const testUsers: Record<string, { id: string; name: string; role: User['role'] }> = {
-              // Email format
-              'student@test.com': { id: 'user-1', name: 'Test Student', role: 'student' },
-              'instructor@test.com': { id: 'user-2', name: 'Test Instructor', role: 'instructor' },
-              'admin@test.com': { id: 'user-3', name: 'Test Admin', role: 'admin' },
-              'student@modulus.com': { id: 'user-4', name: 'Modulus Student', role: 'student' },
-              'instructor@modulus.com': { id: 'user-5', name: 'Modulus Instructor', role: 'instructor' },
-              'admin@modulus.com': { id: 'user-6', name: 'Modulus Admin', role: 'admin' },
-              // Simple username format
-              'student': { id: 'user-7', name: 'Test Student', role: 'student' },
-              'instructor': { id: 'user-8', name: 'Test Instructor', role: 'instructor' },
-              'admin': { id: 'user-9', name: 'Test Admin', role: 'admin' }
-            }
-            
-            const user = testUsers[email]
-            const validPassword = password === 'Mahtabmehek@1337'
-            
-            if (user && validPassword) {
-              console.log('Mock login successful:', user)
-              
-              // Create mock user object
-              const mockUser: User = {
-                id: user.id,
-                email: email,
-                name: user.name,
-                role: user.role,
-                avatar: '/api/placeholder/40/40',
-                level: 1,
-                levelName: 'Beginner',
-                badges: [],
-                streakDays: 0,
-                totalPoints: 0,
-                joinedAt: new Date(),
-                lastActive: new Date(),
-                preferences: {
-                  theme: 'dark',
-                  language: 'en',
-                  notifications: {
-                    email: true,
-                    push: true,
-                    announcements: true,
-                    labUpdates: true
-                  }
-                },
-                isApproved: true,
-                approvalStatus: 'approved'
-              }
-              
-              // Set user and redirect to dashboard
-              set({
-                user: mockUser,
-                isAuthenticated: true,
-                currentView: { type: 'dashboard' }
-              })
-              
-              return { success: true }
-            } else {
-              console.log('Invalid credentials')
-              return { success: false, error: 'Invalid email or password' }
-            }
+            // Users requiring approval see a pending approval screen
+            set({
+              user: response.user,
+              isAuthenticated: true,
+              currentView: { type: 'pending-approval' }
+            })
           }
+          
+          return { success: true }
         } catch (error) {
-          console.error('Login error:', error)
+          console.error('Registration error:', error)
           return { 
             success: false, 
-            error: error instanceof Error ? error.message : 'Login failed' 
+            error: error // Pass the entire error object
           }
         }
       },
@@ -260,14 +248,6 @@ export const useAppStore = create<AppStore>()(
         }))
       },
       
-      switchUserRole: (role) => {
-        const { user } = get()
-        if (user) {
-          const mockUser = mockData.users.find(u => u.role === role) || user
-          set({ user: { ...mockUser, role } })
-        }
-      },
-      
       initializeFromUrl: () => {
         if (typeof window === 'undefined') return
         
@@ -308,7 +288,7 @@ export const useAppStore = create<AppStore>()(
 
       // Lab session actions
       startLabSession: async (labId: string) => {
-        const { user, appData, labSessions } = get()
+        const { user, labSessions } = get()
         if (!user) throw new Error('User not authenticated')
         
         // Clean up any expired sessions first
@@ -323,10 +303,6 @@ export const useAppStore = create<AppStore>()(
           throw new Error('You already have an active lab session. Please end it before starting a new one.')
         }
         
-        // Find the lab details
-        const lab = appData.labs.find(l => l.id === labId)
-        if (!lab) throw new Error('Lab not found')
-        
         const now = new Date()
         const endTime = new Date(now.getTime() + 60 * 60 * 1000) // 1 hour from now
         
@@ -334,7 +310,7 @@ export const useAppStore = create<AppStore>()(
           id: `lab-session-${Date.now()}`,
           userId: user.id,
           labId,
-          labName: lab.title,
+          labName: `Lab ${labId}`, // Simplified lab name for content-based labs
           startTime: now,
           endTime,
           lastInteraction: now,
@@ -457,6 +433,76 @@ export const useAppStore = create<AppStore>()(
             : state.currentLabSession
         }))
       },
+
+      // Initialize user state and check session validity
+      initialize: () => {
+        const { user, checkSession } = get()
+        
+        // Check URL params and restore view state
+        if (typeof window !== 'undefined') {
+          const url = new URL(window.location.href)
+          const viewParam = url.searchParams.get('view')
+          
+          if (viewParam && user) {
+            // User is logged in, restore view from URL
+            switch (viewParam) {
+              case 'dashboard':
+                set({ currentView: { type: 'dashboard' } })
+                break
+              case 'profile':
+                set({ currentView: { type: 'profile' } })
+                break
+              case 'course-creation':
+                set({ currentView: { type: 'course-creation' } })
+                break
+              default:
+                set({ currentView: { type: 'dashboard' } })
+            }
+          } else if (user) {
+            // User is logged in but no view param, go to dashboard
+            set({ currentView: { type: 'dashboard' } })
+            url.searchParams.set('view', 'dashboard')
+            window.history.replaceState({ view: { type: 'dashboard' } }, '', url.toString())
+          } else {
+            // No user, go to login
+            set({ currentView: { type: 'login' } })
+            url.searchParams.set('view', 'login')
+            window.history.replaceState({ view: { type: 'login' } }, '', url.toString())
+          }
+          
+          // Listen for browser back/forward navigation
+          const handlePopState = (event: PopStateEvent) => {
+            if (event.state?.view) {
+              set({ currentView: event.state.view })
+            }
+          }
+          
+          window.addEventListener('popstate', handlePopState)
+          return () => window.removeEventListener('popstate', handlePopState)
+        }
+      },
+
+      // Check session validity with the server
+      checkSession: async () => {
+        const { user } = get()
+        if (!user) return false
+        
+        try {
+          const response = await apiClient.checkSession()
+          if (response.valid) {
+            // Session is valid, update user state
+            set({ user: response.user, isAuthenticated: true })
+            return true
+          } else {
+            // Session is invalid, clear user state
+            set({ user: null, isAuthenticated: false })
+            return false
+          }
+        } catch (error) {
+          console.error('Session check error:', error)
+          return false
+        }
+      },
     }),
     {
       name: 'modulus-store',
@@ -473,26 +519,5 @@ export const useAppStore = create<AppStore>()(
 
 export const useApp = () => {
   const store = useAppStore()
-  
-  // Initialize development invite codes on first load
-  useEffect(() => {
-    if (typeof window !== 'undefined' && !localStorage.getItem('invite_DEVACCESS')) {
-      const devInvite = {
-        id: 'dev-invite-1',
-        code: 'DEVACCESS',
-        name: 'Development User',
-        email: 'dev@modulus.edu',
-        role: 'admin',
-        permissions: ['all'],
-        createdBy: 'system',
-        createdAt: new Date(),
-        expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year
-        isUsed: false
-      }
-      localStorage.setItem('invite_DEVACCESS', JSON.stringify(devInvite))
-      console.log('Created development invite code: DEVACCESS')
-    }
-  }, [])
-  
   return store
 }

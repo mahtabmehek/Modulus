@@ -27,7 +27,7 @@ import {
 } from 'lucide-react'
 
 export function AdminDashboard() {
-  const { user, appData } = useApp()
+  const { user } = useApp()
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'infrastructure' | 'security'>('overview')
 
   const systemStats = {
