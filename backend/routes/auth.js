@@ -750,4 +750,115 @@ router.post('/admin/create-user', authenticateToken, requireAdmin,
   }
 );
 
+// POST /api/auth/admin/disable-user - Disable a user
+router.post('/admin/disable-user', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { userId } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ error: 'User ID is required' });
+    }
+
+    const db = req.app.get('db');
+    
+    // Update user to set them as disabled
+    const result = await db.query(
+      'UPDATE users SET is_approved = false, updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING *',
+      [userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const user = result.rows[0];
+
+    res.json({
+      message: 'User disabled successfully',
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        isApproved: user.is_approved
+      }
+    });
+
+  } catch (error) {
+    console.error('Disable user error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// POST /api/auth/admin/enable-user - Enable a disabled user
+router.post('/admin/enable-user', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { userId } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ error: 'User ID is required' });
+    }
+
+    const db = req.app.get('db');
+    
+    // Update user to set them as enabled (approved)
+    const result = await db.query(
+      'UPDATE users SET is_approved = true, updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING *',
+      [userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const user = result.rows[0];
+
+    res.json({
+      message: 'User enabled successfully',
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        isApproved: user.is_approved
+      }
+    });
+
+  } catch (error) {
+    console.error('Enable user error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// DELETE /api/auth/admin/delete-user - Delete a user from database
+router.delete('/admin/delete-user', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { userId } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ error: 'User ID is required' });
+    }
+
+    const db = req.app.get('db');
+    
+    // Check if user exists first
+    const checkResult = await db.query('SELECT * FROM users WHERE id = $1', [userId]);
+    
+    if (checkResult.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Delete the user
+    await db.query('DELETE FROM users WHERE id = $1', [userId]);
+
+    res.json({
+      message: 'User deleted successfully'
+    });
+
+  } catch (error) {
+    console.error('Delete user error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 module.exports = router;

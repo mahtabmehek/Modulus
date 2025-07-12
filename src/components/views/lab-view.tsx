@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { ChevronUp, ChevronRight, X, Monitor, AlertTriangle } from 'lucide-react'
 import { useApp } from '@/lib/hooks/use-app'
 import { labAPI } from '@/lib/api/labs'
+import { DesktopSession } from '@/components/desktop/DesktopSession'
 
 export default function LabView() {
   const { navigate, currentView } = useApp()
@@ -13,6 +14,7 @@ export default function LabView() {
   const [currentModule, setCurrentModule] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [showDesktop, setShowDesktop] = useState(false)
 
   // Get lab and module data from the URL/state
   const labId = currentView.params?.labId
@@ -242,8 +244,17 @@ export default function LabView() {
             <div className="flex items-center space-x-4 ml-6">
               {/* Lab Machine Controls */}
               <div className="text-center">
-                <p className="text-muted-foreground text-sm mb-2">Lab Virtual Machine</p>
-                <p className="text-muted-foreground text-xs">VM deployment functionality will be added here</p>
+                <p className="text-muted-foreground text-sm mb-2">Kali Linux Desktop</p>
+                <button
+                  onClick={() => setShowDesktop(true)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+                >
+                  <Monitor className="w-4 h-4" />
+                  <span>Launch Desktop</span>
+                </button>
+                <p className="text-muted-foreground text-xs mt-1">
+                  Persistent Kali environment
+                </p>
               </div>
             </div>
           </div>
@@ -292,6 +303,32 @@ export default function LabView() {
           </div>
         </div>
       </div>
+      
+      {/* Desktop Session Modal */}
+      {showDesktop && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-2xl w-full h-full max-w-7xl max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b bg-gray-50">
+              <h2 className="text-lg font-semibold text-gray-900">
+                Kali Linux Desktop - {currentLab?.title}
+              </h2>
+              <button
+                onClick={() => setShowDesktop(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="flex-1 min-h-0">
+              <DesktopSession 
+                labId={labId || ''}
+                labTitle={currentLab?.title}
+                onClose={() => setShowDesktop(false)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

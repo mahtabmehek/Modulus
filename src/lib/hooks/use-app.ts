@@ -87,9 +87,9 @@ export const useAppStore = create<AppStore>()(
           const response = await apiClient.login({ email, password })
           console.log('Login successful:', response)
 
-          // Check if user is approved
-          if (!response.user.isApproved) {
-            // Show pending approval screen for unapproved users
+          // Check if user is approved (admins are always approved)
+          if (response.user.role !== 'admin' && !response.user.isApproved) {
+            // Show pending approval screen for unapproved non-admin users
             set({
               user: response.user,
               isAuthenticated: true,

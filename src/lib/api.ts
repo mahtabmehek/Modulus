@@ -153,6 +153,27 @@ class ApiClient {
     })
   }
 
+  async disableUser(userId: number): Promise<{ message: string; user: any }> {
+    return this.request('/auth/admin/disable-user', {
+      method: 'POST',
+      body: JSON.stringify({ userId }),
+    })
+  }
+
+  async enableUser(userId: number): Promise<{ message: string; user: any }> {
+    return this.request('/auth/admin/enable-user', {
+      method: 'POST',
+      body: JSON.stringify({ userId }),
+    })
+  }
+
+  async deleteUser(userId: number): Promise<{ message: string }> {
+    return this.request('/auth/admin/delete-user', {
+      method: 'DELETE',
+      body: JSON.stringify({ userId }),
+    })
+  }
+
   // Course endpoints
   async getCourses(): Promise<{ courses: any[] }> {
     return this.request('/courses')
@@ -222,6 +243,113 @@ class ApiClient {
     return this.request(`/labs/${labId}`, {
       method: 'DELETE',
     })
+  }
+
+  // Desktop Session Management
+  desktop = {
+    // Create new desktop session
+    createSession: async (labId: string) => {
+      return this.request<{
+        success: boolean;
+        session: {
+          sessionId: string;
+          vncUrl: string;
+          webUrl: string;
+          status: string;
+          persistenceType: string;
+          labId: string;
+        };
+      }>('/desktop/create', {
+        method: 'POST',
+        body: JSON.stringify({ labId })
+      });
+    },
+
+    // Get current active session
+    getCurrentSession: async () => {
+      return this.request<{
+        success: boolean;
+        session: {
+          sessionId: string;
+          vncUrl: string;
+          webUrl: string;
+          status: string;
+          persistenceType: string;
+          labId: string;
+          createdAt: string;
+        };
+      }>('/desktop/session');
+    },
+
+    // Terminate current session
+    terminateSession: async () => {
+      return this.request<{
+        success: boolean;
+        result: {
+          status: string;
+          dataPersisted: boolean;
+          persistenceType: string;
+        };
+      }>('/desktop/terminate', {
+        method: 'DELETE'
+      });
+    },
+
+    // Extend session timeout
+    extendSession: async () => {
+      return this.request<{
+        success: boolean;
+        message: string;
+      }>('/desktop/extend', {
+        method: 'POST',
+        body: JSON.stringify({})
+      });
+    },
+
+    // Get user backup history
+    getBackups: async () => {
+      return this.request<{
+        success: boolean;
+        backups: Array<{
+          filename: string;
+          date: string;
+          size: number;
+          key: string;
+        }>;
+      }>('/desktop/backups');
+    },
+
+    // Get desktop system status
+    getStatus: async () => {
+      return this.request<{
+        success: boolean;
+        system: {
+          activeContainers: number;
+          totalContainers: number;
+          memoryUsage: {
+            total: number;
+            used: number;
+            free: number;
+            percentage: number;
+          };
+          cpuUsage: number;
+          maxContainers: number;
+          availableSlots: number;
+        };
+        userSession: {
+          hasSession: boolean;
+          isRunning: boolean;
+          sessionInfo?: {
+            sessionId: string;
+            labId: string;
+            createdAt: string;
+            lastAccessed: string;
+            vncPort: number;
+            webPort: number;
+          };
+        };
+      }>('/desktop/status');
+    }
   }
 }
 

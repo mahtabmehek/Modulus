@@ -25,12 +25,22 @@ import {
   Clock,
   FileText,
   Download,
-  RefreshCw
+  RefreshCw,
+  Search,
+  ChevronDown,
+  ChevronUp,
+  Edit,
+  UserX,
+  UserCheck,
+  Trash2,
+  MoreHorizontal,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react'
 
 export function AdminDashboard() {
   const { user } = useApp()
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'approvals' | 'courses' | 'labs' | 'infrastructure' | 'security'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'courses' | 'labs' | 'infrastructure' | 'security'>('overview')
   const [realUsers, setRealUsers] = useState<any[]>([])
   const [pendingApprovals, setPendingApprovals] = useState<any[]>([])
   const [courses, setCourses] = useState<any[]>([])
@@ -38,6 +48,18 @@ export function AdminDashboard() {
   const [loading, setLoading] = useState(false)
   const [showUserModal, setShowUserModal] = useState(false)
   const [showCourseModal, setShowCourseModal] = useState(false)
+  const [isUserTableCollapsed, setIsUserTableCollapsed] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [sortConfig, setSortConfig] = useState<{key: string, direction: 'asc' | 'desc'} | null>(null)
+  const [selectedUser, setSelectedUser] = useState<any>(null)
+  const [showUserActions, setShowUserActions] = useState<{[key: string]: boolean}>({})
+  
+  // Pagination state
+  const [approvalsPage, setApprovalsPage] = useState(1)
+  const [usersPage, setUsersPage] = useState(1)
+  const approvalsPerPage = 5
+  const usersPerPage = 10
+  
   const [userFormData, setUserFormData] = useState({
     name: '',
     email: '',
@@ -52,8 +74,27 @@ export function AdminDashboard() {
   })
 
   // Load real user data when component mounts or users tab is selected
+  // Close dropdowns when clicking outside
   useEffect(() => {
-    if (activeTab === 'users' || activeTab === 'approvals') {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element
+      // Check if the click is outside all action dropdowns
+      if (!target.closest('.actions-dropdown') && Object.keys(showUserActions).length > 0) {
+        setShowUserActions({})
+      }
+    }
+
+    // Only add listener if there are open dropdowns
+    if (Object.values(showUserActions).some(isOpen => isOpen)) {
+      document.addEventListener('click', handleClickOutside, true)
+      return () => {
+        document.removeEventListener('click', handleClickOutside, true)
+      }
+    }
+  }, [showUserActions])
+
+  useEffect(() => {
+    if (activeTab === 'users') {
       loadUsers()
     } else if (activeTab === 'courses') {
       loadCourses()
@@ -66,13 +107,192 @@ export function AdminDashboard() {
     setLoading(true)
     try {
       const response = await apiClient.getAllUsers()
-      setRealUsers(response.users)
-      setPendingApprovals(response.users.filter((user: any) => user.status === 'pending'))
+      console.log('Admin users response:', response)
+      setRealUsers(response.users || [])
+      
+      // Filter pending approvals (non-admin users who are not approved)
+      const pending = (response.users || []).filter((user: any) => 
+        user.role !== 'admin' && (!user.is_approved || user.status === 'pending')
+      )
+      setPendingApprovals(pending)
     } catch (error) {
       console.error('Failed to load users:', error)
+      setRealUsers([])
+      setPendingApprovals([])
     } finally {
       setLoading(false)
     }
+  }
+
+  // Search and filter users
+  const filteredUsers = realUsers.filter(user => {
+    const searchLower = searchTerm.toLowerCase()
+    return (
+      user.id?.toString().includes(searchLower) ||
+      user.email?.toLowerCase().includes(searchLower) ||
+      user.name?.toLowerCase().includes(searchLower)
+    )
+  })
+
+  // Sort users
+  const sortedUsers = sortConfig ? 
+    [...filteredUsers].sort((a, b) => {
+      const aValue = a[sortConfig.key] || ''
+      const bValue = b[sortConfig.key] || ''
+      
+      if (sortConfig.direction === 'asc') {
+        return aValue.toString().localeCompare(bValue.toString())
+      } else {
+        return bValue.toString().localeCompare(aValue.toString())
+      }
+    }) : filteredUsers
+
+  // Pagination for approvals
+  const paginatedApprovals = pendingApprovals.slice(
+    (approvalsPage - 1) * approvalsPerPage,
+    approvalsPage * approvalsPerPage
+  )
+  const totalApprovalsPages = Math.ceil(pendingApprovals.length / approvalsPerPage)
+
+  // Pagination for users
+  const paginatedUsers = sortedUsers.slice(
+    (usersPage - 1) * usersPerPage,
+    usersPage * usersPerPage
+  )
+  const totalUsersPages = Math.ceil(sortedUsers.length / usersPerPage)
+
+  // Handle sorting
+  const handleSort = (key: string) => {
+    let direction: 'asc' | 'desc' = 'asc'
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc'
+    }
+    setSortConfig({ key, direction })
+  }
+
+  // Export to CSV
+  const exportToCSV = () => {
+    const headers = ['ID', 'Name', 'Email', 'Role', 'Department', 'Created At']
+    const csvData = [
+      headers.join(','),
+      ...sortedUsers.map(user => [
+        user.id || '',
+        `"${user.name || ''}"`,
+        user.email || '',
+        user.role || '',
+        user.department || 'N/A',
+        user.created_at ? new Date(user.created_at).toLocaleDateString() : ''
+      ].join(','))
+    ].join('\n')
+
+    const blob = new Blob([csvData], { type: 'text/csv' })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `modulus_users_${new Date().toISOString().split('T')[0]}.csv`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+  }
+
+  // Handle user actions
+  const handleEditUser = (user: any) => {
+    // Close dropdown
+    setShowUserActions({})
+    // TODO: Implement edit user modal
+    console.log('Edit user:', user)
+    alert(`Edit functionality for ${user.name} will be implemented soon`)
+  }
+
+  const handleApproveUser = async (userId: string) => {
+    console.log('Attempting to approve user:', userId)
+    try {
+      const response = await apiClient.approveUser(Number(userId))
+      console.log('Approve response:', response)
+      await loadUsers() // Refresh the list
+      alert('✅ User approved successfully!')
+    } catch (error) {
+      console.error('Failed to approve user:', error)
+      alert('❌ Failed to approve user. Please try again.')
+    }
+  }
+
+  const handleRejectUser = async (userId: string) => {
+    if (confirm('Are you sure you want to reject this user? This action cannot be undone.')) {
+      console.log('Attempting to reject user:', userId)
+      try {
+        const response = await apiClient.rejectUser(Number(userId))
+        console.log('Reject response:', response)
+        await loadUsers() // Refresh the list
+        alert('❌ User rejected successfully!')
+      } catch (error) {
+        console.error('Failed to reject user:', error)
+        alert('❌ Failed to reject user. Please try again.')
+      }
+    }
+  }
+
+  const handleDisableUser = async (userId: string) => {
+    // Close dropdown
+    setShowUserActions({})
+    
+    if (confirm('Are you sure you want to disable this user?')) {
+      console.log('Attempting to disable user:', userId)
+      try {
+        const response = await apiClient.disableUser(Number(userId))
+        console.log('Disable response:', response)
+        await loadUsers() // Refresh the list
+        alert('✅ User disabled successfully!')
+      } catch (error) {
+        console.error('Failed to disable user:', error)
+        alert('❌ Failed to disable user. Please try again.')
+      }
+    }
+  }
+
+  const handleDeleteUser = async (userId: string) => {
+    // Close dropdown
+    setShowUserActions({})
+    
+    if (confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+      console.log('Attempting to delete user:', userId)
+      try {
+        const response = await apiClient.deleteUser(Number(userId))
+        console.log('Delete response:', response)
+        await loadUsers() // Refresh list
+        alert('✅ User deleted successfully!')
+      } catch (error) {
+        console.error('Failed to delete user:', error)
+        alert('❌ Failed to delete user. Please try again.')
+      }
+    }
+  }
+
+  const handleEnableUser = async (userId: string) => {
+    // Close dropdown
+    setShowUserActions({})
+    
+    if (confirm('Are you sure you want to enable this user?')) {
+      try {
+        console.log('Attempting to enable user:', userId)
+        await apiClient.enableUser(Number(userId))
+        await loadUsers() // Refresh the list
+        alert('✅ User enabled successfully!')
+      } catch (error) {
+        console.error('Failed to enable user:', error)
+        alert('❌ Failed to enable user. Please try again.')
+      }
+    }
+  }
+
+  const toggleUserActions = (userId: string) => {
+    setShowUserActions(prev => {
+      // Close all other dropdowns and toggle the clicked one
+      const newState: {[key: string]: boolean} = {}
+      newState[userId] = !prev[userId]
+      return newState
+    })
   }
 
   const loadCourses = async () => {
@@ -97,52 +317,6 @@ export function AdminDashboard() {
       console.error('Failed to load labs:', error)
     } finally {
       setLoading(false)
-    }
-  }
-
-  const handleApproveUser = async (userId: string) => {
-    try {
-      await apiClient.approveUser(Number(userId))
-      await loadUsers() // Refresh the list
-      alert('User approved successfully')
-    } catch (error) {
-      console.error('Failed to approve user:', error)
-      alert('Failed to approve user')
-    }
-  }
-
-  const handleRejectUser = async (userId: string) => {
-    try {
-      await apiClient.rejectUser(Number(userId))
-      await loadUsers() // Refresh the list
-      alert('User rejected successfully')
-    } catch (error) {
-      console.error('Failed to reject user:', error)
-      alert('Failed to reject user')
-    }
-  }
-
-  const handleCreateUser = async (userData: any) => {
-    try {
-      await apiClient.createUser(userData)
-      await loadUsers() // Refresh the list
-      setShowUserModal(false)
-      alert('User created successfully')
-    } catch (error) {
-      console.error('Failed to create user:', error)
-      alert('Failed to create user')
-    }
-  }
-
-  const handleCreateCourse = async (courseData: any) => {
-    try {
-      await apiClient.createCourse(courseData)
-      await loadCourses() // Refresh the list
-      setShowCourseModal(false)
-      alert('Course created successfully')
-    } catch (error) {
-      console.error('Failed to create course:', error)
-      alert('Failed to create course')
     }
   }
 
@@ -263,7 +437,6 @@ export function AdminDashboard() {
           {[
             { key: 'overview', label: 'Overview', icon: Activity },
             { key: 'users', label: 'User Management', icon: Users },
-            { key: 'approvals', label: 'Approvals', icon: UserPlus },
             { key: 'courses', label: 'Course Management', icon: BookOpen },
             { key: 'labs', label: 'Lab Management', icon: Monitor },
             { key: 'infrastructure', label: 'Infrastructure', icon: Server },
@@ -403,112 +576,7 @@ export function AdminDashboard() {
 
       {activeTab === 'users' && (
         <div className="space-y-6">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                User Management
-              </h3>
-              <div className="flex gap-3">
-                <button 
-                  onClick={loadUsers}
-                  disabled={loading}
-                  className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg transition-colors"
-                >
-                  <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                  Refresh
-                </button>
-                <button 
-                  onClick={() => setShowUserModal(true)}
-                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
-                >
-                  <UserPlus className="w-4 h-4" />
-                  Add User
-                </button>
-                <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
-                  <Download className="w-4 h-4" />
-                  Export
-                </button>
-              </div>
-            </div>
-
-            {loading ? (
-              <div className="flex items-center justify-center py-8">
-                <RefreshCw className="w-6 h-6 animate-spin text-purple-600" />
-                <span className="ml-2 text-gray-600 dark:text-gray-400">Loading users...</span>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-gray-200 dark:border-gray-700">
-                      <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Name</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Email</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Role</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Status</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Joined</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {realUsers.length > 0 ? realUsers.map((user) => (
-                      <tr key={user.id} className="border-b border-gray-100 dark:border-gray-800">
-                        <td className="py-3 px-4 text-gray-900 dark:text-white">
-                          {user.name || 'Unknown User'}
-                        </td>
-                        <td className="py-3 px-4 text-gray-600 dark:text-gray-400">{user.email}</td>
-                        <td className="py-3 px-4">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            user.role === 'instructor' 
-                              ? 'bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-300'
-                              : user.role === 'admin'
-                              ? 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300'
-                              : 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300'
-                          }`}>
-                            {user.role}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            user.status === 'approved' 
-                              ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300'
-                              : user.status === 'pending'
-                              ? 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900 dark:text-yellow-300'
-                              : 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300'
-                          }`}>
-                            {user.status}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 text-gray-600 dark:text-gray-400">
-                          {new Date(user.createdAt).toLocaleDateString()}
-                        </td>
-                        <td className="py-3 px-4">
-                          <div className="flex gap-2">
-                            <button className="text-blue-600 hover:text-blue-700 dark:text-blue-400">
-                              <Eye className="w-4 h-4" />
-                            </button>
-                            <button className="text-gray-600 hover:text-gray-700 dark:text-gray-400">
-                              <Settings className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    )) : (
-                      <tr>
-                        <td colSpan={6} className="py-8 text-center text-gray-500 dark:text-gray-400">
-                          No users found. Click refresh to load users from the API.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'approvals' && (
-        <div className="space-y-6">
+          {/* Pending Approvals Card */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -533,30 +601,34 @@ export function AdminDashboard() {
               </div>
             ) : pendingApprovals.length > 0 ? (
               <div className="space-y-4">
-                {pendingApprovals.map((user) => (
+                {paginatedApprovals.map((user) => (
                   <div key={user.id} className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
                         <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900 rounded-full flex items-center justify-center">
                           <span className="text-purple-600 dark:text-purple-300 font-semibold">
-                            {user.firstName?.[0]}{user.lastName?.[0]}
+                            {user.name?.[0]?.toUpperCase() || 'U'}
                           </span>
                         </div>
                         <div>
                           <h4 className="font-semibold text-gray-900 dark:text-white">
-                            {user.firstName} {user.lastName}
+                            {user.name || 'Unknown User'}
                           </h4>
                           <p className="text-sm text-gray-600 dark:text-gray-400">{user.email}</p>
                           <div className="flex items-center gap-2 mt-1">
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                               user.role === 'instructor' 
                                 ? 'bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-300'
-                                : 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300'
+                                : user.role === 'staff'
+                                ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300'
+                                : user.role === 'student'
+                                ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300'
+                                : 'bg-gray-100 text-gray-600 dark:bg-gray-900 dark:text-gray-300'
                             }`}>
                               {user.role}
                             </span>
                             <span className="text-xs text-gray-500 dark:text-gray-400">
-                              Registered {new Date(user.createdAt).toLocaleDateString()}
+                              Registered {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'Unknown'}
                             </span>
                           </div>
                         </div>
@@ -580,6 +652,31 @@ export function AdminDashboard() {
                     </div>
                   </div>
                 ))}
+
+                {/* Approvals Pagination */}
+                {totalApprovalsPages > 1 && (
+                  <div className="flex justify-center items-center space-x-2 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <button
+                      onClick={() => setApprovalsPage(prev => Math.max(1, prev - 1))}
+                      disabled={approvalsPage === 1}
+                      className="flex items-center gap-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 disabled:text-gray-400 text-gray-700 rounded-lg transition-colors dark:bg-gray-800 dark:hover:bg-gray-700 dark:disabled:bg-gray-900 dark:disabled:text-gray-600 dark:text-gray-300"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      Previous
+                    </button>
+                    <span className="text-gray-600 dark:text-gray-400 px-4">
+                      Page {approvalsPage} of {totalApprovalsPages} ({pendingApprovals.length} total)
+                    </span>
+                    <button
+                      onClick={() => setApprovalsPage(prev => Math.min(totalApprovalsPages, prev + 1))}
+                      disabled={approvalsPage === totalApprovalsPages}
+                      className="flex items-center gap-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 disabled:text-gray-400 text-gray-700 rounded-lg transition-colors dark:bg-gray-800 dark:hover:bg-gray-700 dark:disabled:bg-gray-900 dark:disabled:text-gray-600 dark:text-gray-300"
+                    >
+                      Next
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="text-center py-8">
@@ -590,6 +687,230 @@ export function AdminDashboard() {
                 <p className="text-gray-600 dark:text-gray-400">
                   No pending user approvals at the moment.
                 </p>
+              </div>
+            )}
+          </div>
+
+          {/* User Management Card */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    User Management
+                  </h3>
+                  <button
+                    onClick={() => setIsUserTableCollapsed(!isUserTableCollapsed)}
+                    className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                  >
+                    {isUserTableCollapsed ? <ChevronDown className="w-5 h-5" /> : <ChevronUp className="w-5 h-5" />}
+                  </button>
+                </div>
+                <div className="flex gap-3">
+                  <button 
+                    onClick={loadUsers}
+                    disabled={loading}
+                    className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg transition-colors"
+                  >
+                    <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                    Refresh
+                  </button>
+                  <button 
+                    onClick={() => setShowUserModal(true)}
+                    className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
+                  >
+                    <UserPlus className="w-4 h-4" />
+                    Add User
+                  </button>
+                  <button 
+                    onClick={exportToCSV}
+                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+                  >
+                    <Download className="w-4 h-4" />
+                    Export
+                  </button>
+                </div>
+              </div>
+
+              {/* Search Bar */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <input
+                  type="text"
+                  placeholder="Search by user ID, email, or name..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+
+            {!isUserTableCollapsed && (
+              <div className="p-6">
+                {loading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <RefreshCw className="w-6 h-6 animate-spin text-purple-600" />
+                    <span className="ml-2 text-gray-600 dark:text-gray-400">Loading users...</span>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-gray-200 dark:border-gray-700">
+                          <th 
+                            className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white cursor-pointer hover:text-purple-600"
+                            onClick={() => handleSort('name')}
+                          >
+                            <div className="flex items-center gap-1">
+                              Name
+                              {sortConfig?.key === 'name' && (
+                                sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                              )}
+                            </div>
+                          </th>
+                          <th 
+                            className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white cursor-pointer hover:text-purple-600"
+                            onClick={() => handleSort('email')}
+                          >
+                            <div className="flex items-center gap-1">
+                              Email
+                              {sortConfig?.key === 'email' && (
+                                sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                              )}
+                            </div>
+                          </th>
+                          <th 
+                            className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white cursor-pointer hover:text-purple-600"
+                            onClick={() => handleSort('role')}
+                          >
+                            <div className="flex items-center gap-1">
+                              Role
+                              {sortConfig?.key === 'role' && (
+                                sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                              )}
+                            </div>
+                          </th>
+                          <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Department</th>
+                          <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Status</th>
+                          <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {paginatedUsers.length > 0 ? paginatedUsers.map((user) => (
+                          <tr key={user.id} className="border-b border-gray-100 dark:border-gray-800">
+                            <td className="py-3 px-4 text-gray-900 dark:text-white">
+                              {user.name || 'Unknown User'}
+                            </td>
+                            <td className="py-3 px-4 text-gray-600 dark:text-gray-400">{user.email}</td>
+                            <td className="py-3 px-4">
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                user.role === 'instructor' 
+                                  ? 'bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-300'
+                                  : user.role === 'admin'
+                                  ? 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300'
+                                  : user.role === 'staff'
+                                  ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300'
+                                  : user.role === 'student'
+                                  ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300'
+                                  : 'bg-gray-100 text-gray-600 dark:bg-gray-900 dark:text-gray-300'
+                              }`}>
+                                {user.role}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 text-gray-600 dark:text-gray-400">
+                              {user.department || 'N/A'}
+                            </td>
+                            <td className="py-3 px-4">
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                user.is_approved === false 
+                                  ? 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300'
+                                  : 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300'
+                              }`}>
+                                {user.is_approved === false ? 'Disabled' : 'Active'}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="relative actions-dropdown">
+                                <button
+                                  onClick={() => toggleUserActions(user.id)}
+                                  className="text-gray-600 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                >
+                                  <Settings className="w-4 h-4" />
+                                </button>
+                                {showUserActions[user.id] && (
+                                  <div className="absolute right-0 top-8 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 min-w-32">
+                                    <button
+                                      onClick={() => handleEditUser(user)}
+                                      className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 first:rounded-t-lg"
+                                    >
+                                      <Edit className="w-4 h-4" />
+                                      Edit
+                                    </button>
+                                    {user.is_approved === false ? (
+                                      <button
+                                        onClick={() => handleEnableUser(user.id)}
+                                        className="flex items-center gap-2 w-full px-3 py-2 text-sm text-green-700 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/20"
+                                      >
+                                        <UserCheck className="w-4 h-4" />
+                                        Enable
+                                      </button>
+                                    ) : (
+                                      <button
+                                        onClick={() => handleDisableUser(user.id)}
+                                        className="flex items-center gap-2 w-full px-3 py-2 text-sm text-yellow-700 hover:bg-yellow-50 dark:text-yellow-400 dark:hover:bg-yellow-900/20"
+                                      >
+                                        <UserX className="w-4 h-4" />
+                                        Disable
+                                      </button>
+                                    )}
+                                    <button
+                                      onClick={() => handleDeleteUser(user.id)}
+                                      className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 last:rounded-b-lg"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                      Delete
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        )) : (
+                          <tr>
+                            <td colSpan={6} className="py-8 text-center text-gray-500 dark:text-gray-400">
+                              {searchTerm ? 'No users found matching your search.' : 'No users found. Click refresh to load users from the API.'}
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+
+                    {/* Users Pagination */}
+                    {totalUsersPages > 1 && (
+                      <div className="flex justify-center items-center space-x-2 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+                        <button
+                          onClick={() => setUsersPage(prev => Math.max(1, prev - 1))}
+                          disabled={usersPage === 1}
+                          className="flex items-center gap-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 disabled:text-gray-400 text-gray-700 rounded-lg transition-colors dark:bg-gray-800 dark:hover:bg-gray-700 dark:disabled:bg-gray-900 dark:disabled:text-gray-600 dark:text-gray-300"
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                          Previous
+                        </button>
+                        <span className="text-gray-600 dark:text-gray-400 px-4">
+                          Page {usersPage} of {totalUsersPages} ({sortedUsers.length} total)
+                        </span>
+                        <button
+                          onClick={() => setUsersPage(prev => Math.min(totalUsersPages, prev + 1))}
+                          disabled={usersPage === totalUsersPages}
+                          className="flex items-center gap-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 disabled:text-gray-400 text-gray-700 rounded-lg transition-colors dark:bg-gray-800 dark:hover:bg-gray-700 dark:disabled:bg-gray-900 dark:disabled:text-gray-600 dark:text-gray-300"
+                        >
+                          Next
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>

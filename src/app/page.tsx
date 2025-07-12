@@ -63,8 +63,8 @@ export default function Home() {
       return <LoginView />
     }
 
-    // Check if user is approved before allowing access to protected views
-    if (user && user.status !== 'approved') {
+    // Check if user is approved before allowing access to protected views (admins are always approved)
+    if (user && user.role !== 'admin' && user.status !== 'approved') {
       return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
           <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg text-center max-w-md mx-4">

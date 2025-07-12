@@ -194,6 +194,25 @@ CREATE TABLE IF NOT EXISTS lab_sessions (
     metadata JSONB
 );
 
+-- Desktop Sessions Table
+CREATE TABLE IF NOT EXISTS desktop_sessions (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    lab_id INTEGER,
+    container_id VARCHAR(255) UNIQUE,
+    vnc_port INTEGER,
+    web_port INTEGER,
+    status VARCHAR(50) DEFAULT 'running',
+    session_data JSONB,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_accessed TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    terminated_at TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_desktop_sessions_user_id ON desktop_sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_desktop_sessions_status ON desktop_sessions(status);
+CREATE INDEX IF NOT EXISTS idx_desktop_sessions_container_id ON desktop_sessions(container_id);
+
 -- Enrollments table
 CREATE TABLE IF NOT EXISTS enrollments (
     id SERIAL PRIMARY KEY,

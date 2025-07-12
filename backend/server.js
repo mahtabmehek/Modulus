@@ -11,6 +11,7 @@ const userRoutes = require('./routes/users');
 const healthRoutes = require('./routes/health');
 const adminRoutes = require('./routes/admin');
 const coursesRoutes = require('./routes/courses');
+const desktopRoutes = require('./routes/desktop');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -98,6 +99,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/courses', coursesRoutes);
+app.use('/api/desktop', desktopRoutes);
 
 // Simple health check endpoint for ECS health checks
 app.get('/health', (req, res) => {
