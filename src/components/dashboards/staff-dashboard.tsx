@@ -1,19 +1,53 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { useApp } from '@/lib/hooks/use-app'
-import { Users, BookOpen, GraduationCap, Settings, Plus, Edit, User } from 'lucide-react'
+import { apiClient } from '@/lib/api'
+import { Users, BookOpen, GraduationCap, UserCheck, UserPlus, BarChart3 } from 'lucide-react'
 
 export function StaffDashboard() {
   const { user, navigate } = useApp()
-  
-  // TODO: Load real data from API
-  const stats = {
+  const [stats, setStats] = useState({
     totalUsers: 0,
     totalCourses: 0,
     totalInstructors: 0,
     totalStudents: 0,
     pendingApprovals: 0,
-  }
+  })
+  const [loading, setLoading] = useState(true)
+  
+  useEffect(() => {
+    const loadStats = async () => {
+      try {
+        const [usersResponse, coursesResponse, approvalsResponse] = await Promise.all([
+          apiClient.adminGetUsers(),
+          apiClient.getCourses(),
+          apiClient.adminGetUsers()
+        ])
+        
+        const users = usersResponse.success ? usersResponse.data : []
+        const courses = coursesResponse.success ? coursesResponse.data : []
+        
+        const instructors = users.filter(u => u.role === 'instructor')
+        const students = users.filter(u => u.role === 'student')
+        const pending = users.filter(u => u.status === 'pending')
+        
+        setStats({
+          totalUsers: users.length,
+          totalCourses: courses.length,
+          totalInstructors: instructors.length,
+          totalStudents: students.length,
+          pendingApprovals: pending.length,
+        })
+      } catch (error) {
+        console.error('Failed to load staff dashboard stats:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    loadStats()
+  }, [])
 
   return (
     <div className="min-h-screen bg-background text-foreground">

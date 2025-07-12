@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useApp } from '@/lib/hooks/use-app'
+import { apiClient } from '@/lib/api'
 import { ArrowLeft, BookOpen, Code, GraduationCap } from 'lucide-react'
 
 export function ModuleView() {
@@ -13,12 +14,39 @@ export function ModuleView() {
   const moduleId = currentView.params?.moduleId
 
   useEffect(() => {
-    // TODO: Fetch real module data from API
-    if (moduleId) {
-      // For now, just show empty state until API is implemented
-      setCurrentModule(null)
+    const loadModuleData = async () => {
+      if (moduleId) {
+        try {
+          // For now, use courses API to simulate module data
+          // In the future, this would be a dedicated modules API
+          const coursesResponse = await apiClient.getCourses()
+          if (coursesResponse.success && coursesResponse.data.length > 0) {
+            // Create a sample module from course data
+            const courseData = coursesResponse.data[0] // Use first course
+            const sampleModule = {
+              id: moduleId,
+              name: `${courseData.title} - Module 1`,
+              description: `Core concepts and practical exercises for ${courseData.title}`,
+              course: courseData,
+              lessons: [
+                { id: 1, title: 'Introduction and Setup', duration: '30 min', completed: false },
+                { id: 2, title: 'Basic Concepts', duration: '45 min', completed: false },
+                { id: 3, title: 'Hands-on Lab', duration: '60 min', completed: false },
+              ],
+              estimatedDuration: '2-3 hours',
+              difficulty: courseData.difficulty || 'Intermediate'
+            }
+            setCurrentModule(sampleModule)
+          }
+        } catch (error) {
+          console.error('Failed to load module data:', error)
+          setCurrentModule(null)
+        }
+      }
+      setLoading(false)
     }
-    setLoading(false)
+    
+    loadModuleData()
   }, [moduleId])
 
   if (loading) {

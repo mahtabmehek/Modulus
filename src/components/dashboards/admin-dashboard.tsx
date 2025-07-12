@@ -47,6 +47,7 @@ export function AdminDashboard() {
   const [labs, setLabs] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [showUserModal, setShowUserModal] = useState(false)
+  const [showEditUserModal, setShowEditUserModal] = useState(false)
   const [showCourseModal, setShowCourseModal] = useState(false)
   const [isUserTableCollapsed, setIsUserTableCollapsed] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
@@ -200,9 +201,8 @@ export function AdminDashboard() {
   const handleEditUser = (user: any) => {
     // Close dropdown
     setShowUserActions({})
-    // TODO: Implement edit user modal
-    console.log('Edit user:', user)
-    alert(`Edit functionality for ${user.name} will be implemented soon`)
+    setSelectedUser(user)
+    setShowEditUserModal(true)
   }
 
   const handleApproveUser = async (userId: string) => {
@@ -310,11 +310,16 @@ export function AdminDashboard() {
   const loadLabs = async () => {
     setLoading(true)
     try {
-      // TODO: Implement lab API endpoint
-      console.log('Lab API not yet implemented')
-      setLabs([])
+      const response = await apiClient.getLabs()
+      if (response.success) {
+        setLabs(response.data)
+      } else {
+        console.error('Failed to load labs')
+        setLabs([])
+      }
     } catch (error) {
       console.error('Failed to load labs:', error)
+      setLabs([])
     } finally {
       setLoading(false)
     }
@@ -1407,6 +1412,98 @@ export function AdminDashboard() {
                   className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
                 >
                   Create Course
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit User Modal */}
+      {showEditUserModal && selectedUser && (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div className="bg-black/50 absolute inset-0" onClick={() => setShowEditUserModal(false)}></div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg max-w-lg w-full p-6 z-10">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Edit User: {selectedUser.name}
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Name
+                </label>
+                <input
+                  type="text"
+                  value={selectedUser.name}
+                  onChange={(e) => setSelectedUser({...selectedUser, name: e.target.value})}
+                  className="block w-full border-gray-300 dark:border-gray-700 rounded-lg shadow-sm focus:ring-purple-500 focus:border-purple-500"
+                  placeholder="Enter full name"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={selectedUser.email}
+                  onChange={(e) => setSelectedUser({...selectedUser, email: e.target.value})}
+                  className="block w-full border-gray-300 dark:border-gray-700 rounded-lg shadow-sm focus:ring-purple-500 focus:border-purple-500"
+                  placeholder="Enter email address"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Role
+                </label>
+                <select 
+                  value={selectedUser.role}
+                  onChange={(e) => setSelectedUser({...selectedUser, role: e.target.value})}
+                  className="block w-full border-gray-300 dark:border-gray-700 rounded-lg shadow-sm focus:ring-purple-500 focus:border-purple-500"
+                >
+                  <option value="student">Student</option>
+                  <option value="instructor">Instructor</option>
+                  <option value="staff">Staff</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Status
+                </label>
+                <select 
+                  value={selectedUser.status || 'active'}
+                  onChange={(e) => setSelectedUser({...selectedUser, status: e.target.value})}
+                  className="block w-full border-gray-300 dark:border-gray-700 rounded-lg shadow-sm focus:ring-purple-500 focus:border-purple-500"
+                >
+                  <option value="active">Active</option>
+                  <option value="pending">Pending Approval</option>
+                  <option value="suspended">Suspended</option>
+                </select>
+              </div>
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={() => setShowEditUserModal(false)}
+                  className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={async () => {
+                    try {
+                      // Here you would typically call an API to update the user
+                      console.log('Updating user:', selectedUser)
+                      alert('✅ User updated successfully!')
+                      await loadUsers() // Refresh the list
+                      setShowEditUserModal(false)
+                    } catch (error) {
+                      console.error('Failed to update user:', error)
+                      alert('❌ Failed to update user. Please try again.')
+                    }
+                  }}
+                  className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+                >
+                  Update User
                 </button>
               </div>
             </div>

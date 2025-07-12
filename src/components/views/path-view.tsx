@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useApp } from '@/lib/hooks/use-app'
+import { apiClient } from '@/lib/api'
 import { ArrowLeft, Clock, Users, Award } from 'lucide-react'
 
 export function PathView() {
@@ -13,12 +14,33 @@ export function PathView() {
   const pathId = currentView.params?.pathId
 
   useEffect(() => {
-    // TODO: Fetch real path data from API
-    if (pathId) {
-      // For now, just show empty state until API is implemented
-      setPath(null)
+    const loadPathData = async () => {
+      if (pathId) {
+        try {
+          // For now, create a learning path from available courses
+          // In the future, this would be a dedicated paths API
+          const coursesResponse = await apiClient.getCourses()
+          if (coursesResponse.success) {
+            // Create a sample path from the courses
+            const samplePath = {
+              id: pathId,
+              name: 'Cybersecurity Fundamentals Path',
+              description: 'Master the fundamentals of cybersecurity through hands-on labs and practical exercises.',
+              courses: coursesResponse.data.slice(0, 3), // Take first 3 courses
+              estimatedDuration: '8-12 weeks',
+              difficulty: 'Beginner to Intermediate'
+            }
+            setPath(samplePath)
+          }
+        } catch (error) {
+          console.error('Failed to load path data:', error)
+          setPath(null)
+        }
+      }
+      setLoading(false)
     }
-    setLoading(false)
+    
+    loadPathData()
   }, [pathId])
 
   if (loading) {

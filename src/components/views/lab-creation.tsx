@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import { useApp } from '@/lib/hooks/use-app'
+import { apiClient } from '@/lib/api'
 import { 
   ArrowLeft, 
   Save, 
@@ -220,18 +221,23 @@ export default function LabCreationView() {
     setIsSaving(true)
     
     try {
-      // TODO: Implement lab API endpoints
-      // For now, just simulate the save
-      console.log('Lab saved:', { labData, tasks })
+      // Create the lab using the API
+      const response = await apiClient.createLab({
+        name: labData.title,
+        type: labData.type,
+        description: labData.description,
+        instructions: tasks.map(task => `${task.title}: ${task.description}`).join('\n'),
+        estimatedDuration: labData.estimatedDuration,
+        difficulty: labData.difficulty,
+        module_id: 1 // Default module ID - should be selected by user
+      })
       
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      
-      alert('Lab created successfully! (Note: Lab API endpoints need to be implemented)')
+      console.log('Lab created:', response)
+      alert('✅ Lab created successfully!')
       navigate('dashboard')
     } catch (error) {
       console.error('Failed to save lab:', error)
-      alert('Failed to save lab. Please try again.')
+      alert('❌ Failed to save lab. Please try again.')
     } finally {
       setIsSaving(false)
     }

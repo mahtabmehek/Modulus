@@ -211,10 +211,11 @@ class ApiClient {
     })
   }
 
-  // Lab endpoints (placeholder for future implementation)
-  async getLabs(): Promise<{ labs: any[] }> {
-    // For now, return empty array since backend doesn't have lab endpoints yet
-    return { labs: [] }
+  // Lab endpoints
+  async getLabs(): Promise<{ success: boolean; data: any[] }> {
+    return this.request('/labs', {
+      method: 'GET',
+    })
   }
 
   async createLab(labData: {
@@ -224,8 +225,8 @@ class ApiClient {
     instructions: string
     estimatedDuration: number
     difficulty: string
+    module_id: number
   }): Promise<{ message: string; lab: any }> {
-    // Placeholder for future lab creation API
     return this.request('/labs', {
       method: 'POST',
       body: JSON.stringify(labData),
