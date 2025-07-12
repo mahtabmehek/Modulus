@@ -1,28 +1,23 @@
-const serverless = require('serverless-http');
+﻿const serverless = require('serverless-http');
 const app = require('./server');
 
-// Lambda Function URL handler
+console.log(' Lambda starting...');
+
+const handler = serverless(app);
+
 exports.handler = async (event, context) => {
-  console.log('🔍 Lambda Event:', JSON.stringify(event, null, 2));
+  console.log(' Lambda Event received');
   
   try {
-    // Create serverless handler
-    const handler = serverless(app, {
-      binary: false,
-      // For Lambda Function URLs, we don't need to strip base path
-      stripBasePath: false
-    });
-    
-    const response = await handler(event, context);
-    
-    console.log('🔍 Lambda Response:', JSON.stringify(response, null, 2));
-    return response;
+    const result = await handler(event, context);
+    return result;
   } catch (error) {
-    console.error('❌ Lambda Handler Error:', error);
+    console.error(' Lambda Handler Error:', error);
     return {
       statusCode: 500,
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
       },
       body: JSON.stringify({
         error: 'Internal Server Error',
