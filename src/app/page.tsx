@@ -104,11 +104,12 @@ export default function Home() {
     }
   }
 
-  // Don't show header/footer for public pages and full-screen views
+  // Don't show header/footer for public pages, full-screen views, and pending approval
   const isPublicPage = ['login'].includes(currentView.type) || !isAuthenticated
   const isFullScreenView = ['desktop', 'lab-creation'].includes(currentView.type)
+  const isPendingApproval = isAuthenticated && user && user.role !== 'admin' && !user.isApproved
 
-  if (isPublicPage || isFullScreenView) {
+  if (isPublicPage || isFullScreenView || isPendingApproval) {
     return (
       <div className="min-h-screen">
         {renderContent()}
