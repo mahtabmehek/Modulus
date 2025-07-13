@@ -70,7 +70,6 @@ export function LoginView() {
             </div>
           </div>
           <h1 className="text-3xl font-bold text-white">ModulusLMS</h1>
-          <p className="text-gray-300 mt-2">Interactive Cybersecurity Learning Platform</p>
         </div>
 
         {/* Login Form */}

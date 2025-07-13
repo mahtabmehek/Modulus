@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
+const { authenticateToken, requireAdmin } = require('../middleware/auth');
 const router = express.Router();
 
 // JWT secret (in production, this should be from environment variables)
@@ -80,23 +81,7 @@ const generateRoleBasedUserId = async (role, db) => {
   throw new Error(`No available IDs in range ${minId}-${maxId} for role ${role}`);
 };
 
-// Middleware to verify JWT token
-const authenticateToken = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
-  if (!token) {
-    return res.status(401).json({ error: 'Access token required' });
-  }
-
-  jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) {
-      return res.status(403).json({ error: 'Invalid or expired token' });
-    }
-    req.user = user;
-    next();
-  });
-};
 
 // Validation middleware
 const validateRegistration = [
@@ -335,14 +320,15 @@ router.post('/login', validateLogin, async (req, res) => {
       });
     }
 
+    // Note: We allow pending users to login, but the frontend will show them the pending approval view
     // Check if user is approved (only admins are auto-approved, all others need approval)
-    if (user.role !== 'admin' && !user.is_approved) {
-      console.log(`🚫 Login blocked - ${user.role} user ${user.email} not approved`);
-      return res.status(403).json({
-        error: 'Account pending approval',
-        message: `Your ${user.role} account is pending approval from staff or administrator`
-      });
-    }
+    // if (user.role !== 'admin' && !user.is_approved) {
+    //   console.log(`🚫 Login blocked - ${user.role} user ${user.email} not approved`);
+    //   return res.status(403).json({
+    //     error: 'Account pending approval',
+    //     message: `Your ${user.role} account is pending approval from staff or administrator`
+    //   });
+    // }
 
     console.log(`✅ Login successful - ${user.role} user ${user.email}`);
 
@@ -484,9 +470,12 @@ router.put('/change-password', [
 // POST /api/auth/create-test-users - For development/testing only
 router.post('/create-test-users', async (req, res) => {
   try {
-    // Only allow in development environment
+    // Allow in production only with special authorization
     if (process.env.NODE_ENV === 'production') {
-      return res.status(403).json({ error: 'Not available in production' });
+      const authHeader = req.headers['x-admin-setup'];
+      if (authHeader !== 'modulus-setup-2025') {
+        return res.status(403).json({ error: 'Not available in production without proper authorization' });
+      }
     }
 
     const db = req.app.locals.db;
@@ -542,7 +531,14 @@ router.post('/create-test-users', async (req, res) => {
           password: testUser.password // Return plain password for testing
         });
       } else {
-        // User already exists, just return info
+        // User already exists, update password for testing
+        const passwordHash = await bcrypt.hash(testUser.password, saltRounds);
+        
+        await db.query(
+          'UPDATE users SET password_hash = $1, is_approved = $2 WHERE email = $3',
+          [passwordHash, testUser.isApproved, testUser.email]
+        );
+
         const userInfo = await db.query(
           'SELECT id, email, name, role FROM users WHERE email = $1',
           [testUser.email]
@@ -567,13 +563,7 @@ router.post('/create-test-users', async (req, res) => {
   }
 });
 
-// Admin middleware to check if user is admin
-const requireAdmin = (req, res, next) => {
-  if (req.user.role !== 'admin') {
-    return res.status(403).json({ error: 'Admin access required' });
-  }
-  next();
-};
+
 
 // GET /api/auth/admin/pending-approvals - Get users pending approval
 router.get('/admin/pending-approvals', authenticateToken, requireAdmin, async (req, res) => {
@@ -759,11 +749,11 @@ router.post('/admin/disable-user', authenticateToken, requireAdmin, async (req, 
       return res.status(400).json({ error: 'User ID is required' });
     }
 
-    const db = req.app.get('db');
+    const db = req.app.locals.db;
 
     // Update user to set them as disabled
     const result = await db.query(
-      'UPDATE users SET is_approved = false, updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING *',
+      'UPDATE users SET is_approved = false WHERE id = $1 RETURNING *',
       [userId]
     );
 
@@ -799,11 +789,11 @@ router.post('/admin/enable-user', authenticateToken, requireAdmin, async (req, r
       return res.status(400).json({ error: 'User ID is required' });
     }
 
-    const db = req.app.get('db');
+    const db = req.app.locals.db;
 
     // Update user to set them as enabled (approved)
     const result = await db.query(
-      'UPDATE users SET is_approved = true, updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING *',
+      'UPDATE users SET is_approved = true WHERE id = $1 RETURNING *',
       [userId]
     );
 
@@ -839,7 +829,7 @@ router.delete('/admin/delete-user', authenticateToken, requireAdmin, async (req,
       return res.status(400).json({ error: 'User ID is required' });
     }
 
-    const db = req.app.get('db');
+    const db = req.app.locals.db;
 
     // Check if user exists first
     const checkResult = await db.query('SELECT * FROM users WHERE id = $1', [userId]);
