@@ -64,27 +64,8 @@ export default function Home() {
     }
 
     // Check if user is approved before allowing access to protected views (admins are always approved)
-    if (user && user.role !== 'admin' && user.status !== 'approved') {
-      return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-          <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg text-center max-w-md mx-4">
-            <div className="text-yellow-500 text-5xl mb-4">⏳</div>
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-              Account Pending Approval
-            </h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
-              Your account is currently <span className="font-medium">{user.status}</span>.
-              Please wait for admin approval before accessing the platform.
-            </p>
-            <button
-              onClick={logout}
-              className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors"
-            >
-              Sign Out
-            </button>
-          </div>
-        </div>
-      )
+    if (user && user.role !== 'admin' && !user.isApproved) {
+      return <PendingApprovalView />
     }
 
     switch (currentView.type) {

@@ -164,7 +164,7 @@ router.get('/test-users', async (req, res) => {
     }
 
     const query = `
-      SELECT id, email, name, role, is_approved, created_at, last_active, level, total_points
+      SELECT id, email, name, role, is_approved, created_at
       FROM users 
       WHERE email LIKE '%@test.com' OR email LIKE '%@modulus.com' 
       ORDER BY role, email
@@ -190,8 +190,8 @@ router.get('/test-users', async (req, res) => {
 // Simple seed endpoint for easier access
 router.get('/seed', async (req, res) => {
   try {
-    const pool = req.app.locals.db;
-    if (!pool) {
+    const db = req.app.locals.db;
+    if (!db) {
       return res.status(500).json({ error: 'Database connection not available' });
     }
 
@@ -283,8 +283,8 @@ router.post('/init-database', async (req, res) => {
       return res.status(403).json({ error: 'Invalid access code' });
     }
 
-    const pool = req.app.locals.db;
-    if (!pool) {
+    const db = req.app.locals.db;
+    if (!db) {
       return res.status(500).json({ error: 'Database connection not available' });
     }
 
@@ -346,8 +346,8 @@ router.post('/reset-password', async (req, res) => {
       return res.status(400).json({ error: 'Email and new password are required' });
     }
 
-    const pool = req.app.locals.db;
-    if (!pool) {
+    const db = req.app.locals.db;
+    if (!db) {
       return res.status(500).json({ error: 'Database connection not available' });
     }
 
@@ -378,8 +378,8 @@ router.post('/reset-password', async (req, res) => {
 // Admin endpoint to list all users
 router.get('/list-users', async (req, res) => {
   try {
-    const pool = req.app.locals.db;
-    if (!pool) {
+    const db = req.app.locals.db;
+    if (!db) {
       return res.status(500).json({ error: 'Database connection not available' });
     }
 
@@ -808,6 +808,128 @@ router.get('/user-id-status', async (req, res) => {
     console.error('Error checking user ID status:', error);
     res.status(500).json({ 
       error: 'Failed to check user ID status', 
+      details: error.message 
+    });
+  }
+});
+
+// Admin endpoint to approve a user
+router.post('/approve-user/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    if (!userId) {
+      return res.status(400).json({ error: 'User ID is required' });
+    }
+
+    const db = req.app.locals.db;
+    if (!db) {
+      return res.status(500).json({ error: 'Database connection not available' });
+    }
+
+    // Update user approval status
+    const updateQuery = 'UPDATE users SET is_approved = true WHERE id = $1 RETURNING id, email, name, role, is_approved';
+    const result = await db.query(updateQuery, [userId]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const user = result.rows[0];
+
+    res.json({
+      message: 'User approved successfully',
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        isApproved: user.is_approved
+      }
+    });
+
+  } catch (error) {
+    console.error('Error approving user:', error);
+    res.status(500).json({ 
+      error: 'Failed to approve user', 
+      details: error.message 
+    });
+  }
+});
+
+// Admin endpoint to reject/delete a user
+router.delete('/reject-user/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    if (!userId) {
+      return res.status(400).json({ error: 'User ID is required' });
+    }
+
+    const db = req.app.locals.db;
+    if (!db) {
+      return res.status(500).json({ error: 'Database connection not available' });
+    }
+
+    // First get user info before deletion
+    const getUserQuery = 'SELECT id, email, name, role FROM users WHERE id = $1';
+    const userResult = await db.query(getUserQuery, [userId]);
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const user = userResult.rows[0];
+
+    // Delete the user
+    const deleteQuery = 'DELETE FROM users WHERE id = $1';
+    await db.query(deleteQuery, [userId]);
+
+    res.json({
+      message: 'User rejected and deleted successfully',
+      deletedUser: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role
+      }
+    });
+
+  } catch (error) {
+    console.error('Error rejecting user:', error);
+    res.status(500).json({ 
+      error: 'Failed to reject user', 
+      details: error.message 
+    });
+  }
+});
+
+// Admin endpoint to get pending users (unapproved)
+router.get('/pending-users', async (req, res) => {
+  try {
+    const db = req.app.locals.db;
+    if (!db) {
+      return res.status(500).json({ error: 'Database connection not available' });
+    }
+
+    const query = `
+      SELECT id, email, name, role, is_approved, created_at
+      FROM users 
+      WHERE is_approved = false 
+      ORDER BY created_at DESC
+    `;
+    const result = await db.query(query);
+
+    res.json({
+      message: 'Pending users retrieved successfully',
+      users: result.rows,
+      total: result.rows.length
+    });
+
+  } catch (error) {
+    console.error('Error fetching pending users:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch pending users', 
       details: error.message 
     });
   }

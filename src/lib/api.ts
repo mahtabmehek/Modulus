@@ -121,26 +121,24 @@ class ApiClient {
   }
 
   // Admin endpoints
-  async getPendingApprovals(): Promise<{ pendingApprovals: any[] }> {
-    return this.request('/auth/admin/pending-approvals')
+  async getPendingApprovals(): Promise<{ users: any[], total: number, message: string }> {
+    return this.request('/admin/pending-users')
   }
 
   async approveUser(userId: number): Promise<{ message: string; user: any }> {
-    return this.request('/auth/admin/approve-user', {
-      method: 'POST',
-      body: JSON.stringify({ userId }),
+    return this.request(`/admin/approve-user/${userId}`, {
+      method: 'POST'
     })
   }
 
-  async rejectUser(userId: number): Promise<{ message: string; user: any }> {
-    return this.request('/auth/admin/reject-user', {
-      method: 'POST',
-      body: JSON.stringify({ userId }),
+  async rejectUser(userId: number): Promise<{ message: string; deletedUser: any }> {
+    return this.request(`/admin/reject-user/${userId}`, {
+      method: 'DELETE'
     })
   }
 
-  async getAllUsers(): Promise<{ users: any[] }> {
-    return this.request('/auth/admin/users')
+  async getAllUsers(): Promise<{ users: any[], total: number }> {
+    return this.request('/admin/test-users')
   }
 
   async createUser(userData: {
