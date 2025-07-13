@@ -1,7 +1,7 @@
 // API configuration and utilities
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || (
-  process.env.NODE_ENV === 'production' 
-    ? 'https://2wd44vvcnypx57l3g32zo4dnoy0bkmwi.lambda-url.eu-west-2.on.aws/api'
+  process.env.NODE_ENV === 'production'
+    ? 'https://9yr579qaz1.execute-api.eu-west-2.amazonaws.com/prod/api'
     : 'http://localhost:3001/api'
 )
 
@@ -43,7 +43,7 @@ class ApiClient {
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`
-    
+
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       ...options.headers,

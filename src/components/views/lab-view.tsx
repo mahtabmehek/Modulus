@@ -60,7 +60,7 @@ export default function LabView() {
       <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">Lab not found</h1>
-          <button 
+          <button
             onClick={() => navigate('dashboard')}
             className="text-red-400 hover:text-red-300"
           >
@@ -138,7 +138,7 @@ export default function LabView() {
               <h3 className="text-foreground font-medium">Module Content</h3>
             )}
             <div className="flex items-center space-x-2">
-              <button 
+              <button
                 onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
                 className="text-muted-foreground hover:text-foreground transition-colors p-1"
                 title={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
@@ -146,7 +146,7 @@ export default function LabView() {
                 <ChevronRight className={`w-5 h-5 transition-transform duration-300 ${isSidebarCollapsed ? 'rotate-0' : 'rotate-180'}`} />
               </button>
               {!isSidebarCollapsed && (
-                <button 
+                <button
                   onClick={() => navigate('module', { moduleId: currentModule.id })}
                   className="text-muted-foreground hover:text-foreground transition-colors"
                   title="Close lab view"
@@ -157,16 +157,15 @@ export default function LabView() {
             </div>
           </div>
         </div>
-        
+
         <div className="flex-1 p-4">
           <div className="space-y-2">
             {/* Simple lab content navigation */}
-            <div 
-              className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'justify-between'} ${isSidebarCollapsed ? 'p-2' : 'p-3'} rounded-lg transition-colors cursor-pointer ${
-                expandedSections.content
-                  ? 'bg-red-600 text-white' 
+            <div
+              className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'justify-between'} ${isSidebarCollapsed ? 'p-2' : 'p-3'} rounded-lg transition-colors cursor-pointer ${expandedSections.content
+                  ? 'bg-red-600 text-white'
                   : 'bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground'
-              }`}
+                }`}
               onClick={() => {
                 if (isSidebarCollapsed) {
                   setIsSidebarCollapsed(false)
@@ -204,21 +203,21 @@ export default function LabView() {
         {/* Breadcrumb */}
         <div className="bg-card border-b border-border px-6 py-4">
           <div className="text-sm text-muted-foreground flex items-center space-x-2">
-            <button 
+            <button
               onClick={() => navigate('dashboard')}
               className="hover:text-foreground transition-colors"
             >
               Dashboard
             </button>
             <span>{'>'}</span>
-            <button 
+            <button
               onClick={() => navigate('path', { pathId: currentModule.pathId })}
               className="hover:text-foreground transition-colors"
             >
               Learning Path
             </button>
             <span>{'>'}</span>
-            <button 
+            <button
               onClick={() => navigate('module', { moduleId: currentModule.id })}
               className="hover:text-foreground transition-colors"
             >
@@ -240,7 +239,7 @@ export default function LabView() {
                 {currentLab.description}
               </p>
             </div>
-            
+
             <div className="flex items-center space-x-4 ml-6">
               {/* Lab Machine Controls */}
               <div className="text-center">
@@ -278,14 +277,13 @@ export default function LabView() {
             {expandedSections.content && (
               <div className="bg-card rounded-lg border border-border overflow-hidden">
                 <div className="bg-muted/50 px-6 py-4 border-b border-border cursor-pointer"
-                     onClick={() => toggleSection('content')}>
+                  onClick={() => toggleSection('content')}>
                   <div className="flex items-center justify-between">
                     <h2 className="text-xl font-semibold text-foreground flex items-center space-x-3">
                       <span>Instructions</span>
                     </h2>
-                    <ChevronUp className={`w-5 h-5 text-muted-foreground transition-transform ${
-                      expandedSections.content ? 'rotate-180' : ''
-                    }`} />
+                    <ChevronUp className={`w-5 h-5 text-muted-foreground transition-transform ${expandedSections.content ? 'rotate-180' : ''
+                      }`} />
                   </div>
                 </div>
 
@@ -303,7 +301,7 @@ export default function LabView() {
           </div>
         </div>
       </div>
-      
+
       {/* Desktop Session Modal */}
       {showDesktop && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -320,7 +318,7 @@ export default function LabView() {
               </button>
             </div>
             <div className="flex-1 min-h-0">
-              <DesktopSession 
+              <DesktopSession
                 labId={labId || ''}
                 labTitle={currentLab?.title}
                 onClose={() => setShowDesktop(false)}

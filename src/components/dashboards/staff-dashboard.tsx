@@ -15,7 +15,7 @@ export function StaffDashboard() {
     pendingApprovals: 0,
   })
   const [loading, setLoading] = useState(true)
-  
+
   useEffect(() => {
     const loadStats = async () => {
       try {
@@ -23,14 +23,14 @@ export function StaffDashboard() {
           apiClient.getAllUsers(),
           apiClient.getCourses()
         ])
-        
+
         const users = usersResponse.users || []
         const courses = coursesResponse.courses || []
-        
+
         const instructors = users.filter(u => u.role === 'instructor')
         const students = users.filter(u => u.role === 'student')
         const pending = users.filter(u => u.status === 'pending')
-        
+
         setStats({
           totalUsers: users.length,
           totalCourses: courses.length,
@@ -44,7 +44,7 @@ export function StaffDashboard() {
         setLoading(false)
       }
     }
-    
+
     loadStats()
   }, [])
 
@@ -108,7 +108,7 @@ export function StaffDashboard() {
           <div className="bg-card rounded-lg p-6 border border-border">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-foreground">Course Management</h2>
-              <button 
+              <button
                 onClick={() => navigate('course-creation')}
                 className="flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
               >
@@ -130,7 +130,7 @@ export function StaffDashboard() {
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-foreground">User Management</h2>
               <div className="flex space-x-2">
-                <button 
+                <button
                   onClick={() => navigate('user-creation')}
                   className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
                 >
@@ -153,7 +153,7 @@ export function StaffDashboard() {
         <div className="mt-8 bg-card rounded-lg p-6 border border-border">
           <h2 className="text-xl font-semibold mb-6 text-foreground">Quick Actions</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <button 
+            <button
               onClick={() => navigate('course-overview')}
               className="flex items-center space-x-3 p-4 bg-muted hover:bg-muted/80 rounded-lg transition-colors text-left"
             >
@@ -164,7 +164,7 @@ export function StaffDashboard() {
               </div>
             </button>
 
-            <button 
+            <button
               onClick={() => navigate('user-overview')}
               className="flex items-center space-x-3 p-4 bg-muted hover:bg-muted/80 rounded-lg transition-colors text-left"
             >

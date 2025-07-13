@@ -10,7 +10,7 @@ export default function ApiTestPage() {
   useEffect(() => {
     // Get the API URL that would be used
     const url = process.env.NEXT_PUBLIC_API_URL || (
-      process.env.NODE_ENV === 'production' 
+      process.env.NODE_ENV === 'production'
         ? 'https://9yr579qaz1.execute-api.eu-west-2.amazonaws.com/prod/api'
         : 'http://localhost:3001/api'
     )
@@ -40,7 +40,7 @@ export default function ApiTestPage() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="bg-white shadow rounded-lg p-6">
           <h1 className="text-2xl font-bold text-gray-900 mb-6">API Connection Test</h1>
-          
+
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700">Current API URL:</label>

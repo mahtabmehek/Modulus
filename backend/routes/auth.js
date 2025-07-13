@@ -11,7 +11,7 @@ const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h';
 // Access codes for different roles
 const ROLE_ACCESS_CODES = {
   'student': 'student2025',
-  'instructor': 'instructor2025', 
+  'instructor': 'instructor2025',
   'staff': 'staff2025',
   'admin': 'mahtabmehek1337'
 };
@@ -25,10 +25,10 @@ const updateUserIdSequence = async (db) => {
     // Get the maximum ID from users table
     const maxIdResult = await db.query('SELECT MAX(id) as max_id FROM users');
     const maxId = maxIdResult.rows[0].max_id || 0;
-    
+
     // Update the sequence to start from max_id + 1
     await db.query(`SELECT setval('users_id_seq', $1, true)`, [maxId]);
-    
+
     console.log(`Updated users_id_seq to ${maxId}`);
   } catch (error) {
     console.error('Error updating user ID sequence:', error);
@@ -39,7 +39,7 @@ const updateUserIdSequence = async (db) => {
 // Function to generate role-based user ID
 const generateRoleBasedUserId = async (role, db) => {
   let minId, maxId;
-  
+
   switch (role) {
     case 'staff':
       minId = 100;
@@ -67,16 +67,16 @@ const generateRoleBasedUserId = async (role, db) => {
     'SELECT id FROM users WHERE id >= $1 AND id <= $2 ORDER BY id',
     [minId, maxId]
   );
-  
+
   const existingIds = new Set(result.rows.map(row => row.id));
-  
+
   // Find the first available ID in the range
   for (let id = minId; id <= maxId; id++) {
     if (!existingIds.has(id)) {
       return id;
     }
   }
-  
+
   throw new Error(`No available IDs in range ${minId}-${maxId} for role ${role}`);
 };
 
@@ -141,7 +141,7 @@ router.post('/validate-access-code', [
     }
 
     // Check role-specific access codes
-    const roleForCode = Object.keys(ROLE_ACCESS_CODES).find(role => 
+    const roleForCode = Object.keys(ROLE_ACCESS_CODES).find(role =>
       ROLE_ACCESS_CODES[role] === accessCode
     );
 
@@ -183,19 +183,19 @@ router.post('/validate-access-code', [
 // Helper function to determine role from access code
 const getRoleFromAccessCode = (accessCode) => {
   // Check role-specific access codes
-  const roleForCode = Object.keys(ROLE_ACCESS_CODES).find(role => 
+  const roleForCode = Object.keys(ROLE_ACCESS_CODES).find(role =>
     ROLE_ACCESS_CODES[role] === accessCode
   );
-  
+
   if (roleForCode) {
     return roleForCode;
   }
-  
+
   // Legacy access code defaults to admin
   if (accessCode === VALID_ACCESS_CODE) {
     return 'admin';
   }
-  
+
   // Default to student for any other code
   return 'student';
 };
@@ -209,10 +209,10 @@ router.post('/register', validateRegistration, async (req, res) => {
     }
 
     const { email, password, name, role: requestedRole, accessCode } = req.body;
-    
+
     // Determine role from access code
     const roleFromAccessCode = getRoleFromAccessCode(accessCode);
-    
+
     // Validate that the requested role matches the access code
     if (requestedRole && requestedRole !== roleFromAccessCode) {
       console.log(`🚫 Role mismatch - Requested: ${requestedRole}, Access code allows: ${roleFromAccessCode}`);
@@ -222,10 +222,10 @@ router.post('/register', validateRegistration, async (req, res) => {
         message: `The access code provided is for ${roleFromAccessCode} role, but you selected ${requestedRole}. Please use the correct access code.`
       });
     }
-    
+
     const role = roleFromAccessCode;
     console.log(`🔧 Access code: ${accessCode} mapped to role: ${role}`);
-    
+
     const db = req.app.locals.db;
 
     // Check if user already exists
@@ -235,7 +235,7 @@ router.post('/register', validateRegistration, async (req, res) => {
     );
 
     if (existingUser.rows.length > 0) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'User already exists',
         errorType: 'USER_EXISTS',
         message: 'An account with this email already exists. Try logging in instead.'
@@ -253,7 +253,7 @@ router.post('/register', validateRegistration, async (req, res) => {
     // Only admin accounts are auto-approved, all others require staff approval
     const isAutoApproved = (role === 'admin');
     console.log(`🔧 User registration - Role: ${role}, Auto-approved: ${isAutoApproved}`);
-    
+
     const result = await db.query(
       `INSERT INTO users (id, email, password_hash, name, role, is_approved, created_at, last_active)
        VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
@@ -268,9 +268,9 @@ router.post('/register', validateRegistration, async (req, res) => {
 
     // Generate JWT token
     const token = jwt.sign(
-      { 
-        userId: user.id, 
-        email: user.email, 
+      {
+        userId: user.id,
+        email: user.email,
         role: user.role,
         isApproved: user.is_approved
       },
@@ -316,7 +316,7 @@ router.post('/login', validateLogin, async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      return res.status(401).json({ 
+      return res.status(401).json({
         error: 'User not found',
         errorType: 'USER_NOT_FOUND',
         message: 'No account found with this email address. Please check your email or register for a new account.'
@@ -328,7 +328,7 @@ router.post('/login', validateLogin, async (req, res) => {
     // Verify password
     const isValidPassword = await bcrypt.compare(password, user.password_hash);
     if (!isValidPassword) {
-      return res.status(401).json({ 
+      return res.status(401).json({
         error: 'Incorrect password',
         errorType: 'INVALID_PASSWORD',
         message: 'The password you entered is incorrect. Please try again.'
@@ -338,12 +338,12 @@ router.post('/login', validateLogin, async (req, res) => {
     // Check if user is approved (only admins are auto-approved, all others need approval)
     if (user.role !== 'admin' && !user.is_approved) {
       console.log(`🚫 Login blocked - ${user.role} user ${user.email} not approved`);
-      return res.status(403).json({ 
+      return res.status(403).json({
         error: 'Account pending approval',
         message: `Your ${user.role} account is pending approval from staff or administrator`
       });
     }
-    
+
     console.log(`✅ Login successful - ${user.role} user ${user.email}`);
 
     // Update last active
@@ -354,9 +354,9 @@ router.post('/login', validateLogin, async (req, res) => {
 
     // Generate JWT token
     const token = jwt.sign(
-      { 
-        userId: user.id, 
-        email: user.email, 
+      {
+        userId: user.id,
+        email: user.email,
         role: user.role,
         isApproved: user.is_approved
       },
@@ -547,7 +547,7 @@ router.post('/create-test-users', async (req, res) => {
           'SELECT id, email, name, role FROM users WHERE email = $1',
           [testUser.email]
         );
-        
+
         createdUsers.push({
           ...userInfo.rows[0],
           password: testUser.password, // Return plain password for testing
@@ -579,7 +579,7 @@ const requireAdmin = (req, res, next) => {
 router.get('/admin/pending-approvals', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const db = req.app.locals.db;
-    
+
     const result = await db.query(
       `SELECT id, email, name, role, created_at 
        FROM users 
@@ -608,7 +608,7 @@ router.post('/admin/approve-user', authenticateToken, requireAdmin, async (req, 
   try {
     const { userId } = req.body;
     const db = req.app.locals.db;
-    
+
     const result = await db.query(
       `UPDATE users 
        SET is_approved = true 
@@ -637,7 +637,7 @@ router.post('/admin/reject-user', authenticateToken, requireAdmin, async (req, r
   try {
     const { userId } = req.body;
     const database = req.app.locals.db;
-    
+
     const deleteResult = await database.query(
       `DELETE FROM users 
        WHERE id = $1 AND is_approved = false
@@ -664,7 +664,7 @@ router.post('/admin/reject-user', authenticateToken, requireAdmin, async (req, r
 router.get('/admin/users', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const database = req.app.locals.db;
-    
+
     const usersResult = await database.query(
       `SELECT id, email, name, role, is_approved, created_at, last_active 
        FROM users 
@@ -690,7 +690,7 @@ router.get('/admin/users', authenticateToken, requireAdmin, async (req, res) => 
 });
 
 // POST /api/auth/admin/create-user - Create a new user (admin only)
-router.post('/admin/create-user', authenticateToken, requireAdmin, 
+router.post('/admin/create-user', authenticateToken, requireAdmin,
   [
     body('email').isEmail().normalizeEmail().withMessage('Valid email required'),
     body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
@@ -760,7 +760,7 @@ router.post('/admin/disable-user', authenticateToken, requireAdmin, async (req, 
     }
 
     const db = req.app.get('db');
-    
+
     // Update user to set them as disabled
     const result = await db.query(
       'UPDATE users SET is_approved = false, updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING *',
@@ -800,7 +800,7 @@ router.post('/admin/enable-user', authenticateToken, requireAdmin, async (req, r
     }
 
     const db = req.app.get('db');
-    
+
     // Update user to set them as enabled (approved)
     const result = await db.query(
       'UPDATE users SET is_approved = true, updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING *',
@@ -840,10 +840,10 @@ router.delete('/admin/delete-user', authenticateToken, requireAdmin, async (req,
     }
 
     const db = req.app.get('db');
-    
+
     // Check if user exists first
     const checkResult = await db.query('SELECT * FROM users WHERE id = $1', [userId]);
-    
+
     if (checkResult.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }

@@ -3,13 +3,13 @@
 import { useState, useEffect } from 'react'
 import { useApp } from '@/lib/hooks/use-app'
 import { apiClient } from '@/lib/api'
-import { 
-  Users, 
-  Server, 
-  Shield, 
-  BarChart3 as Activity, 
-  Settings, 
-  AlertTriangle, 
+import {
+  Users,
+  Server,
+  Shield,
+  BarChart3 as Activity,
+  Settings,
+  AlertTriangle,
   Database,
   Cloud,
   Cpu,
@@ -51,16 +51,16 @@ export function AdminDashboard() {
   const [showCourseModal, setShowCourseModal] = useState(false)
   const [isUserTableCollapsed, setIsUserTableCollapsed] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
-  const [sortConfig, setSortConfig] = useState<{key: string, direction: 'asc' | 'desc'} | null>(null)
+  const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null)
   const [selectedUser, setSelectedUser] = useState<any>(null)
-  const [showUserActions, setShowUserActions] = useState<{[key: string]: boolean}>({})
-  
+  const [showUserActions, setShowUserActions] = useState<{ [key: string]: boolean }>({})
+
   // Pagination state
   const [approvalsPage, setApprovalsPage] = useState(1)
   const [usersPage, setUsersPage] = useState(1)
   const approvalsPerPage = 5
   const usersPerPage = 10
-  
+
   const [userFormData, setUserFormData] = useState({
     name: '',
     email: '',
@@ -110,9 +110,9 @@ export function AdminDashboard() {
       const response = await apiClient.getAllUsers()
       console.log('Admin users response:', response)
       setRealUsers(response.users || [])
-      
+
       // Filter pending approvals (non-admin users who are not approved)
-      const pending = (response.users || []).filter((user: any) => 
+      const pending = (response.users || []).filter((user: any) =>
         user.role !== 'admin' && (!user.is_approved || user.status === 'pending')
       )
       setPendingApprovals(pending)
@@ -136,11 +136,11 @@ export function AdminDashboard() {
   })
 
   // Sort users
-  const sortedUsers = sortConfig ? 
+  const sortedUsers = sortConfig ?
     [...filteredUsers].sort((a, b) => {
       const aValue = a[sortConfig.key] || ''
       const bValue = b[sortConfig.key] || ''
-      
+
       if (sortConfig.direction === 'asc') {
         return aValue.toString().localeCompare(bValue.toString())
       } else {
@@ -236,7 +236,7 @@ export function AdminDashboard() {
   const handleDisableUser = async (userId: string) => {
     // Close dropdown
     setShowUserActions({})
-    
+
     if (confirm('Are you sure you want to disable this user?')) {
       console.log('Attempting to disable user:', userId)
       try {
@@ -254,7 +254,7 @@ export function AdminDashboard() {
   const handleDeleteUser = async (userId: string) => {
     // Close dropdown
     setShowUserActions({})
-    
+
     if (confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
       console.log('Attempting to delete user:', userId)
       try {
@@ -272,7 +272,7 @@ export function AdminDashboard() {
   const handleEnableUser = async (userId: string) => {
     // Close dropdown
     setShowUserActions({})
-    
+
     if (confirm('Are you sure you want to enable this user?')) {
       try {
         console.log('Attempting to enable user:', userId)
@@ -290,14 +290,14 @@ export function AdminDashboard() {
     try {
       setLoading(true)
       console.log('Creating user:', userData)
-      
+
       const response = await apiClient.createUser({
         name: userData.name,
         email: userData.email,
         role: userData.role,
         password: 'tempPassword123!' // Default password that user should change
       })
-      
+
       setShowUserModal(false)
       await loadUsers() // Refresh the list
       alert('✅ User created successfully!')
@@ -313,7 +313,7 @@ export function AdminDashboard() {
     try {
       setLoading(true)
       console.log('Creating course:', courseData)
-      
+
       const response = await apiClient.createCourse({
         title: courseData.title,
         code: courseData.code,
@@ -323,7 +323,7 @@ export function AdminDashboard() {
         description: `${courseData.title} course`,
         duration: 12 // Default duration in weeks
       })
-      
+
       setShowCourseModal(false)
       await loadCourses() // Refresh the list
       alert('✅ Course created successfully!')
@@ -338,7 +338,7 @@ export function AdminDashboard() {
   const toggleUserActions = (userId: string) => {
     setShowUserActions(prev => {
       // Close all other dropdowns and toggle the clicked one
-      const newState: {[key: string]: boolean} = {}
+      const newState: { [key: string]: boolean } = {}
       newState[userId] = !prev[userId]
       return newState
     })
@@ -398,35 +398,35 @@ export function AdminDashboard() {
   ]
 
   const recentAlerts = [
-    { 
-      id: 1, 
-      type: 'warning', 
+    {
+      id: 1,
+      type: 'warning',
       severity: 'medium',
-      message: 'High CPU usage on worker node 3 (85%)', 
+      message: 'High CPU usage on worker node 3 (85%)',
       time: '15 mins ago',
       action: 'Scale cluster'
     },
-    { 
-      id: 2, 
-      type: 'info', 
+    {
+      id: 2,
+      type: 'info',
       severity: 'low',
-      message: 'New user registration spike detected (+15 users)', 
+      message: 'New user registration spike detected (+15 users)',
       time: '1 hour ago',
       action: 'Monitor'
     },
-    { 
-      id: 3, 
-      type: 'error', 
+    {
+      id: 3,
+      type: 'error',
       severity: 'high',
-      message: 'Failed desktop deployment on node kube-worker-2', 
+      message: 'Failed desktop deployment on node kube-worker-2',
       time: '2 hours ago',
       action: 'Investigate'
     },
-    { 
-      id: 4, 
-      type: 'warning', 
+    {
+      id: 4,
+      type: 'warning',
       severity: 'medium',
-      message: 'SSL certificate expires in 30 days', 
+      message: 'SSL certificate expires in 30 days',
       time: '3 hours ago',
       action: 'Renew'
     },
@@ -499,11 +499,10 @@ export function AdminDashboard() {
             <button
               key={key}
               onClick={() => setActiveTab(key as any)}
-              className={`flex items-center gap-2 py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === key
+              className={`flex items-center gap-2 py-2 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === key
                   ? 'border-purple-500 text-purple-600 dark:text-purple-400'
                   : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
-              }`}
+                }`}
             >
               <Icon className="w-4 h-4" />
               {label}
@@ -525,10 +524,9 @@ export function AdminDashboard() {
                 {systemHealth.map((service, index) => (
                   <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
                     <div className="flex items-center gap-3">
-                      <div className={`w-3 h-3 rounded-full ${
-                        service.status === 'healthy' ? 'bg-green-500' :
-                        service.status === 'warning' ? 'bg-yellow-500' : 'bg-red-500'
-                      }`}></div>
+                      <div className={`w-3 h-3 rounded-full ${service.status === 'healthy' ? 'bg-green-500' :
+                          service.status === 'warning' ? 'bg-yellow-500' : 'bg-red-500'
+                        }`}></div>
                       <span className="font-medium text-gray-900 dark:text-white">{service.name}</span>
                       <span className="text-xs text-gray-500 dark:text-gray-400">({service.instances} instances)</span>
                     </div>
@@ -561,7 +559,7 @@ export function AdminDashboard() {
                         <span className="text-sm text-gray-600 dark:text-gray-400">{resource.value}%</span>
                       </div>
                       <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                        <div 
+                        <div
                           className={`${resource.color} h-2 rounded-full transition-all duration-300`}
                           style={{ width: `${resource.value}%` }}
                         ></div>
@@ -637,7 +635,7 @@ export function AdminDashboard() {
                 Pending User Approvals
               </h3>
               <div className="flex gap-3">
-                <button 
+                <button
                   onClick={loadUsers}
                   disabled={loading}
                   className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg transition-colors"
@@ -670,15 +668,14 @@ export function AdminDashboard() {
                           </h4>
                           <p className="text-sm text-gray-600 dark:text-gray-400">{user.email}</p>
                           <div className="flex items-center gap-2 mt-1">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              user.role === 'instructor' 
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${user.role === 'instructor'
                                 ? 'bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-300'
                                 : user.role === 'staff'
-                                ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300'
-                                : user.role === 'student'
-                                ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300'
-                                : 'bg-gray-100 text-gray-600 dark:bg-gray-900 dark:text-gray-300'
-                            }`}>
+                                  ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300'
+                                  : user.role === 'student'
+                                    ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300'
+                                    : 'bg-gray-100 text-gray-600 dark:bg-gray-900 dark:text-gray-300'
+                              }`}>
                               {user.role}
                             </span>
                             <span className="text-xs text-gray-500 dark:text-gray-400">
@@ -761,7 +758,7 @@ export function AdminDashboard() {
                   </button>
                 </div>
                 <div className="flex gap-3">
-                  <button 
+                  <button
                     onClick={loadUsers}
                     disabled={loading}
                     className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg transition-colors"
@@ -769,14 +766,14 @@ export function AdminDashboard() {
                     <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                     Refresh
                   </button>
-                  <button 
+                  <button
                     onClick={() => setShowUserModal(true)}
                     className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
                   >
                     <UserPlus className="w-4 h-4" />
                     Add User
                   </button>
-                  <button 
+                  <button
                     onClick={exportToCSV}
                     className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
                   >
@@ -811,7 +808,7 @@ export function AdminDashboard() {
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-gray-200 dark:border-gray-700">
-                          <th 
+                          <th
                             className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white cursor-pointer hover:text-purple-600"
                             onClick={() => handleSort('name')}
                           >
@@ -822,7 +819,7 @@ export function AdminDashboard() {
                               )}
                             </div>
                           </th>
-                          <th 
+                          <th
                             className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white cursor-pointer hover:text-purple-600"
                             onClick={() => handleSort('email')}
                           >
@@ -833,7 +830,7 @@ export function AdminDashboard() {
                               )}
                             </div>
                           </th>
-                          <th 
+                          <th
                             className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white cursor-pointer hover:text-purple-600"
                             onClick={() => handleSort('role')}
                           >
@@ -857,17 +854,16 @@ export function AdminDashboard() {
                             </td>
                             <td className="py-3 px-4 text-gray-600 dark:text-gray-400">{user.email}</td>
                             <td className="py-3 px-4">
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                user.role === 'instructor' 
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${user.role === 'instructor'
                                   ? 'bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-300'
                                   : user.role === 'admin'
-                                  ? 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300'
-                                  : user.role === 'staff'
-                                  ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300'
-                                  : user.role === 'student'
-                                  ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300'
-                                  : 'bg-gray-100 text-gray-600 dark:bg-gray-900 dark:text-gray-300'
-                              }`}>
+                                    ? 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300'
+                                    : user.role === 'staff'
+                                      ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300'
+                                      : user.role === 'student'
+                                        ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300'
+                                        : 'bg-gray-100 text-gray-600 dark:bg-gray-900 dark:text-gray-300'
+                                }`}>
                                 {user.role}
                               </span>
                             </td>
@@ -875,11 +871,10 @@ export function AdminDashboard() {
                               {user.department || 'N/A'}
                             </td>
                             <td className="py-3 px-4">
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                user.is_approved === false 
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${user.is_approved === false
                                   ? 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300'
                                   : 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300'
-                              }`}>
+                                }`}>
                                 {user.is_approved === false ? 'Disabled' : 'Active'}
                               </span>
                             </td>
@@ -1075,11 +1070,10 @@ export function AdminDashboard() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      alert.severity === 'high' ? 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300' :
-                      alert.severity === 'medium' ? 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900 dark:text-yellow-300' :
-                      'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300'
-                    }`}>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${alert.severity === 'high' ? 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300' :
+                        alert.severity === 'medium' ? 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900 dark:text-yellow-300' :
+                          'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300'
+                      }`}>
                       {alert.severity}
                     </span>
                     <button className="text-sm text-purple-600 hover:text-purple-700 dark:text-purple-400 px-3 py-1 rounded border border-purple-200 dark:border-purple-800">
@@ -1101,7 +1095,7 @@ export function AdminDashboard() {
                 Lab Management
               </h3>
               <div className="flex gap-3">
-                <button 
+                <button
                   onClick={loadLabs}
                   disabled={loading}
                   className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg transition-colors"
@@ -1131,17 +1125,16 @@ export function AdminDashboard() {
                   <div key={lab.id} className="bg-gray-50 dark:bg-gray-900 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
                     <div className="flex items-center justify-between mb-4">
                       <h4 className="font-semibold text-gray-900 dark:text-white">{lab.name}</h4>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        lab.status === 'active' 
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${lab.status === 'active'
                           ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300'
                           : lab.status === 'draft'
-                          ? 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900 dark:text-yellow-300'
-                          : 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300'
-                      }`}>
+                            ? 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900 dark:text-yellow-300'
+                            : 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300'
+                        }`}>
                         {lab.status}
                       </span>
                     </div>
-                    
+
                     <div className="space-y-2 mb-4">
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600 dark:text-gray-400">Type:</span>
@@ -1203,7 +1196,7 @@ export function AdminDashboard() {
                 Course Management
               </h3>
               <div className="flex gap-3">
-                <button 
+                <button
                   onClick={loadCourses}
                   disabled={loading}
                   className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg transition-colors"
@@ -1211,7 +1204,7 @@ export function AdminDashboard() {
                   <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                   Refresh
                 </button>
-                <button 
+                <button
                   onClick={() => setShowCourseModal(true)}
                   className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
                 >
@@ -1258,13 +1251,12 @@ export function AdminDashboard() {
                         <td className="py-3 px-4 text-gray-900 dark:text-white font-mono">{course.code}</td>
                         <td className="py-3 px-4 text-gray-600 dark:text-gray-400">{course.department}</td>
                         <td className="py-3 px-4">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            course.academicLevel === 'Bachelor' 
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${course.academicLevel === 'Bachelor'
                               ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300'
                               : course.academicLevel === 'Master'
-                              ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300'
-                              : 'bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-300'
-                          }`}>
+                                ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300'
+                                : 'bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-300'
+                            }`}>
                             {course.academicLevel}
                           </span>
                         </td>
@@ -1317,7 +1309,7 @@ export function AdminDashboard() {
                 <input
                   type="text"
                   value={userFormData.name}
-                  onChange={(e) => setUserFormData({...userFormData, name: e.target.value})}
+                  onChange={(e) => setUserFormData({ ...userFormData, name: e.target.value })}
                   className="block w-full border-gray-300 dark:border-gray-700 rounded-lg shadow-sm focus:ring-purple-500 focus:border-purple-500"
                   placeholder="Enter full name"
                 />
@@ -1329,7 +1321,7 @@ export function AdminDashboard() {
                 <input
                   type="email"
                   value={userFormData.email}
-                  onChange={(e) => setUserFormData({...userFormData, email: e.target.value})}
+                  onChange={(e) => setUserFormData({ ...userFormData, email: e.target.value })}
                   className="block w-full border-gray-300 dark:border-gray-700 rounded-lg shadow-sm focus:ring-purple-500 focus:border-purple-500"
                   placeholder="Enter email address"
                 />
@@ -1338,9 +1330,9 @@ export function AdminDashboard() {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Role
                 </label>
-                <select 
+                <select
                   value={userFormData.role}
-                  onChange={(e) => setUserFormData({...userFormData, role: e.target.value})}
+                  onChange={(e) => setUserFormData({ ...userFormData, role: e.target.value })}
                   className="block w-full border-gray-300 dark:border-gray-700 rounded-lg shadow-sm focus:ring-purple-500 focus:border-purple-500"
                 >
                   <option value="student">Student</option>
@@ -1389,7 +1381,7 @@ export function AdminDashboard() {
                 <input
                   type="text"
                   value={courseFormData.title}
-                  onChange={(e) => setCourseFormData({...courseFormData, title: e.target.value})}
+                  onChange={(e) => setCourseFormData({ ...courseFormData, title: e.target.value })}
                   className="block w-full border-gray-300 dark:border-gray-700 rounded-lg shadow-sm focus:ring-purple-500 focus:border-purple-500"
                   placeholder="Enter course title"
                 />
@@ -1401,7 +1393,7 @@ export function AdminDashboard() {
                 <input
                   type="text"
                   value={courseFormData.code}
-                  onChange={(e) => setCourseFormData({...courseFormData, code: e.target.value})}
+                  onChange={(e) => setCourseFormData({ ...courseFormData, code: e.target.value })}
                   className="block w-full border-gray-300 dark:border-gray-700 rounded-lg shadow-sm focus:ring-purple-500 focus:border-purple-500"
                   placeholder="Enter course code"
                 />
@@ -1413,7 +1405,7 @@ export function AdminDashboard() {
                 <input
                   type="text"
                   value={courseFormData.department}
-                  onChange={(e) => setCourseFormData({...courseFormData, department: e.target.value})}
+                  onChange={(e) => setCourseFormData({ ...courseFormData, department: e.target.value })}
                   className="block w-full border-gray-300 dark:border-gray-700 rounded-lg shadow-sm focus:ring-purple-500 focus:border-purple-500"
                   placeholder="Enter department name"
                 />
@@ -1422,9 +1414,9 @@ export function AdminDashboard() {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Level
                 </label>
-                <select 
+                <select
                   value={courseFormData.academicLevel}
-                  onChange={(e) => setCourseFormData({...courseFormData, academicLevel: e.target.value})}
+                  onChange={(e) => setCourseFormData({ ...courseFormData, academicLevel: e.target.value })}
                   className="block w-full border-gray-300 dark:border-gray-700 rounded-lg shadow-sm focus:ring-purple-500 focus:border-purple-500"
                 >
                   <option value="bachelor">Bachelor</option>
@@ -1439,7 +1431,7 @@ export function AdminDashboard() {
                 <input
                   type="number"
                   value={courseFormData.totalCredits}
-                  onChange={(e) => setCourseFormData({...courseFormData, totalCredits: parseInt(e.target.value) || 0})}
+                  onChange={(e) => setCourseFormData({ ...courseFormData, totalCredits: parseInt(e.target.value) || 0 })}
                   className="block w-full border-gray-300 dark:border-gray-700 rounded-lg shadow-sm focus:ring-purple-500 focus:border-purple-500"
                   placeholder="Enter total credits"
                 />
@@ -1484,7 +1476,7 @@ export function AdminDashboard() {
                 <input
                   type="text"
                   value={selectedUser.name}
-                  onChange={(e) => setSelectedUser({...selectedUser, name: e.target.value})}
+                  onChange={(e) => setSelectedUser({ ...selectedUser, name: e.target.value })}
                   className="block w-full border-gray-300 dark:border-gray-700 rounded-lg shadow-sm focus:ring-purple-500 focus:border-purple-500"
                   placeholder="Enter full name"
                 />
@@ -1496,7 +1488,7 @@ export function AdminDashboard() {
                 <input
                   type="email"
                   value={selectedUser.email}
-                  onChange={(e) => setSelectedUser({...selectedUser, email: e.target.value})}
+                  onChange={(e) => setSelectedUser({ ...selectedUser, email: e.target.value })}
                   className="block w-full border-gray-300 dark:border-gray-700 rounded-lg shadow-sm focus:ring-purple-500 focus:border-purple-500"
                   placeholder="Enter email address"
                 />
@@ -1505,9 +1497,9 @@ export function AdminDashboard() {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Role
                 </label>
-                <select 
+                <select
                   value={selectedUser.role}
-                  onChange={(e) => setSelectedUser({...selectedUser, role: e.target.value})}
+                  onChange={(e) => setSelectedUser({ ...selectedUser, role: e.target.value })}
                   className="block w-full border-gray-300 dark:border-gray-700 rounded-lg shadow-sm focus:ring-purple-500 focus:border-purple-500"
                 >
                   <option value="student">Student</option>
@@ -1520,9 +1512,9 @@ export function AdminDashboard() {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Status
                 </label>
-                <select 
+                <select
                   value={selectedUser.status || 'active'}
-                  onChange={(e) => setSelectedUser({...selectedUser, status: e.target.value})}
+                  onChange={(e) => setSelectedUser({ ...selectedUser, status: e.target.value })}
                   className="block w-full border-gray-300 dark:border-gray-700 rounded-lg shadow-sm focus:ring-purple-500 focus:border-purple-500"
                 >
                   <option value="active">Active</option>

@@ -4,14 +4,14 @@ import { useState } from 'react'
 import Image from 'next/image'
 import { useApp } from '@/lib/hooks/use-app'
 import { apiClient } from '@/lib/api'
-import { 
-  ArrowLeft, 
-  Save, 
-  Plus, 
-  Trash2, 
-  Monitor, 
-  Flag, 
-  FileText, 
+import {
+  ArrowLeft,
+  Save,
+  Plus,
+  Trash2,
+  Monitor,
+  Flag,
+  FileText,
   Upload,
   Eye,
   EyeOff,
@@ -45,7 +45,7 @@ interface Question {
 
 export default function LabCreationView() {
   const { navigate } = useApp()
-  
+
   const [labData, setLabData] = useState({
     title: '',
     description: '',
@@ -102,7 +102,7 @@ export default function LabCreationView() {
   }
 
   const updateTask = (taskId: string, updates: Partial<Task>) => {
-    setTasks(tasks.map(task => 
+    setTasks(tasks.map(task =>
       task.id === taskId ? { ...task, ...updates } : task
     ))
   }
@@ -123,95 +123,95 @@ export default function LabCreationView() {
       attachments: [],
       hints: []
     }
-    
-    setTasks(tasks.map(task => 
-      task.id === taskId 
+
+    setTasks(tasks.map(task =>
+      task.id === taskId
         ? { ...task, questions: [...task.questions, newQuestion] }
         : task
     ))
   }
 
   const updateQuestion = (taskId: string, questionId: string, updates: Partial<Question>) => {
-    setTasks(tasks.map(task => 
-      task.id === taskId 
+    setTasks(tasks.map(task =>
+      task.id === taskId
         ? {
-            ...task,
-            questions: task.questions.map(q => 
-              q.id === questionId ? { ...q, ...updates } : q
-            )
-          }
+          ...task,
+          questions: task.questions.map(q =>
+            q.id === questionId ? { ...q, ...updates } : q
+          )
+        }
         : task
     ))
   }
 
   const handleImageUpload = (taskId: string, questionId: string, files: FileList | null) => {
     if (!files) return
-    
+
     // Simulate file upload - in real app, upload to cloud storage
     const imageUrls = Array.from(files).map(file => URL.createObjectURL(file))
-    
-    setTasks(tasks.map(task => 
-      task.id === taskId 
+
+    setTasks(tasks.map(task =>
+      task.id === taskId
         ? {
-            ...task,
-            questions: task.questions.map(q => 
-              q.id === questionId 
-                ? { ...q, images: [...(q.images || []), ...imageUrls] }
-                : q
-            )
-          }
+          ...task,
+          questions: task.questions.map(q =>
+            q.id === questionId
+              ? { ...q, images: [...(q.images || []), ...imageUrls] }
+              : q
+          )
+        }
         : task
     ))
   }
 
   const handleAttachmentUpload = (taskId: string, questionId: string, files: FileList | null) => {
     if (!files) return
-    
+
     // Simulate file upload - in real app, upload to cloud storage
     const attachmentUrls = Array.from(files).map(file => ({
       name: file.name,
       url: URL.createObjectURL(file),
       size: file.size
     }))
-    
-    setTasks(tasks.map(task => 
-      task.id === taskId 
+
+    setTasks(tasks.map(task =>
+      task.id === taskId
         ? {
-            ...task,
-            questions: task.questions.map(q => 
-              q.id === questionId 
-                ? { ...q, attachments: [...(q.attachments || []), ...attachmentUrls.map(a => a.url)] }
-                : q
-            )
-          }
+          ...task,
+          questions: task.questions.map(q =>
+            q.id === questionId
+              ? { ...q, attachments: [...(q.attachments || []), ...attachmentUrls.map(a => a.url)] }
+              : q
+          )
+        }
         : task
     ))
   }
 
   const addMultipleChoiceOption = (taskId: string, questionId: string) => {
-    setTasks(tasks.map(task => 
-      task.id === taskId 
+    setTasks(tasks.map(task =>
+      task.id === taskId
         ? {
-            ...task,
-            questions: task.questions.map(q => 
-              q.id === questionId 
-                ? { 
-                    ...q, 
-                    multipleChoiceOptions: [
-                      ...(q.multipleChoiceOptions || []),
-                      { option: '', isCorrect: false }
-                    ]
-                  }
-                : q
-            )
-          }
+          ...task,
+          questions: task.questions.map(q =>
+            q.id === questionId
+              ? {
+                ...q,
+                multipleChoiceOptions: [
+                  ...(q.multipleChoiceOptions || []),
+                  { option: '', isCorrect: false }
+                ]
+              }
+              : q
+          )
+        }
         : task
     ))
   }
 
   const deleteQuestion = (taskId: string, questionId: string) => {
-    setTasks(tasks.map(task => 
-      task.id === taskId 
+    setTasks(tasks.map(task =>
+      task.id === taskId
         ? { ...task, questions: task.questions.filter(q => q.id !== questionId) }
         : task
     ))
@@ -219,7 +219,7 @@ export default function LabCreationView() {
 
   const handleSave = async () => {
     setIsSaving(true)
-    
+
     try {
       // Create the lab using the API
       const response = await apiClient.createLab({
@@ -231,7 +231,7 @@ export default function LabCreationView() {
         difficulty: labData.difficulty,
         module_id: 1 // Default module ID - should be selected by user
       })
-      
+
       console.log('Lab created:', response)
       alert('✅ Lab created successfully!')
       navigate('dashboard')
@@ -386,7 +386,7 @@ export default function LabCreationView() {
 
   const courses = [
     'BSc Computer Science Year 1',
-    'BSc Computer Science Year 2', 
+    'BSc Computer Science Year 2',
     'BSc Computer Science Year 3',
     'MSc Computer Science',
     'BSc Engineering Year 1',
@@ -433,7 +433,7 @@ export default function LabCreationView() {
                 Create New Lab
               </h1>
             </div>
-            
+
             <div className="flex items-center space-x-3">
               <button
                 onClick={() => setShowPreview(!showPreview)}
@@ -442,7 +442,7 @@ export default function LabCreationView() {
                 {showPreview ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
                 {showPreview ? 'Hide Preview' : 'Preview'}
               </button>
-              
+
               <button
                 onClick={handleSave}
                 disabled={isSaving || !labData.title.trim()}
@@ -469,115 +469,115 @@ export default function LabCreationView() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Form */}
           <div className="lg:col-span-2 space-y-8">
-          {/* Academic Organization */}
-          <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
-              Academic Organization
-            </h2>
-            
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Academic Organization */}
+            <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
+                Academic Organization
+              </h2>
+
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Academic Field *
+                    </label>
+                    <select
+                      value={labData.academicCategory}
+                      onChange={(e) => setLabData({
+                        ...labData,
+                        academicCategory: e.target.value,
+                        category: getSubcategories(e.target.value)[0] || ''
+                      })}
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    >
+                      {academicCategories.map(cat => (
+                        <option key={cat} value={cat}>
+                          {cat.split('-').map(word =>
+                            word.charAt(0).toUpperCase() + word.slice(1)
+                          ).join(' ')}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Course *
+                    </label>
+                    <select
+                      value={labData.course}
+                      onChange={(e) => setLabData({ ...labData, course: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    >
+                      <option value="">Select Course</option>
+                      {courses.filter(course =>
+                        course.toLowerCase().includes(labData.academicCategory) ||
+                        (labData.academicCategory === 'computing' && course.includes('Computer Science')) ||
+                        (labData.academicCategory === 'medicine' && course.includes('MBBS')) ||
+                        (labData.academicCategory === 'business' && (course.includes('Business') || course.includes('MBA')))
+                      ).map(course => (
+                        <option key={course} value={course}>{course}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Module
+                    </label>
+                    <input
+                      type="text"
+                      value={labData.module}
+                      onChange={(e) => setLabData({ ...labData, module: e.target.value })}
+                      placeholder="e.g., Module 3: Data Structures"
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Lab Type *
+                    </label>
+                    <select
+                      value={labData.labType}
+                      onChange={(e) => setLabData({ ...labData, labType: e.target.value as 'mandatory' | 'challenge' })}
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    >
+                      <option value="mandatory">Mandatory</option>
+                      <option value="challenge">Challenge</option>
+                    </select>
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Academic Field *
+                    Subject Area
                   </label>
                   <select
-                    value={labData.academicCategory}
-                    onChange={(e) => setLabData({ 
-                      ...labData, 
-                      academicCategory: e.target.value,
-                      category: getSubcategories(e.target.value)[0] || ''
-                    })}
+                    value={labData.category}
+                    onChange={(e) => setLabData({ ...labData, category: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   >
-                    {academicCategories.map(cat => (
+                    {categories.map(cat => (
                       <option key={cat} value={cat}>
-                        {cat.split('-').map(word => 
+                        {cat.split('-').map(word =>
                           word.charAt(0).toUpperCase() + word.slice(1)
                         ).join(' ')}
                       </option>
                     ))}
                   </select>
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Course *
-                  </label>
-                  <select
-                    value={labData.course}
-                    onChange={(e) => setLabData({ ...labData, course: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  >
-                    <option value="">Select Course</option>
-                    {courses.filter(course => 
-                      course.toLowerCase().includes(labData.academicCategory) ||
-                      (labData.academicCategory === 'computing' && course.includes('Computer Science')) ||
-                      (labData.academicCategory === 'medicine' && course.includes('MBBS')) ||
-                      (labData.academicCategory === 'business' && (course.includes('Business') || course.includes('MBA')))
-                    ).map(course => (
-                      <option key={course} value={course}>{course}</option>
-                    ))}
-                  </select>
-                </div>
               </div>
+            </section>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Module
-                  </label>
-                  <input
-                    type="text"
-                    value={labData.module}
-                    onChange={(e) => setLabData({ ...labData, module: e.target.value })}
-                    placeholder="e.g., Module 3: Data Structures"
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Lab Type *
-                  </label>
-                  <select
-                    value={labData.labType}
-                    onChange={(e) => setLabData({ ...labData, labType: e.target.value as 'mandatory' | 'challenge' })}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  >
-                    <option value="mandatory">Mandatory</option>
-                    <option value="challenge">Challenge</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Subject Area
-                </label>
-                <select
-                  value={labData.category}
-                  onChange={(e) => setLabData({ ...labData, category: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                >
-                  {categories.map(cat => (
-                    <option key={cat} value={cat}>
-                      {cat.split('-').map(word => 
-                        word.charAt(0).toUpperCase() + word.slice(1)
-                      ).join(' ')}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </section>
-
-          {/* Lab Basic Information */}
+            {/* Lab Basic Information */}
             <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
                 Basic Information
               </h2>
-              
+
               <div className="space-y-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -644,7 +644,7 @@ export default function LabCreationView() {
                 <Monitor className="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400" />
                 Virtual Machine Configuration
               </h2>
-              
+
               <div className="space-y-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -867,7 +867,7 @@ export default function LabCreationView() {
                                   </div>
                                 )}
                               </div>
-                              
+
                               <div>
                                 <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
                                   Attachments
@@ -961,18 +961,17 @@ export default function LabCreationView() {
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600 dark:text-gray-400">Field:</span>
                   <span className="text-sm font-medium text-gray-900 dark:text-white">
-                    {labData.academicCategory.split('-').map(word => 
+                    {labData.academicCategory.split('-').map(word =>
                       word.charAt(0).toUpperCase() + word.slice(1)
                     ).join(' ')}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600 dark:text-gray-400">Type:</span>
-                  <span className={`text-sm font-medium ${
-                    labData.labType === 'mandatory' 
-                      ? 'text-blue-600 dark:text-blue-400' 
+                  <span className={`text-sm font-medium ${labData.labType === 'mandatory'
+                      ? 'text-blue-600 dark:text-blue-400'
                       : 'text-purple-600 dark:text-purple-400'
-                  }`}>
+                    }`}>
                     {labData.labType.charAt(0).toUpperCase() + labData.labType.slice(1)}
                   </span>
                 </div>
@@ -989,7 +988,7 @@ export default function LabCreationView() {
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600 dark:text-gray-400">Total Points:</span>
                   <span className="text-sm font-medium text-gray-900 dark:text-white">
-                    {tasks.reduce((total, task) => 
+                    {tasks.reduce((total, task) =>
                       total + task.questions.reduce((taskTotal, question) => taskTotal + question.points, 0), 0
                     )}
                   </span>

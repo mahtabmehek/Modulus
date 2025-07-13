@@ -9,7 +9,7 @@ export function ModuleView() {
   const { navigate, currentView } = useApp()
   const [currentModule, setCurrentModule] = useState<any>(null)
   const [loading, setLoading] = useState(true)
-  
+
   // Get moduleId from either the direct property or params
   const moduleId = currentView.params?.moduleId
 
@@ -45,7 +45,7 @@ export function ModuleView() {
       }
       setLoading(false)
     }
-    
+
     loadModuleData()
   }, [moduleId])
 
@@ -59,13 +59,13 @@ export function ModuleView() {
       </div>
     )
   }
-  
+
   if (!currentModule) {
     return (
       <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">Module not found</h1>
-          <button 
+          <button
             onClick={() => navigate('dashboard')}
             className="text-red-400 hover:text-red-300"
           >
@@ -81,14 +81,14 @@ export function ModuleView() {
       <div className="max-w-6xl mx-auto p-6">
         {/* Breadcrumb */}
         <div className="flex items-center space-x-2 text-muted-foreground mb-6">
-          <button 
+          <button
             onClick={() => navigate('dashboard')}
             className="hover:text-foreground transition-colors"
           >
             Dashboard
           </button>
           <span>&gt;</span>
-          <button 
+          <button
             onClick={() => navigate('dashboard')}
             className="hover:text-foreground transition-colors"
           >
@@ -109,7 +109,7 @@ export function ModuleView() {
         {/* Labs Section */}
         <div>
           <h2 className="text-xl font-semibold mb-6">Labs in this Module</h2>
-          
+
           <div className="bg-card rounded-lg p-6 border border-border text-center">
             <p className="text-muted-foreground">Labs will be loaded here from the API.</p>
             <p className="text-sm text-muted-foreground mt-2">

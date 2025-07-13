@@ -49,7 +49,7 @@ export default function Home() {
     if (currentView.type === 'login') {
       return <LoginView />
     }
-    
+
     if (currentView.type === 'register') {
       return <RegisterView />
     }
@@ -73,10 +73,10 @@ export default function Home() {
               Account Pending Approval
             </h2>
             <p className="text-gray-600 dark:text-gray-400 mb-4">
-              Your account is currently <span className="font-medium">{user.status}</span>. 
+              Your account is currently <span className="font-medium">{user.status}</span>.
               Please wait for admin approval before accessing the platform.
             </p>
-            <button 
+            <button
               onClick={logout}
               className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors"
             >

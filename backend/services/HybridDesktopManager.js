@@ -12,7 +12,7 @@ class HybridDesktopManager {
     this.vncPortCounter = 5902; // Start from 5902 for VNC
     this.maxContainersPerInstance = 25;
     this.s3Bucket = process.env.USER_DATA_BUCKET || 'modulus-user-data';
-    
+
     // Cleanup interval - check for idle sessions every 30 minutes
     setInterval(() => this.cleanupIdleSessions(), 30 * 60 * 1000);
   }
@@ -36,7 +36,7 @@ class HybridDesktopManager {
       // Get available ports
       const vncPort = this.getNextVNCPort();
       const webPort = this.getNextWebPort();
-      
+
       // Create container with hybrid storage
       const container = await this.docker.createContainer({
         Image: 'modulus-kali-hybrid:latest',
@@ -94,12 +94,12 @@ class HybridDesktopManager {
       };
 
       this.activeSessions.set(userId, sessionData);
-      
+
       // Set auto-cleanup timer (2 hours of inactivity)
       this.setSessionTimeout(userId, 2 * 60 * 60 * 1000);
 
       const publicIP = await this.getPublicIP();
-      
+
       return {
         sessionId: container.id,
         vncUrl: `vnc://${publicIP}:${vncPort}`,
@@ -124,13 +124,13 @@ class HybridDesktopManager {
 
     try {
       console.log(`Terminating session for user ${userId}`);
-      
+
       const container = this.docker.getContainer(session.containerId);
-      
+
       // Send SIGTERM to trigger backup script
       try {
         await container.kill({ signal: 'SIGTERM' });
-        
+
         // Give backup time to complete (30 seconds)
         await new Promise(resolve => setTimeout(resolve, 30000));
       } catch (killError) {
@@ -157,8 +157,8 @@ class HybridDesktopManager {
 
       console.log(`Session terminated for user ${userId}`);
 
-      return { 
-        status: 'terminated', 
+      return {
+        status: 'terminated',
         dataPersisted: true,
         persistenceType: 'hybrid'
       };
@@ -194,14 +194,14 @@ class HybridDesktopManager {
   async getSystemStatus() {
     try {
       const containers = await this.docker.listContainers();
-      const kaliContainers = containers.filter(c => 
+      const kaliContainers = containers.filter(c =>
         c.Labels && c.Labels['modulus.type'] === 'desktop-session'
       );
 
       // Get system resources
       const { stdout: memInfo } = await exec('free -m');
       const { stdout: cpuInfo } = await exec("top -bn1 | grep 'Cpu(s)' | awk '{print $2}' | cut -d'%' -f1");
-      
+
       return {
         activeContainers: kaliContainers.length,
         totalContainers: containers.length,
@@ -226,7 +226,7 @@ class HybridDesktopManager {
     }
 
     const isRunning = await this.isContainerRunning(session.containerId);
-    
+
     return {
       hasSession: true,
       isRunning,
@@ -296,9 +296,9 @@ class HybridDesktopManager {
         });
 
         const logContent = logs.toString();
-        if (logContent.includes('Container ready for user') || 
-            logContent.includes('VNC server started') ||
-            logContent.includes('noVNC started')) {
+        if (logContent.includes('Container ready for user') ||
+          logContent.includes('VNC server started') ||
+          logContent.includes('noVNC started')) {
           console.log(`Container ${containerId} is ready`);
           return true;
         }
@@ -365,7 +365,7 @@ class HybridDesktopManager {
 
   async cleanupIdleSessions() {
     console.log('Running idle session cleanup...');
-    
+
     for (const [userId, session] of this.activeSessions.entries()) {
       const idleTime = Date.now() - session.lastAccessed;
       const maxIdleTime = 2 * 60 * 60 * 1000; // 2 hours
@@ -393,7 +393,7 @@ class HybridDesktopManager {
 
   getAWSCredentialMounts() {
     const mounts = [];
-    
+
     // Try to mount AWS credentials if they exist
     try {
       const fs = require('fs');

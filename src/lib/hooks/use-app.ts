@@ -9,20 +9,20 @@ interface AppStore {
   // User state
   user: User | null
   isAuthenticated: boolean
-  
+
   // View state
   currentView: ViewState
-  
+
   // Progress tracking
   userProgress: UserProgress[]
-  
+
   // Desktop sessions
   desktopSessions: DesktopSession[]
-  
+
   // Lab sessions
   labSessions: LabSession[]
   currentLabSession: LabSession | null
-  
+
   // Actions
   setUser: (user: User | null) => void
   logout: () => void
@@ -35,7 +35,7 @@ interface AppStore {
   initializeFromUrl: () => void
   initialize: () => void // Add initialization function
   checkSession: () => Promise<boolean> // Add session check function
-  
+
   // Lab session actions
   startLabSession: (labId: string) => Promise<LabSession>
   extendLabSession: (sessionId: string) => boolean
@@ -65,7 +65,7 @@ export const useAppStore = create<AppStore>()(
           set({ currentView: { type: 'login' } })
         }
       },
-      
+
       logout: () => {
         set({ user: null, isAuthenticated: false, currentView: { type: 'login' } })
         if (typeof window !== 'undefined') {
@@ -80,10 +80,10 @@ export const useAppStore = create<AppStore>()(
           window.history.pushState({ view: { type: 'login' } }, '', url.toString())
         }
       },
-        login: async (email: string, password: string) => {
+      login: async (email: string, password: string) => {
         try {
           console.log('Attempting login with:', { email })
-          
+
           const response = await apiClient.login({ email, password })
           console.log('Login successful:', response)
 
@@ -100,7 +100,7 @@ export const useAppStore = create<AppStore>()(
 
           // Set token in API client
           apiClient.setToken(response.token)
-          
+
           // Set user and redirect to dashboard
           set({
             user: response.user,
@@ -120,27 +120,27 @@ export const useAppStore = create<AppStore>()(
             })
             window.history.pushState({ view: { type: 'dashboard' } }, '', url.toString())
           }
-          
+
           return { success: true }
         } catch (error) {
           console.error('Login error:', error)
-          return { 
-            success: false, 
+          return {
+            success: false,
             error: error // Pass the entire error object
           }
         }
       },
-      
+
       register: async (name: string, email: string, password: string, role: string, accessCode: string) => {
         try {
           console.log('Attempting registration with:', { name, email, role })
-          
+
           const response = await apiClient.register({ name, email, password, role, accessCode })
           console.log('Registration successful:', response)
 
           // Set token in API client
           apiClient.setToken(response.token)
-          
+
           // Check if user requires approval
           if (response.user.isApproved) {
             // Auto-approved users (admins) go straight to dashboard
@@ -157,33 +157,33 @@ export const useAppStore = create<AppStore>()(
               currentView: { type: 'pending-approval' }
             })
           }
-          
+
           return { success: true }
         } catch (error) {
           console.error('Registration error:', error)
-          return { 
-            success: false, 
+          return {
+            success: false,
             error: error // Pass the entire error object
           }
         }
       },
-      
+
       navigate: (type, params = {}) => {
         const newView: ViewState = { type, params }
         set({ currentView: newView })
-        
+
         // Update browser history for proper back button behavior
         if (typeof window !== 'undefined') {
           const url = new URL(window.location.href)
           url.searchParams.set('view', type)
-          
+
           // Clear existing params first
           Array.from(url.searchParams.keys()).forEach(key => {
             if (key !== 'view') {
               url.searchParams.delete(key)
             }
           })
-          
+
           // Add any parameters to the URL
           if (params) {
             Object.entries(params).forEach(([key, value]) => {
@@ -192,27 +192,27 @@ export const useAppStore = create<AppStore>()(
               }
             })
           }
-          
+
           // Push new state to browser history
           window.history.pushState({ view: newView }, '', url.toString())
         }
       },
-      
+
       updateProgress: (progress) => {
         set((state) => ({
           userProgress: [
-            ...state.userProgress.filter(p => 
+            ...state.userProgress.filter(p =>
               !(p.userId === progress.userId && p.labId === progress.labId)
             ),
             progress
           ]
         }))
       },
-      
+
       createDesktopSession: async (labId) => {
         const { user } = get()
         if (!user) throw new Error('User not authenticated')
-        
+
         const session: DesktopSession = {
           id: `session-${Date.now()}`,
           userId: user.id,
@@ -223,40 +223,40 @@ export const useAppStore = create<AppStore>()(
           expiresAt: new Date(Date.now() + 4 * 60 * 60 * 1000), // 4 hours
           lastActive: new Date(),
         }
-        
+
         set((state) => ({
           desktopSessions: [...state.desktopSessions, session]
         }))
-        
+
         // Simulate session startup
         setTimeout(() => {
           set((state) => ({
             desktopSessions: state.desktopSessions.map(s =>
-              s.id === session.id 
+              s.id === session.id
                 ? { ...s, status: 'running' as const, vnc_port: 5900, ssh_port: 22 }
                 : s
             )
           }))
         }, 3000)
-        
+
         return session
       },
-      
+
       terminateDesktopSession: (sessionId) => {
         set((state) => ({
           desktopSessions: state.desktopSessions.filter(s => s.id !== sessionId)
         }))
       },
-      
+
       initializeFromUrl: () => {
         if (typeof window === 'undefined') return
-        
+
         const url = new URL(window.location.href)
         const viewType = url.searchParams.get('view') as ViewState['type'] || 'login'
-        
+
         // Extract parameters from URL and build the params object correctly
         const params: ViewState['params'] = {}
-        
+
         // Get specific parameters based on view type
         if (viewType === 'lab') {
           const moduleId = url.searchParams.get('moduleId')
@@ -281,7 +281,7 @@ export const useAppStore = create<AppStore>()(
             params.sessionId = sessionId
           }
         }
-        
+
         const newView: ViewState = { type: viewType, params }
         set({ currentView: newView })
       },
@@ -290,22 +290,22 @@ export const useAppStore = create<AppStore>()(
       startLabSession: async (labId: string) => {
         const { user, labSessions } = get()
         if (!user) throw new Error('User not authenticated')
-        
+
         // Clean up any expired sessions first
         get().cleanupExpiredSessions()
-        
+
         // Check if user already has an active lab session
-        const existingActiveSession = labSessions.find(s => 
+        const existingActiveSession = labSessions.find(s =>
           s.userId === user.id && s.isActive
         )
-        
+
         if (existingActiveSession) {
           throw new Error('You already have an active lab session. Please end it before starting a new one.')
         }
-        
+
         const now = new Date()
         const endTime = new Date(now.getTime() + 60 * 60 * 1000) // 1 hour from now
-        
+
         const session: LabSession = {
           id: `lab-session-${Date.now()}`,
           userId: user.id,
@@ -319,12 +319,12 @@ export const useAppStore = create<AppStore>()(
           canExtend: true,
           vmIP: `10.0.1.${Math.floor(Math.random() * 254) + 1}`,
         }
-        
+
         set((state) => ({
           labSessions: [...state.labSessions, session],
           currentLabSession: session
         }))
-        
+
         // Set up auto-close timer for inactivity (30 minutes)
         const timeoutId = setTimeout(() => {
           const currentState = get()
@@ -336,44 +336,44 @@ export const useAppStore = create<AppStore>()(
             }
           }
         }, 30 * 60 * 1000)
-        
+
         return session
       },
 
       extendLabSession: (sessionId: string) => {
         const { labSessions } = get()
         const session = labSessions.find(s => s.id === sessionId)
-        
+
         if (!session || !session.isActive || !session.canExtend) {
           return false
         }
-        
+
         const now = new Date()
         const newEndTime = new Date(session.endTime.getTime() + 30 * 60 * 1000) // Add 30 minutes
-        
+
         set((state) => ({
           labSessions: state.labSessions.map(s =>
             s.id === sessionId
               ? {
-                  ...s,
-                  endTime: newEndTime,
-                  remainingMinutes: Math.ceil((newEndTime.getTime() - now.getTime()) / (60 * 1000)),
-                  canExtend: false, // Can only extend once
-                  lastInteraction: now,
-                }
+                ...s,
+                endTime: newEndTime,
+                remainingMinutes: Math.ceil((newEndTime.getTime() - now.getTime()) / (60 * 1000)),
+                canExtend: false, // Can only extend once
+                lastInteraction: now,
+              }
               : s
           ),
           currentLabSession: state.currentLabSession?.id === sessionId
             ? {
-                ...state.currentLabSession,
-                endTime: newEndTime,
-                remainingMinutes: Math.ceil((newEndTime.getTime() - now.getTime()) / (60 * 1000)),
-                canExtend: false,
-                lastInteraction: now,
-              }
+              ...state.currentLabSession,
+              endTime: newEndTime,
+              remainingMinutes: Math.ceil((newEndTime.getTime() - now.getTime()) / (60 * 1000)),
+              canExtend: false,
+              lastInteraction: now,
+            }
             : state.currentLabSession
         }))
-        
+
         return true
       },
 
@@ -396,18 +396,18 @@ export const useAppStore = create<AppStore>()(
           labSessions: state.labSessions.map(s =>
             s.id === sessionId
               ? {
-                  ...s,
-                  lastInteraction: now,
-                  remainingMinutes: Math.ceil((s.endTime.getTime() - now.getTime()) / (60 * 1000))
-                }
+                ...s,
+                lastInteraction: now,
+                remainingMinutes: Math.ceil((s.endTime.getTime() - now.getTime()) / (60 * 1000))
+              }
               : s
           ),
           currentLabSession: state.currentLabSession?.id === sessionId
             ? {
-                ...state.currentLabSession,
-                lastInteraction: now,
-                remainingMinutes: Math.ceil((state.currentLabSession.endTime.getTime() - now.getTime()) / (60 * 1000))
-              }
+              ...state.currentLabSession,
+              lastInteraction: now,
+              remainingMinutes: Math.ceil((state.currentLabSession.endTime.getTime() - now.getTime()) / (60 * 1000))
+            }
             : state.currentLabSession
         }))
       },
@@ -415,7 +415,7 @@ export const useAppStore = create<AppStore>()(
       getCurrentLabSession: () => {
         const { user, labSessions } = get()
         if (!user) return null
-        
+
         return labSessions.find(s => s.userId === user.id && s.isActive) || null
       },
 
@@ -437,12 +437,12 @@ export const useAppStore = create<AppStore>()(
       // Initialize user state and check session validity
       initialize: () => {
         const { user, checkSession } = get()
-        
+
         // Check URL params and restore view state
         if (typeof window !== 'undefined') {
           const url = new URL(window.location.href)
           const viewParam = url.searchParams.get('view')
-          
+
           if (viewParam && user) {
             // User is logged in, restore view from URL
             switch (viewParam) {
@@ -469,14 +469,14 @@ export const useAppStore = create<AppStore>()(
             url.searchParams.set('view', 'login')
             window.history.replaceState({ view: { type: 'login' } }, '', url.toString())
           }
-          
+
           // Listen for browser back/forward navigation
           const handlePopState = (event: PopStateEvent) => {
             if (event.state?.view) {
               set({ currentView: event.state.view })
             }
           }
-          
+
           window.addEventListener('popstate', handlePopState)
           return () => window.removeEventListener('popstate', handlePopState)
         }
@@ -486,7 +486,7 @@ export const useAppStore = create<AppStore>()(
       checkSession: async () => {
         const { user } = get()
         if (!user) return false
-        
+
         try {
           const response = await apiClient.checkSession()
           if (response.valid) {

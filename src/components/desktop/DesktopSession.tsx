@@ -43,7 +43,7 @@ export function DesktopSession({ labId, labTitle = `Lab ${labId}`, onClose }: De
         const diffMins = Math.floor(diffMs / (1000 * 60))
         const hours = Math.floor(diffMins / 60)
         const minutes = diffMins % 60
-        
+
         if (hours > 0) {
           setSessionTimer(`${hours}h ${minutes}m`)
         } else {
@@ -53,7 +53,7 @@ export function DesktopSession({ labId, labTitle = `Lab ${labId}`, onClose }: De
 
       updateTimer()
       const interval = setInterval(updateTimer, 60000) // Update every minute
-      
+
       return () => clearInterval(interval)
     }
   }, [session?.createdAt])
@@ -78,7 +78,7 @@ export function DesktopSession({ labId, labTitle = `Lab ${labId}`, onClose }: De
   const createSession = async () => {
     setCreating(true)
     setError('')
-    
+
     try {
       const response = await apiClient.desktop.createSession(labId)
       if (response.success) {
@@ -97,13 +97,13 @@ export function DesktopSession({ labId, labTitle = `Lab ${labId}`, onClose }: De
 
   const terminateSession = async () => {
     if (!session) return
-    
+
     setTerminating(true)
     try {
       await apiClient.desktop.terminateSession()
       setSession(null)
       setSessionTimer('')
-      
+
       if (onClose) {
         onClose()
       }
@@ -180,14 +180,14 @@ export function DesktopSession({ labId, labTitle = `Lab ${labId}`, onClose }: De
             <h3 className="text-lg font-semibold text-red-900 mb-2">Desktop Session Error</h3>
             <p className="text-red-700 mb-4">{error}</p>
             <div className="flex space-x-3">
-              <button 
+              <button
                 onClick={createSession}
                 className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
               >
                 Try Again
               </button>
               {onClose && (
-                <button 
+                <button
                   onClick={onClose}
                   className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors"
                 >
@@ -207,12 +207,12 @@ export function DesktopSession({ labId, labTitle = `Lab ${labId}`, onClose }: De
         <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
           <Monitor className="w-10 h-10 text-blue-600" />
         </div>
-        
+
         <h3 className="text-xl font-bold text-gray-900 mb-2">Kali Linux Desktop</h3>
         <p className="text-gray-600 mb-6 max-w-md mx-auto">
           Launch a dedicated Kali Linux environment with your personal settings and files automatically restored.
         </p>
-        
+
         <div className="bg-blue-50 rounded-lg p-4 mb-6 text-sm text-left max-w-md mx-auto">
           <h4 className="font-semibold text-blue-900 mb-2 flex items-center">
             <Database className="w-4 h-4 mr-2" />
@@ -225,8 +225,8 @@ export function DesktopSession({ labId, labTitle = `Lab ${labId}`, onClose }: De
             <li>• Desktop customizations</li>
           </ul>
         </div>
-        
-        <button 
+
+        <button
           onClick={createSession}
           disabled={creating}
           className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors font-medium"
@@ -251,7 +251,7 @@ export function DesktopSession({ labId, labTitle = `Lab ${labId}`, onClose }: De
               <p className="text-sm text-gray-300">{labTitle}</p>
             </div>
           </div>
-          
+
           <div className="flex items-center space-x-4">
             {/* Session Info */}
             <div className="hidden md:flex items-center space-x-4 text-sm">
@@ -259,39 +259,39 @@ export function DesktopSession({ labId, labTitle = `Lab ${labId}`, onClose }: De
                 <Wifi className="w-4 h-4 text-green-400" />
                 <span className="text-green-400">Online</span>
               </div>
-              
+
               {sessionTimer && (
                 <div className="flex items-center space-x-1">
                   <Clock className="w-4 h-4 text-blue-400" />
                   <span className="text-blue-400">{sessionTimer}</span>
                 </div>
               )}
-              
+
               <div className="flex items-center space-x-1">
                 <Database className="w-4 h-4 text-purple-400" />
                 <span className="text-purple-400">Hybrid Storage</span>
               </div>
             </div>
-            
+
             {/* Actions */}
             <div className="flex items-center space-x-2">
-              <button 
+              <button
                 onClick={extendSession}
                 className="text-blue-400 hover:text-blue-300 text-sm px-3 py-1 rounded bg-blue-900/30 hover:bg-blue-900/50 transition-colors"
                 title="Extend Session"
               >
                 Extend
               </button>
-              
-              <button 
+
+              <button
                 onClick={openInNewTab}
                 className="text-gray-300 hover:text-white transition-colors"
                 title="Open in New Tab"
               >
                 <ExternalLink className="w-4 h-4" />
               </button>
-              
-              <button 
+
+              <button
                 onClick={terminateSession}
                 disabled={terminating}
                 className="text-red-400 hover:text-red-300 transition-colors disabled:opacity-50"
@@ -307,17 +307,17 @@ export function DesktopSession({ labId, labTitle = `Lab ${labId}`, onClose }: De
           </div>
         </div>
       </div>
-      
+
       {/* Desktop Content */}
       <div className="flex-1 bg-black">
-        <iframe 
+        <iframe
           src={session.webUrl}
           className="w-full h-full border-0"
           title="Kali Linux Desktop"
           allow="clipboard-read; clipboard-write"
         />
       </div>
-      
+
       {/* Footer */}
       <div className="bg-gray-100 px-4 py-2 text-xs text-gray-600 flex items-center justify-between">
         <div className="flex items-center space-x-4">

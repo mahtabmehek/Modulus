@@ -12,7 +12,7 @@ export function Header() {
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
   const [showAchievements, setShowAchievements] = useState(false)
-  
+
   // Refs for dropdown menus
   const userMenuRef = useRef<HTMLDivElement>(null)
   const notificationsRef = useRef<HTMLDivElement>(null)
@@ -50,7 +50,7 @@ export function Header() {
 
   // Check if user is in a lab or desktop session
   const isInLab = currentView.type === 'lab' || currentView.type === 'desktop'
-  
+
   // Get IP addresses from session data - TODO: Replace with real session data
   const currentSession = null // Placeholder until session management is implemented
   const userMachineIP = 'Local Network'
@@ -62,7 +62,7 @@ export function Header() {
         <div className="flex items-center justify-between h-16">
           {/* Left Side: Logo + Lab VM */}
           <div className="flex items-center space-x-4">
-            <div 
+            <div
               className="flex items-center cursor-pointer"
               onClick={() => navigate('dashboard')}
             >
@@ -111,11 +111,10 @@ export function Header() {
                   </div>
                   <div className="max-h-64 overflow-y-auto">
                     {achievements.map((achievement) => (
-                      <div 
+                      <div
                         key={achievement.id}
-                        className={`p-3 border-b border-gray-100 dark:border-gray-600 last:border-b-0 ${
-                          achievement.earned ? 'bg-green-50 dark:bg-green-900/20' : 'opacity-50'
-                        }`}
+                        className={`p-3 border-b border-gray-100 dark:border-gray-600 last:border-b-0 ${achievement.earned ? 'bg-green-50 dark:bg-green-900/20' : 'opacity-50'
+                          }`}
                       >
                         <div className="flex items-start space-x-3">
                           <span className="text-2xl">{achievement.icon}</span>
@@ -223,7 +222,7 @@ export function Header() {
                     <p className="font-medium text-gray-900 dark:text-white">{user?.name}</p>
                     <p className="text-sm text-gray-500 dark:text-gray-400">{user?.email}</p>
                   </div>
-                  
+
                   <div className="p-2 border-t border-gray-200 dark:border-gray-700">
                     <button
                       onClick={() => navigate('profile')}

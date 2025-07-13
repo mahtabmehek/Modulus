@@ -1,7 +1,7 @@
 // API configuration
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || (
-  process.env.NODE_ENV === 'production' 
-    ? 'https://2wd44vvcnypx57l3g32zo4dnoy0bkmwi.lambda-url.eu-west-2.on.aws/api'
+  process.env.NODE_ENV === 'production'
+    ? 'https://9yr579qaz1.execute-api.eu-west-2.amazonaws.com/prod/api'
     : 'http://localhost:3001/api'
 )
 
@@ -45,10 +45,10 @@ class LabAPI {
   }
 
   async getLabs(moduleId?: number): Promise<Lab[]> {
-    const url = moduleId 
+    const url = moduleId
       ? `${API_BASE_URL}/labs?module_id=${moduleId}`
       : `${API_BASE_URL}/labs`
-    
+
     const response = await fetch(url, {
       headers: this.getAuthHeaders()
     })
