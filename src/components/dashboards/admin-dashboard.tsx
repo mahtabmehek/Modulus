@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useApp } from '@/lib/hooks/use-app'
 import { apiClient } from '@/lib/api'
+import toast from 'react-hot-toast'
 import {
   Users,
   Server,
@@ -211,10 +212,10 @@ export function AdminDashboard() {
       const response = await apiClient.approveUser(Number(userId))
       console.log('Approve response:', response)
       await loadUsers() // Refresh the list
-      alert('✅ User approved successfully!')
+      toast.success('User approved successfully!')
     } catch (error) {
       console.error('Failed to approve user:', error)
-      alert('❌ Failed to approve user. Please try again.')
+      toast.error('Failed to approve user. Please try again.')
     }
   }
 
@@ -225,10 +226,10 @@ export function AdminDashboard() {
         const response = await apiClient.rejectUser(Number(userId))
         console.log('Reject response:', response)
         await loadUsers() // Refresh the list
-        alert('❌ User rejected successfully!')
+        toast.success('User rejected successfully!')
       } catch (error) {
         console.error('Failed to reject user:', error)
-        alert('❌ Failed to reject user. Please try again.')
+        toast.error('Failed to reject user. Please try again.')
       }
     }
   }
@@ -243,10 +244,10 @@ export function AdminDashboard() {
         const response = await apiClient.disableUser(Number(userId))
         console.log('Disable response:', response)
         await loadUsers() // Refresh the list
-        alert('✅ User disabled successfully!')
+        toast.success('User disabled successfully!')
       } catch (error) {
         console.error('Failed to disable user:', error)
-        alert('❌ Failed to disable user. Please try again.')
+        toast.error('Failed to disable user. Please try again.')
       }
     }
   }
@@ -261,10 +262,10 @@ export function AdminDashboard() {
         const response = await apiClient.deleteUser(Number(userId))
         console.log('Delete response:', response)
         await loadUsers() // Refresh list
-        alert('✅ User deleted successfully!')
+        toast.success('User deleted successfully!')
       } catch (error) {
         console.error('Failed to delete user:', error)
-        alert('❌ Failed to delete user. Please try again.')
+        toast.error('Failed to delete user. Please try again.')
       }
     }
   }
@@ -278,10 +279,10 @@ export function AdminDashboard() {
         console.log('Attempting to enable user:', userId)
         await apiClient.enableUser(Number(userId))
         await loadUsers() // Refresh the list
-        alert('✅ User enabled successfully!')
+        toast.success('User enabled successfully!')
       } catch (error) {
         console.error('Failed to enable user:', error)
-        alert('❌ Failed to enable user. Please try again.')
+        toast.error('Failed to enable user. Please try again.')
       }
     }
   }
@@ -300,10 +301,10 @@ export function AdminDashboard() {
 
       setShowUserModal(false)
       await loadUsers() // Refresh the list
-      alert('✅ User created successfully!')
+      toast.success('User created successfully!')
     } catch (error) {
       console.error('Failed to create user:', error)
-      alert('❌ Failed to create user. Please try again.')
+      toast.error('Failed to create user. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -326,10 +327,10 @@ export function AdminDashboard() {
 
       setShowCourseModal(false)
       await loadCourses() // Refresh the list
-      alert('✅ Course created successfully!')
+      toast.success('Course created successfully!')
     } catch (error) {
       console.error('Failed to create course:', error)
-      alert('❌ Failed to create course. Please try again.')
+      toast.error('Failed to create course. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -1534,12 +1535,12 @@ export function AdminDashboard() {
                     try {
                       // Here you would typically call an API to update the user
                       console.log('Updating user:', selectedUser)
-                      alert('✅ User updated successfully!')
+                      toast.success('User updated successfully!')
                       await loadUsers() // Refresh the list
                       setShowEditUserModal(false)
                     } catch (error) {
                       console.error('Failed to update user:', error)
-                      alert('❌ Failed to update user. Please try again.')
+                      toast.error('Failed to update user. Please try again.')
                     }
                   }}
                   className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"

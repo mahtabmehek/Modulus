@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useApp } from '@/lib/hooks/use-app'
 import { apiClient } from '@/lib/api'
 import { Users, BookOpen, GraduationCap, UserCheck, UserPlus, BarChart3, Settings, Plus, RefreshCw, Eye, AlertTriangle, Search, X, Edit } from 'lucide-react'
+import toast from 'react-hot-toast'
 
 export function StaffDashboard() {
   const { user, navigate } = useApp()
@@ -82,29 +83,29 @@ export function StaffDashboard() {
     
     // Validate required fields
     if (!courseFormData.title.trim()) {
-      alert('❌ Course title is required')
+      toast.error('Course title is required')
       return
     }
     if (!courseFormData.code.trim()) {
-      alert('❌ Course code is required')
+      toast.error('Course code is required')
       return
     }
     if (!courseFormData.department) {
-      alert('❌ Department is required')
+      toast.error('Department is required')
       return
     }
     if (!courseFormData.totalCredits || parseInt(courseFormData.totalCredits) < 20 || parseInt(courseFormData.totalCredits) > 360) {
-      alert('❌ Credits must be between 20 and 360')
+      toast.error('Credits must be between 20 and 360')
       return
     }
     if (!courseFormData.duration || parseInt(courseFormData.duration) < 1 || parseInt(courseFormData.duration) > 52) {
-      alert('❌ Duration must be between 1 and 52 weeks')
+      toast.error('Duration must be between 1 and 52 weeks')
       return
     }
     // Enhanced description validation
     const descriptionText = courseFormData.description.trim()
     if (descriptionText.length > 0 && descriptionText.split(' ').filter(word => word.length > 0).length < 10) {
-      alert('❌ Description must contain at least 10 words')
+      toast.error('Description must contain at least 10 words')
       return
     }
 
@@ -134,21 +135,21 @@ export function StaffDashboard() {
         description: ''
       })
       await loadCourses() // Refresh the list
-      alert(editingCourse ? '✅ Course updated successfully!' : '✅ Course created successfully!')
+      toast.success(editingCourse ? 'Course updated successfully!' : 'Course created successfully!')
     } catch (error: any) {
       console.error('Failed to create course:', error)
       
       // More specific error handling
       if (error.message && error.message.includes('400')) {
         if (error.message.includes('duplicate') || error.message.includes('exists')) {
-          alert('❌ Course code already exists. Please use a different code.')
+          toast.error('Course code already exists. Please use a different code.')
         } else if (error.message.includes('validation')) {
-          alert('❌ Validation error. Please check all required fields.')
+          toast.error('Validation error. Please check all required fields.')
         } else {
-          alert('❌ Invalid course data. Please check your input and try again.')
+          toast.error('Invalid course data. Please check your input and try again.')
         }
       } else {
-        alert('❌ Failed to create course. Please try again.')
+        toast.error('Failed to create course. Please try again.')
       }
     } finally {
       setLoading(false)
@@ -171,7 +172,7 @@ export function StaffDashboard() {
 
   const handleDeleteCourse = async () => {
     if (deleteConfirmText !== 'delete') {
-      alert('❌ Please type "delete" to confirm deletion')
+      toast.error('Please type "delete" to confirm deletion')
       return
     }
 
@@ -180,7 +181,7 @@ export function StaffDashboard() {
     setLoading(true)
     try {
       await apiClient.deleteCourse(editingCourse.id)
-      alert('✅ Course deleted successfully!')
+      toast.success('Course deleted successfully!')
       
       // Refresh courses list
       const coursesResponse = await apiClient.getCourses()
@@ -202,7 +203,7 @@ export function StaffDashboard() {
       })
     } catch (error: any) {
       console.error('Delete course error:', error)
-      alert('❌ Failed to delete course. Please try again.')
+      toast.error('Failed to delete course. Please try again.')
     } finally {
       setLoading(false)
     }

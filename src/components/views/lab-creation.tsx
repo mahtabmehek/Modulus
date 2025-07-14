@@ -18,6 +18,7 @@ import {
   AlertCircle,
   CheckCircle
 } from 'lucide-react'
+import toast from 'react-hot-toast'
 
 interface Task {
   id: string
@@ -233,11 +234,11 @@ export default function LabCreationView() {
       })
 
       console.log('Lab created:', response)
-      alert('✅ Lab created successfully!')
+      toast.success('Lab created successfully!')
       navigate('dashboard')
     } catch (error) {
       console.error('Failed to save lab:', error)
-      alert('❌ Failed to save lab. Please try again.')
+      toast.error('Failed to save lab. Please try again.')
     } finally {
       setIsSaving(false)
     }

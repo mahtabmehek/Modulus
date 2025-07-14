@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useApp } from '@/lib/hooks/use-app'
 import { ArrowLeft, Save } from 'lucide-react'
 import { apiClient } from '@/lib/api'
+import toast from 'react-hot-toast'
 
 export function CourseCreationView() {
   const { navigate } = useApp()
@@ -46,7 +47,7 @@ export function CourseCreationView() {
       console.log('Creating course:', courseData)
       const response = await apiClient.createCourse(courseData)
       console.log('Course created successfully:', response)
-      alert('Course created successfully!')
+      toast.success('Course created successfully!')
       navigate('dashboard')
     } catch (error) {
       console.error('Failed to create course:', error)

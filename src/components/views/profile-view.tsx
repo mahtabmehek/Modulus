@@ -5,6 +5,7 @@ import { useApp } from '@/lib/hooks/use-app'
 import { ArrowLeft, Save, User, Mail, Shield, Settings, Calendar, Award, Camera, Eye, EyeOff, Lock } from 'lucide-react'
 import { User as UserType, UserRole } from '@/types'
 import { getUserPermissions, canEditUserData } from '@/lib/permissions'
+import toast from 'react-hot-toast'
 
 export function ProfileView() {
   const { user: currentUser, navigate } = useApp()
@@ -138,7 +139,7 @@ export function ProfileView() {
 
   const handlePasswordReset = () => {
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      alert('Passwords do not match')
+      toast.error('Passwords do not match')
       return
     }
     // Here you would typically make an API call to change the password
