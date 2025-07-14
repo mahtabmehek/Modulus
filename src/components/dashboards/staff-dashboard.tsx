@@ -28,6 +28,8 @@ export function StaffDashboard() {
     duration: '',
     description: ''
   })
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
 
   useEffect(() => {
     const loadStats = async () => {
@@ -165,6 +167,45 @@ export function StaffDashboard() {
       description: course.description || ''
     })
     setShowCourseModal(true)
+  }
+
+  const handleDeleteCourse = async () => {
+    if (deleteConfirmText !== 'delete') {
+      alert('❌ Please type "delete" to confirm deletion')
+      return
+    }
+
+    if (!editingCourse) return
+
+    setLoading(true)
+    try {
+      await apiClient.deleteCourse(editingCourse.id)
+      alert('✅ Course deleted successfully!')
+      
+      // Refresh courses list
+      const coursesResponse = await apiClient.getCourses()
+      setCourses(coursesResponse.courses || [])
+      
+      // Close modal and reset states
+      setShowCourseModal(false)
+      setEditingCourse(null)
+      setShowDeleteConfirm(false)
+      setDeleteConfirmText('')
+      setCourseFormData({
+        title: '',
+        code: '',
+        department: '',
+        academicLevel: '',
+        totalCredits: '',
+        duration: '',
+        description: ''
+      })
+    } catch (error: any) {
+      console.error('Delete course error:', error)
+      alert('❌ Failed to delete course. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const filteredCourses = courses.filter(course =>
@@ -353,34 +394,6 @@ export function StaffDashboard() {
           </div>
         </div>
 
-        {/* Quick Actions */}
-        <div className="mt-8 bg-card rounded-lg p-6 border border-border">
-          <h2 className="text-xl font-semibold mb-6 text-foreground">Quick Actions</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <button
-              onClick={() => navigate('course-overview')}
-              className="flex items-center space-x-3 p-4 bg-muted hover:bg-muted/80 rounded-lg transition-colors text-left"
-            >
-              <GraduationCap className="w-6 h-6 text-green-500" />
-              <div>
-                <h3 className="font-medium text-foreground">Course Overview</h3>
-                <p className="text-sm text-muted-foreground">View all courses and programs</p>
-              </div>
-            </button>
-
-            <button
-              onClick={() => navigate('user-overview')}
-              className="flex items-center space-x-3 p-4 bg-muted hover:bg-muted/80 rounded-lg transition-colors text-left"
-            >
-              <Settings className="w-6 h-6 text-purple-500" />
-              <div>
-                <h3 className="font-medium text-foreground">User Overview</h3>
-                <p className="text-sm text-muted-foreground">Manage all user accounts</p>
-              </div>
-            </button>
-          </div>
-        </div>
-
         {/* Course Creation Modal */}
         {showCourseModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -527,11 +540,22 @@ export function StaffDashboard() {
                     onClick={() => {
                       setShowCourseModal(false)
                       setEditingCourse(null)
+                      setShowDeleteConfirm(false)
+                      setDeleteConfirmText('')
                     }}
                     className="flex-1 px-4 py-2 bg-muted hover:bg-muted/80 text-foreground rounded-lg transition-colors"
                   >
                     Cancel
                   </button>
+                  {editingCourse && (
+                    <button
+                      type="button"
+                      onClick={() => setShowDeleteConfirm(true)}
+                      className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                    >
+                      Delete
+                    </button>
+                  )}
                   <button
                     type="submit"
                     disabled={loading}
@@ -541,6 +565,60 @@ export function StaffDashboard() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-card rounded-lg p-6 max-w-md w-full mx-4 border border-border">
+              <div className="flex items-center mb-4">
+                <AlertTriangle className="w-6 h-6 text-red-500 mr-3" />
+                <h3 className="text-lg font-semibold text-foreground">Delete Course</h3>
+              </div>
+              
+              <div className="mb-6">
+                <p className="text-muted-foreground mb-4">
+                  Are you sure you want to delete the course "{editingCourse?.title}"?
+                </p>
+                <p className="text-sm text-red-600 mb-4">
+                  This action cannot be undone. All associated data will be permanently removed.
+                </p>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Type "delete" to confirm:
+                  </label>
+                  <input
+                    type="text"
+                    value={deleteConfirmText}
+                    onChange={(e) => setDeleteConfirmText(e.target.value)}
+                    className="w-full px-3 py-2 bg-muted border border-border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-foreground"
+                    placeholder="Type 'delete' to confirm"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowDeleteConfirm(false)
+                    setDeleteConfirmText('')
+                  }}
+                  className="flex-1 px-4 py-2 bg-muted hover:bg-muted/80 text-foreground rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteCourse}
+                  disabled={loading || deleteConfirmText !== 'delete'}
+                  className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded-lg transition-colors"
+                >
+                  {loading ? 'Deleting...' : 'Delete Course'}
+                </button>
+              </div>
             </div>
           </div>
         )}
