@@ -1,13 +1,49 @@
 const express = require('express');
-const { authenticateToken } = require('../middleware/auth');
-const HybridDesktopManager = require('../services/HybridDesktopManager');
+const jwt = require('jsonwebtoken');
+
+// Conditionally load HybridDesktopManager only when not in Lambda environment
+let HybridDesktopManager = null;
+try {
+  if (process.env.NODE_ENV !== 'production' && !process.env.AWS_LAMBDA_FUNCTION_NAME) {
+    HybridDesktopManager = require('../services/HybridDesktopManager');
+  }
+} catch (error) {
+  console.log('HybridDesktopManager not available in this environment:', error.message);
+}
+
 const router = express.Router();
 
-const desktopManager = new HybridDesktopManager();
+// Inline authentication middleware for Lambda compatibility
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ message: 'Access token required' });
+  }
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).json({ message: 'Invalid or expired token' });
+    }
+    req.user = user;
+    next();
+  });
+};
+
+// Initialize desktop manager only if available
+let desktopManager = null;
+if (HybridDesktopManager) {
+  desktopManager = new HybridDesktopManager();
+}
 
 // Create desktop session
 router.post('/create', authenticateToken, async (req, res) => {
   try {
+    if (!desktopManager) {
+      return res.status(503).json({ message: 'Desktop service not available in this environment' });
+    }
+    
     const { labId } = req.body;
     const userId = req.user.id;
 
@@ -44,6 +80,10 @@ router.post('/create', authenticateToken, async (req, res) => {
 // Get current session
 router.get('/session', authenticateToken, async (req, res) => {
   try {
+    if (!desktopManager) {
+      return res.status(503).json({ message: 'Desktop service not available in this environment' });
+    }
+    
     const userId = req.user.id;
 
     // Check for active session in database
@@ -102,6 +142,10 @@ router.get('/session', authenticateToken, async (req, res) => {
 // Terminate session
 router.delete('/terminate', authenticateToken, async (req, res) => {
   try {
+    if (!desktopManager) {
+      return res.status(503).json({ message: 'Desktop service not available in this environment' });
+    }
+    
     const userId = req.user.id;
 
     console.log(`Terminating desktop session for user ${userId}`);
@@ -134,6 +178,9 @@ router.delete('/terminate', authenticateToken, async (req, res) => {
 // Get user's backup history
 router.get('/backups', authenticateToken, async (req, res) => {
   try {
+    if (!desktopManager) {
+      return res.status(503).json({ message: 'Desktop service not available in this environment' });
+    }
     const userId = req.user.id;
 
     const backups = await desktopManager.listUserBackups(userId);
@@ -154,6 +201,10 @@ router.get('/backups', authenticateToken, async (req, res) => {
 // Extend session (reset timeout)
 router.post('/extend', authenticateToken, async (req, res) => {
   try {
+    if (!desktopManager) {
+      return res.status(503).json({ message: 'Desktop service not available in this environment' });
+    }
+    
     const userId = req.user.id;
 
     const result = await desktopManager.extendUserSession(userId);
@@ -182,6 +233,9 @@ router.post('/extend', authenticateToken, async (req, res) => {
 // Get desktop status/health
 router.get('/status', authenticateToken, async (req, res) => {
   try {
+    if (!desktopManager) {
+      return res.status(503).json({ message: 'Desktop service not available in this environment' });
+    }
     const userId = req.user.id;
 
     const status = await desktopManager.getSystemStatus();

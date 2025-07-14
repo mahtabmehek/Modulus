@@ -3,6 +3,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const { Pool } = require('pg');
+const RDSDataClient = require('./rds-data-client');
 require('dotenv').config();
 
 // Import routes - updated for deployment test
@@ -12,7 +13,16 @@ const healthRoutes = require('./routes/health');
 const adminRoutes = require('./routes/admin');
 const coursesRoutes = require('./routes/courses');
 const labsRoutes = require('./routes/labs');
-const desktopRoutes = require('./routes/desktop');
+
+// Conditionally load desktop routes only if not in Lambda environment
+let desktopRoutes = null;
+try {
+  if (process.env.NODE_ENV !== 'production' && !process.env.AWS_LAMBDA_FUNCTION_NAME) {
+    desktopRoutes = require('./routes/desktop');
+  }
+} catch (error) {
+  console.log('Desktop routes not available in this environment:', error.message);
+}
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -65,34 +75,53 @@ app.use((req, res, next) => {
 // Database connection
 let pool;
 
-// Use real PostgreSQL database (Aurora)
-pool = new Pool({
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT || 5432,
-  database: process.env.DB_NAME,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-  max: 5, // Reduced for Aurora Serverless
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 20000, // Increased for Aurora cold starts
-  acquireTimeoutMillis: 20000, // Additional timeout for acquiring connections
-  createTimeoutMillis: 20000, // Timeout for creating connections
-});
+// Check if running in Lambda environment
+const isLambda = !!process.env.AWS_LAMBDA_FUNCTION_NAME;
+
+if (isLambda) {
+  // Use RDS Data API for Lambda (no VPC required)
+  console.log('🌟 Lambda environment detected, using RDS Data API');
+  pool = new RDSDataClient();
+  
+  // Test RDS Data API connection
+  pool.testConnection()
+    .then(() => {
+      console.log('✅ RDS Data API connection successful');
+    })
+    .catch(err => {
+      console.error('❌ RDS Data API connection error:', err.message);
+    });
+} else {
+  // Use real PostgreSQL database (Aurora) for local development
+  console.log('🔌 Local environment detected, using direct PostgreSQL connection');
+  pool = new Pool({
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT || 5432,
+    database: process.env.DB_NAME,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+    max: 5, // Reduced for Aurora Serverless
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 20000, // Increased for Aurora cold starts
+    acquireTimeoutMillis: 20000, // Additional timeout for acquiring connections
+    createTimeoutMillis: 20000, // Timeout for creating connections
+  });
+
+  // Test database connection on startup
+  pool.connect()
+    .then(client => {
+      console.log('✅ Connected to database');
+      if (client.release) client.release();
+    })
+    .catch(err => {
+      console.error('❌ Database connection error:', err.message);
+      process.exit(1);
+    });
+}
 
 // Make pool available to routes
 app.locals.db = pool;
-
-// Test database connection on startup
-pool.connect()
-  .then(client => {
-    console.log('✅ Connected to database');
-    if (client.release) client.release();
-  })
-  .catch(err => {
-    console.error('❌ Database connection error:', err.message);
-    process.exit(1);
-  });
 
 // Routes
 app.use('/api/health', healthRoutes);
@@ -101,7 +130,11 @@ app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/courses', coursesRoutes);
 app.use('/api/labs', labsRoutes);
-app.use('/api/desktop', desktopRoutes);
+
+// Only use desktop routes if available
+if (desktopRoutes) {
+  app.use('/api/desktop', desktopRoutes);
+}
 
 // Simple health check endpoint for ECS health checks
 app.get('/health', (req, res) => {
