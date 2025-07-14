@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useApp } from '@/lib/hooks/use-app'
 import { ArrowLeft, Save, User, Mail, Shield } from 'lucide-react'
 import { UserRole } from '@/types'
+import toast from 'react-hot-toast'
 
 export function UserCreationView() {
   const { navigate, user: currentUser } = useApp()
@@ -100,11 +101,11 @@ export function UserCreationView() {
       // const response = await api.createUser(userData)
       
       // For now, just show success and navigate
-      alert('User created successfully!')
+      toast.success('User created successfully!')
       navigate('dashboard')
     } catch (error) {
       console.error('Error creating user:', error)
-      alert('Failed to create user. Please try again.')
+      toast.error('Failed to create user. Please try again.')
     }
   }
 
