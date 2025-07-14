@@ -39,7 +39,7 @@ const validateCourse = [
   body('department').trim().isLength({ min: 2 }).withMessage('Department must be at least 2 characters'),
   body('academicLevel').isIn(['bachelor', 'master', 'phd', 'certificate']).withMessage('Valid academic level required'),
   body('duration').isInt({ min: 1, max: 10 }).withMessage('Duration must be between 1 and 10 years'),
-  body('totalCredits').isInt({ min: 1, max: 1000 }).withMessage('Total credits must be between 1 and 1000')
+  body('totalCredits').isInt({ min: 1 }).withMessage('Total credits must be a positive number')
 ];
 
 // GET /api/courses - Get all courses
@@ -176,8 +176,12 @@ router.post('/', authenticateToken, requireStaffOrAdmin, validateCourse, async (
 // PUT /api/courses/:id - Update a course
 router.put('/:id', authenticateToken, requireStaffOrAdmin, validateCourse, async (req, res) => {
   try {
+    console.log('UPDATE COURSE - Request body:', req.body);
+    console.log('UPDATE COURSE - Course ID:', req.params.id);
+    
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log('UPDATE COURSE - Validation errors:', errors.array());
       return res.status(400).json({ errors: errors.array() });
     }
 
@@ -233,8 +237,10 @@ router.put('/:id', authenticateToken, requireStaffOrAdmin, validateCourse, async
     });
 
   } catch (error) {
-    console.error('Update course error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('UPDATE COURSE - Full error details:', error);
+    console.error('UPDATE COURSE - Error message:', error.message);
+    console.error('UPDATE COURSE - Error stack:', error.stack);
+    res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 });
 
