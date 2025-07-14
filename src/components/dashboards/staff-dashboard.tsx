@@ -94,8 +94,8 @@ export function StaffDashboard() {
       toast.error('Department is required')
       return
     }
-    if (!courseFormData.totalCredits || parseInt(courseFormData.totalCredits) < 20 || parseInt(courseFormData.totalCredits) > 360) {
-      toast.error('Credits must be between 20 and 360')
+    if (!courseFormData.totalCredits || parseInt(courseFormData.totalCredits) < 1) {
+      toast.error('Credits must be a positive number')
       return
     }
     if (!courseFormData.duration || parseInt(courseFormData.duration) < 1 || parseInt(courseFormData.duration) > 52) {
@@ -111,9 +111,9 @@ export function StaffDashboard() {
 
     try {
       setLoading(true)
-      console.log('Creating course:', courseFormData)
+      console.log(editingCourse ? 'Updating course:' : 'Creating course:', courseFormData)
 
-      const response = await apiClient.createCourse({
+      const courseData = {
         title: courseFormData.title.trim(),
         code: courseFormData.code.trim().toUpperCase(),
         department: courseFormData.department,
@@ -121,7 +121,11 @@ export function StaffDashboard() {
         totalCredits: parseInt(courseFormData.totalCredits),
         description: descriptionText || `An comprehensive ${courseFormData.academicLevel} level course in ${courseFormData.title}. This course covers essential concepts and practical applications in the field, designed to provide students with thorough understanding and hands-on experience.`,
         duration: parseInt(courseFormData.duration)
-      })
+      }
+
+      const response = editingCourse 
+        ? await apiClient.updateCourse(editingCourse.id, courseData)
+        : await apiClient.createCourse(courseData)
 
       setShowCourseModal(false)
       setEditingCourse(null)
@@ -482,12 +486,12 @@ export function StaffDashboard() {
                       value={courseFormData.totalCredits}
                       onChange={(e) => {
                         const value = e.target.value.replace(/[^0-9]/g, '')
-                        if (value === '' || (parseInt(value) >= 1 && parseInt(value) <= 12)) {
+                        if (value === '' || parseInt(value) >= 1) {
                           setCourseFormData(prev => ({ ...prev, totalCredits: value }))
                         }
                       }}
                       className="w-full px-3 py-2 bg-muted border border-border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-foreground"
-                      placeholder="20-360"
+                      placeholder="Enter credits"
                     />
                   </div>
 
