@@ -63,12 +63,23 @@ app.use(limiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Request logging middleware
+// Request logging middleware - ENHANCED
 app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
-  console.log('Headers:', req.headers);
-  console.log('Original URL:', req.originalUrl);
-  console.log('Base URL:', req.baseUrl);
+  console.log(`\n🔥🔥🔥 INCOMING REQUEST 🔥🔥🔥`);
+  console.log(`🌐 ${new Date().toISOString()} - ${req.method} ${req.url}`);
+  console.log(`🌐 Path: ${req.path}`);
+  console.log(`🌐 Original URL: ${req.originalUrl}`);
+  console.log(`🌐 Base URL: ${req.baseUrl}`);
+  console.log(`🌐 Query:`, req.query);
+  console.log(`🌐 Params:`, req.params);
+  console.log('🌐 Headers:', JSON.stringify(req.headers, null, 2));
+  console.log(`🌐 Content-Type: ${req.headers['content-type']}`);
+  console.log(`🌐 User-Agent: ${req.headers['user-agent']}`);
+  console.log(`🌐 IP: ${req.ip || req.connection.remoteAddress}`);
+  if (req.body && Object.keys(req.body).length > 0) {
+    console.log('🌐 Body:', JSON.stringify(req.body, null, 2));
+  }
+  console.log(`🔥🔥🔥 END REQUEST LOG 🔥🔥🔥\n`);
   next();
 });
 
@@ -116,7 +127,12 @@ if (useRDSDataAPI) {
     })
     .catch(err => {
       console.error('❌ Database connection error:', err.message);
-      process.exit(1);
+      console.log('🔄 Falling back to mock database for local development');
+      
+      // Use mock database as fallback
+      const MockDatabase = require('./mock-db');
+      app.locals.db = new MockDatabase();
+      console.log('✅ Mock database initialized');
     });
 }
 

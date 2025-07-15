@@ -1,5 +1,5 @@
 ﻿const serverless = require('serverless-http');
-const app = require('./server');
+const app = require('./lambda-server');
 
 console.log(' Lambda starting...');
 
@@ -7,7 +7,7 @@ const handler = serverless(app);
 
 exports.handler = async (event, context) => {
   console.log(' Lambda Event received');
-  
+
   try {
     const result = await handler(event, context);
     return result;

@@ -557,7 +557,7 @@ router.post('/create-test-users', async (req, res) => {
       } else {
         // User already exists, update password for testing
         const passwordHash = await bcrypt.hash(testUser.password, saltRounds);
-        
+
         await db.query(
           'UPDATE users SET password_hash = $1, is_approved = $2 WHERE email = $3',
           [passwordHash, testUser.isApproved, testUser.email]

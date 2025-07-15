@@ -7,17 +7,21 @@ const JWT_SECRET = process.env.JWT_SECRET || 'modulus-lms-secret-key-change-in-p
 
 // Middleware to verify JWT token
 const authenticateToken = (req, res, next) => {
+  console.log('🔑 COURSE AUTH - Headers:', req.headers['authorization']);
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
   if (!token) {
+    console.log('❌ COURSE AUTH - No token provided');
     return res.status(401).json({ error: 'Access token required' });
   }
 
   jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) {
+      console.log('❌ COURSE AUTH - Token verification failed:', err.message);
       return res.status(403).json({ error: 'Invalid or expired token' });
     }
+    console.log('✅ COURSE AUTH - User authenticated:', user.email, 'Role:', user.role);
     req.user = user;
     next();
   });
@@ -25,9 +29,12 @@ const authenticateToken = (req, res, next) => {
 
 // Admin/Instructor middleware
 const requireStaffOrAdmin = (req, res, next) => {
+  console.log('👤 COURSE ROLE CHECK - User role:', req.user?.role);
   if (!['admin', 'staff', 'instructor'].includes(req.user.role)) {
+    console.log('❌ COURSE ROLE CHECK - Access denied for role:', req.user.role);
     return res.status(403).json({ error: 'Staff or admin access required' });
   }
+  console.log('✅ COURSE ROLE CHECK - Access granted for role:', req.user.role);
   next();
 };
 
@@ -46,7 +53,7 @@ const validateCourse = [
 router.get('/', async (req, res) => {
   try {
     const db = req.app.locals.db;
-    
+
     const result = await db.query(
       `SELECT 
         id, title, code, description, department, academic_level, 
@@ -83,7 +90,7 @@ router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const db = req.app.locals.db;
-    
+
     const result = await db.query(
       `SELECT 
         id, title, code, description, department, academic_level, 
@@ -124,13 +131,32 @@ router.get('/:id', async (req, res) => {
 // POST /api/courses - Create a new course
 router.post('/', authenticateToken, requireStaffOrAdmin, validateCourse, async (req, res) => {
   try {
+    console.log('CREATE COURSE - Request body:', req.body);
+    console.log('CREATE COURSE - Body types:', {
+      duration: typeof req.body.duration,
+      totalCredits: typeof req.body.totalCredits,
+      durationValue: req.body.duration,
+      totalCreditsValue: req.body.totalCredits
+    });
+
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log('CREATE COURSE - Validation errors:', errors.array());
       return res.status(400).json({ errors: errors.array() });
     }
 
     const { title, code, description, department, academicLevel, duration, totalCredits } = req.body;
     const db = req.app.locals.db;
+
+    // Ensure integer types for database operations
+    const parsedDuration = parseInt(duration, 10);
+    const parsedTotalCredits = parseInt(totalCredits, 10);
+    
+    console.log('CREATE COURSE - Parsed values:', {
+      parsedDuration,
+      parsedTotalCredits,
+      userId: req.user.userId
+    });
 
     // Check if course code already exists
     const existingCourse = await db.query(
@@ -142,12 +168,17 @@ router.post('/', authenticateToken, requireStaffOrAdmin, validateCourse, async (
       return res.status(400).json({ error: 'Course with this code already exists' });
     }
 
+    console.log('CREATE COURSE - About to insert with values:', {
+      title, code, description, department, academicLevel, 
+      duration: parsedDuration, totalCredits: parsedTotalCredits, userId: req.user.userId
+    });
+
     // Insert new course
     const result = await db.query(
       `INSERT INTO courses (title, code, description, department, academic_level, duration, total_credits, created_by, created_at, updated_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
        RETURNING id, title, code, description, department, academic_level, duration, total_credits, created_at`,
-      [title, code, description, department, academicLevel, duration, totalCredits, req.user.userId]
+      [title, code, description, department, academicLevel, parsedDuration, parsedTotalCredits, req.user.userId]
     );
 
     const course = result.rows[0];
@@ -178,7 +209,13 @@ router.put('/:id', authenticateToken, requireStaffOrAdmin, validateCourse, async
   try {
     console.log('UPDATE COURSE - Request body:', req.body);
     console.log('UPDATE COURSE - Course ID:', req.params.id);
-    
+    console.log('UPDATE COURSE - Body types:', {
+      duration: typeof req.body.duration,
+      totalCredits: typeof req.body.totalCredits,
+      durationValue: req.body.duration,
+      totalCreditsValue: req.body.totalCredits
+    });
+
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       console.log('UPDATE COURSE - Validation errors:', errors.array());
@@ -189,25 +226,53 @@ router.put('/:id', authenticateToken, requireStaffOrAdmin, validateCourse, async
     const { title, code, description, department, academicLevel, duration, totalCredits } = req.body;
     const db = req.app.locals.db;
 
+    // Ensure integer types for database queries
+    const parsedDuration = parseInt(duration, 10);
+    const parsedTotalCredits = parseInt(totalCredits, 10);
+    
+    console.log('UPDATE COURSE - Parsed values:', {
+      parsedDuration,
+      parsedTotalCredits,
+      id: parseInt(id, 10)
+    });
+
     // Check if course exists
+    console.log('UPDATE COURSE - Checking if course exists with ID:', id);
     const existingCourse = await db.query(
       'SELECT id FROM courses WHERE id = $1',
-      [id]
+      [parseInt(id, 10)]
     );
 
     if (existingCourse.rows.length === 0) {
       return res.status(404).json({ error: 'Course not found' });
     }
 
+    console.log('UPDATE COURSE - Course exists, checking code uniqueness');
     // Check if course code is taken by another course
     const codeCheck = await db.query(
-      'SELECT id FROM courses WHERE code = $1 AND id != $2',
-      [code, id]
+      'SELECT id FROM courses WHERE code = $1 AND id <> $2',
+      [code, parseInt(id, 10)]
     );
 
     if (codeCheck.rows.length > 0) {
       return res.status(400).json({ error: 'Course code is already taken by another course' });
     }
+
+    console.log('UPDATE COURSE - About to update course with values:', {
+      title, code, description, department, academicLevel, 
+      duration: parsedDuration, totalCredits: parsedTotalCredits, id: parseInt(id, 10)
+    });
+
+    console.log('UPDATE COURSE - Parameter types:', {
+      title: typeof title,
+      code: typeof code, 
+      description: typeof description,
+      department: typeof department,
+      academicLevel: typeof academicLevel,
+      duration: typeof parsedDuration,
+      totalCredits: typeof parsedTotalCredits,
+      id: typeof id
+    });
 
     // Update course
     const result = await db.query(
@@ -216,7 +281,7 @@ router.put('/:id', authenticateToken, requireStaffOrAdmin, validateCourse, async
            academic_level = $5, duration = $6, total_credits = $7, updated_at = NOW()
        WHERE id = $8
        RETURNING id, title, code, description, department, academic_level, duration, total_credits, updated_at`,
-      [title, code, description, department, academicLevel, duration, totalCredits, id]
+      [title, code, description, department, academicLevel, parsedDuration, parsedTotalCredits, parseInt(id, 10)]
     );
 
     const course = result.rows[0];
@@ -252,7 +317,7 @@ router.delete('/:id', authenticateToken, requireStaffOrAdmin, async (req, res) =
 
     const result = await db.query(
       'DELETE FROM courses WHERE id = $1 RETURNING id, title, code',
-      [id]
+      [parseInt(id, 10)]
     );
 
     if (result.rows.length === 0) {

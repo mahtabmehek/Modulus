@@ -28,13 +28,24 @@ class ApiClient {
   }
 
   setToken(token: string | null) {
+    console.log('🎯 SETTING TOKEN:', {
+      newToken: token ? `${token.substring(0, 30)}...` : 'null',
+      oldToken: this.token ? `${this.token.substring(0, 30)}...` : 'null'
+    })
+    
     this.token = token
     if (typeof window !== 'undefined') {
       if (token) {
         localStorage.setItem('auth_token', token)
+        console.log('✅ Token saved to localStorage')
       } else {
         localStorage.removeItem('auth_token')
+        console.log('🗑️ Token removed from localStorage')
       }
+      
+      // Verify it was saved
+      const savedToken = localStorage.getItem('auth_token')
+      console.log('🔍 Verification - Token in localStorage:', savedToken ? `${savedToken.substring(0, 30)}...` : 'null')
     }
   }
 
@@ -49,6 +60,13 @@ class ApiClient {
       ...options.headers,
     }
 
+    console.log('🔍 API Request Debug:', {
+      endpoint,
+      method: options.method || 'GET',
+      hasToken: !!this.token,
+      tokenPreview: this.token ? `${this.token.substring(0, 20)}...` : 'No token'
+    })
+
     if (this.token) {
       (headers as Record<string, string>).Authorization = `Bearer ${this.token}`
     }
@@ -58,8 +76,15 @@ class ApiClient {
       headers,
     })
 
+    console.log('📡 API Response Debug:', {
+      url,
+      status: response.status,
+      ok: response.ok
+    })
+
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
+      console.error('❌ API Error Details:', errorData)
       // Throw the entire error object so frontend can access errorType and message
       const error = new Error(errorData.message || `HTTP ${response.status}`)
       // Attach the error data to the error object
