@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useApp } from '@/lib/hooks/use-app'
 import { apiClient } from '@/lib/api'
-import { Users, BookOpen, GraduationCap, UserCheck, UserPlus, BarChart3, Settings, Plus, RefreshCw, Eye, AlertTriangle, Search, X, Edit } from 'lucide-react'
+import { Users, BookOpen, GraduationCap, UserCheck, UserPlus, BarChart3, Settings, Plus, RefreshCw, Eye, AlertTriangle, Search, X, Edit, CheckCircle, ChevronLeft, ChevronRight } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 export function StaffDashboard() {
@@ -31,6 +31,18 @@ export function StaffDashboard() {
   })
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
+  
+  // Pending approvals state
+  const [pendingApprovals, setPendingApprovals] = useState<any[]>([])
+  const [approvalsPage, setApprovalsPage] = useState(1)
+  const approvalsPerPage = 5
+
+  // Pagination for approvals
+  const paginatedApprovals = pendingApprovals.slice(
+    (approvalsPage - 1) * approvalsPerPage,
+    approvalsPage * approvalsPerPage
+  )
+  const totalApprovalsPages = Math.ceil(pendingApprovals.length / approvalsPerPage)
 
   useEffect(() => {
     const loadStats = async () => {
@@ -45,6 +57,11 @@ export function StaffDashboard() {
         const courses = coursesResponse.courses || []
         const pendingUsers = pendingResponse.users || []
 
+        // Filter pending users - staff can only see students and instructors (not admin/staff)
+        const filteredPendingUsers = pendingUsers.filter(u => 
+          u.role === 'student' || u.role === 'instructor'
+        )
+
         const instructors = users.filter(u => u.role === 'instructor')
         const students = users.filter(u => u.role === 'student')
 
@@ -53,10 +70,11 @@ export function StaffDashboard() {
           totalCourses: courses.length,
           totalInstructors: instructors.length,
           totalStudents: students.length,
-          pendingApprovals: pendingUsers.length,
+          pendingApprovals: filteredPendingUsers.length,
         })
 
         setCourses(courses)
+        setPendingApprovals(filteredPendingUsers)
       } catch (error) {
         console.error('Failed to load staff dashboard stats:', error)
       } finally {
@@ -70,10 +88,29 @@ export function StaffDashboard() {
   const loadCourses = async () => {
     setLoading(true)
     try {
-      const response = await apiClient.getCourses()
-      setCourses(response.courses || [])
+      const [coursesResponse, pendingResponse] = await Promise.all([
+        apiClient.getCourses(),
+        apiClient.getPendingApprovals()
+      ])
+      
+      const courses = coursesResponse.courses || []
+      const pendingUsers = pendingResponse.users || []
+      const filteredPendingUsers = pendingUsers.filter(u => 
+        u.role === 'student' || u.role === 'instructor'
+      )
+      
+      setCourses(courses)
+      setPendingApprovals(filteredPendingUsers)
+      
+      // Update stats
+      setStats(prev => ({
+        ...prev,
+        totalCourses: courses.length,
+        pendingApprovals: filteredPendingUsers.length
+      }))
     } catch (error) {
-      console.error('Failed to load courses:', error)
+      console.error('Failed to load data:', error)
+      toast.error('Failed to load data. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -230,6 +267,57 @@ export function StaffDashboard() {
       toast.error('Failed to delete course. Please try again.')
     } finally {
       setLoading(false)
+    }
+  }
+
+  // User approval handlers
+  const handleApproveUser = async (userId: string) => {
+    try {
+      await apiClient.approveUser(Number(userId))
+      toast.success('User approved successfully!')
+      
+      // Refresh pending approvals
+      const pendingResponse = await apiClient.getPendingApprovals()
+      const pendingUsers = pendingResponse.users || []
+      const filteredPendingUsers = pendingUsers.filter(u => 
+        u.role === 'student' || u.role === 'instructor'
+      )
+      setPendingApprovals(filteredPendingUsers)
+      
+      // Update stats
+      setStats(prev => ({
+        ...prev,
+        pendingApprovals: filteredPendingUsers.length
+      }))
+    } catch (error) {
+      console.error('Failed to approve user:', error)
+      toast.error('Failed to approve user. Please try again.')
+    }
+  }
+
+  const handleRejectUser = async (userId: string) => {
+    if (confirm('Are you sure you want to reject this user? This action cannot be undone.')) {
+      try {
+        await apiClient.rejectUser(Number(userId))
+        toast.success('User rejected successfully!')
+        
+        // Refresh pending approvals
+        const pendingResponse = await apiClient.getPendingApprovals()
+        const pendingUsers = pendingResponse.users || []
+        const filteredPendingUsers = pendingUsers.filter(u => 
+          u.role === 'student' || u.role === 'instructor'
+        )
+        setPendingApprovals(filteredPendingUsers)
+        
+        // Update stats
+        setStats(prev => ({
+          ...prev,
+          pendingApprovals: filteredPendingUsers.length
+        }))
+      } catch (error) {
+        console.error('Failed to reject user:', error)
+        toast.error('Failed to reject user. Please try again.')
+      }
     }
   }
 
@@ -416,6 +504,117 @@ export function StaffDashboard() {
               </div>
             )}
           </div>
+        </div>
+
+        {/* Pending User Approvals Card */}
+        <div className="bg-card rounded-lg p-6 border border-border mt-8">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-semibold text-foreground">Pending User Approvals</h2>
+            <div className="flex gap-3">
+              <button
+                onClick={loadCourses}
+                disabled={loading}
+                className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg transition-colors"
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                Refresh
+              </button>
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <RefreshCw className="w-6 h-6 animate-spin text-purple-600" />
+              <span className="ml-2 text-muted-foreground">Loading pending approvals...</span>
+            </div>
+          ) : pendingApprovals.length > 0 ? (
+            <div className="space-y-4">
+              {paginatedApprovals.map((user) => (
+                <div key={user.id} className="bg-muted rounded-lg p-4 border border-border">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900 rounded-full flex items-center justify-center">
+                        <span className="text-purple-600 dark:text-purple-300 font-semibold">
+                          {user.name?.[0]?.toUpperCase() || 'U'}
+                        </span>
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-foreground">
+                          {user.name || 'Unknown User'}
+                        </h4>
+                        <p className="text-sm text-muted-foreground">{user.email}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            user.role === 'instructor'
+                              ? 'bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-300'
+                              : user.role === 'student'
+                                ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300'
+                                : 'bg-gray-100 text-gray-600 dark:bg-gray-900 dark:text-gray-300'
+                          }`}>
+                            {user.role}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            Registered {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'Unknown'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleApproveUser(user.id)}
+                        className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
+                      >
+                        <CheckCircle className="w-4 h-4" />
+                        Approve
+                      </button>
+                      <button
+                        onClick={() => handleRejectUser(user.id)}
+                        className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
+                      >
+                        <AlertTriangle className="w-4 h-4" />
+                        Reject
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {/* Approvals Pagination */}
+              {totalApprovalsPages > 1 && (
+                <div className="flex justify-center items-center space-x-2 mt-6 pt-4 border-t border-border">
+                  <button
+                    onClick={() => setApprovalsPage(prev => Math.max(1, prev - 1))}
+                    disabled={approvalsPage === 1}
+                    className="flex items-center gap-1 px-3 py-2 bg-muted hover:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed text-foreground rounded-lg transition-colors"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Previous
+                  </button>
+                  <span className="text-muted-foreground px-4">
+                    Page {approvalsPage} of {totalApprovalsPages} ({pendingApprovals.length} total)
+                  </span>
+                  <button
+                    onClick={() => setApprovalsPage(prev => Math.min(totalApprovalsPages, prev + 1))}
+                    disabled={approvalsPage === totalApprovalsPages}
+                    className="flex items-center gap-1 px-3 py-2 bg-muted hover:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed text-foreground rounded-lg transition-colors"
+                  >
+                    Next
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4" />
+              <h4 className="text-lg font-semibold text-foreground mb-2">
+                All caught up!
+              </h4>
+              <p className="text-muted-foreground">
+                No pending user approvals at the moment.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Course Creation Modal */}
