@@ -75,14 +75,14 @@ app.use((req, res, next) => {
 // Database connection
 let pool;
 
-// Check if running in Lambda environment
-const isLambda = !!process.env.AWS_LAMBDA_FUNCTION_NAME;
+// Check if we should use RDS Data API (for Lambda or local development with USE_RDS_DATA_API=true)
+const useRDSDataAPI = !!process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.USE_RDS_DATA_API === 'true';
 
-if (isLambda) {
-  // Use RDS Data API for Lambda (no VPC required)
-  console.log('🌟 Lambda environment detected, using RDS Data API');
+if (useRDSDataAPI) {
+  // Use RDS Data API (works for both Lambda and local development)
+  console.log('🌟 Using RDS Data API for database connection');
   pool = new RDSDataClient();
-  
+
   // Test RDS Data API connection
   pool.testConnection()
     .then(() => {
