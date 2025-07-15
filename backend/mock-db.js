@@ -36,6 +36,14 @@ class MockDatabase {
         name: 'Test Admin',
         role: 'admin',
         is_approved: true
+      },
+      {
+        id: 'user-4',
+        email: 'staffuser@test.com',
+        password: 'password123',
+        name: 'Staff User',
+        role: 'staff',
+        is_approved: true
       }
     ];
 

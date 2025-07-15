@@ -108,15 +108,15 @@ export function AdminDashboard() {
   const loadUsers = async () => {
     setLoading(true)
     try {
-      const response = await apiClient.getAllUsers()
-      console.log('Admin users response:', response)
-      setRealUsers(response.users || [])
+      // Load all users for the user management section
+      const usersResponse = await apiClient.getAllUsers()
+      console.log('Admin users response:', usersResponse)
+      setRealUsers(usersResponse.users || [])
 
-      // Filter pending approvals (non-admin users who are not approved)
-      const pending = (response.users || []).filter((user: any) =>
-        user.role !== 'admin' && (!user.is_approved || user.status === 'pending')
-      )
-      setPendingApprovals(pending)
+      // Load pending approvals using the dedicated endpoint
+      const pendingResponse = await apiClient.getPendingApprovals()
+      console.log('Admin pending approvals response:', pendingResponse)
+      setPendingApprovals(pendingResponse.users || [])
     } catch (error) {
       console.error('Failed to load users:', error)
       setRealUsers([])

@@ -8,10 +8,10 @@ const updateUserIdSequence = async (db) => {
     // Get the maximum ID from users table
     const maxIdResult = await db.query('SELECT MAX(id) as max_id FROM users');
     const maxId = maxIdResult.rows[0].max_id || 0;
-    
+
     // Update the sequence to start from max_id + 1
     await db.query(`SELECT setval('users_id_seq', $1, true)`, [maxId]);
-    
+
     console.log(`Updated users_id_seq to ${maxId}`);
   } catch (error) {
     console.error('Error updating user ID sequence:', error);
@@ -22,7 +22,7 @@ const updateUserIdSequence = async (db) => {
 // Function to generate role-based user ID
 const generateRoleBasedUserId = async (role, db) => {
   let minId, maxId;
-  
+
   switch (role) {
     case 'staff':
       minId = 100;
@@ -50,16 +50,16 @@ const generateRoleBasedUserId = async (role, db) => {
     'SELECT id FROM users WHERE id >= $1 AND id <= $2 ORDER BY id',
     [minId, maxId]
   );
-  
+
   const existingIds = new Set(result.rows.map(row => row.id));
-  
+
   // Find the first available ID in the range
   for (let id = minId; id <= maxId; id++) {
     if (!existingIds.has(id)) {
       return id;
     }
   }
-  
+
   throw new Error(`No available IDs in range ${minId}-${maxId} for role ${role}`);
 };
 
@@ -78,26 +78,33 @@ router.post('/create-test-users', async (req, res) => {
       return res.status(500).json({ error: 'Database connection not available' });
     }
 
-    // Password for all test users
+    // Password for all test users (except staffuser@test.com)
     const password = 'Mahtabmehek@1337';
     const saltRounds = 12;
     const passwordHash = await bcrypt.hash(password, saltRounds);
+    
+    // Special password for staffuser@test.com
+    const staffPassword = 'password123';
+    const staffPasswordHash = await bcrypt.hash(staffPassword, saltRounds);
 
     // Test users to create with specific IDs
     const testUsers = [
       { id: 1001, email: 'student@test.com', name: 'Test Student', role: 'student', level: 1, level_name: 'Beginner', total_points: 0 },
       { id: 501, email: 'instructor@test.com', name: 'Test Instructor', role: 'instructor', level: 5, level_name: 'Advanced', total_points: 500 },
+      { id: 101, email: 'staff@test.com', name: 'Test Staff', role: 'staff', level: 7, level_name: 'Professional', total_points: 750 },
+      { id: 103, email: 'staffuser@test.com', name: 'Staff User', role: 'staff', level: 7, level_name: 'Professional', total_points: 750 },
       { id: 1, email: 'admin@test.com', name: 'Test Admin', role: 'admin', level: 10, level_name: 'Expert', total_points: 1000 },
       { id: 1002, email: 'student@modulus.com', name: 'Modulus Student', role: 'student', level: 1, level_name: 'Beginner', total_points: 0 },
       { id: 502, email: 'instructor@modulus.com', name: 'Modulus Instructor', role: 'instructor', level: 5, level_name: 'Advanced', total_points: 500 },
+      { id: 102, email: 'staff@modulus.com', name: 'Modulus Staff', role: 'staff', level: 7, level_name: 'Professional', total_points: 750 },
       { id: 2, email: 'admin@modulus.com', name: 'Modulus Admin', role: 'admin', level: 10, level_name: 'Expert', total_points: 1000 }
     ];
 
     // First, delete existing test users
     const deleteQuery = `
       DELETE FROM users 
-      WHERE email IN ('student@test.com', 'instructor@test.com', 'admin@test.com', 
-                      'student@modulus.com', 'instructor@modulus.com', 'admin@modulus.com')
+      WHERE email IN ('student@test.com', 'instructor@test.com', 'staff@test.com', 'staffuser@test.com', 'admin@test.com', 
+                      'student@modulus.com', 'instructor@modulus.com', 'staff@modulus.com', 'admin@modulus.com')
     `;
     await db.query(deleteQuery);
 
@@ -110,10 +117,13 @@ router.post('/create-test-users', async (req, res) => {
     const results = [];
     for (const user of testUsers) {
       try {
+        // Use special password for staffuser@test.com
+        const userPasswordHash = user.email === 'staffuser@test.com' ? staffPasswordHash : passwordHash;
+        
         const result = await db.query(insertQuery, [
           user.id,
           user.email,
-          passwordHash,
+          userPasswordHash,
           user.name,
           user.role,
           user.level,
@@ -148,9 +158,9 @@ router.post('/create-test-users', async (req, res) => {
 
   } catch (error) {
     console.error('Error creating test users:', error);
-    res.status(500).json({ 
-      error: 'Failed to create test users', 
-      details: error.message 
+    res.status(500).json({
+      error: 'Failed to create test users',
+      details: error.message
     });
   }
 });
@@ -180,9 +190,9 @@ router.get('/test-users', async (req, res) => {
 
   } catch (error) {
     console.error('Error fetching test users:', error);
-    res.status(500).json({ 
-      error: 'Failed to fetch test users', 
-      details: error.message 
+    res.status(500).json({
+      error: 'Failed to fetch test users',
+      details: error.message
     });
   }
 });
@@ -226,7 +236,7 @@ router.get('/seed', async (req, res) => {
         total_points INTEGER DEFAULT 0
       );
     `;
-    
+
     await db.query(createTableQuery);
 
     // Insert test users
@@ -267,9 +277,9 @@ router.get('/seed', async (req, res) => {
 
   } catch (error) {
     console.error('Error seeding test users:', error);
-    res.status(500).json({ 
-      error: 'Failed to seed test users', 
-      details: error.message 
+    res.status(500).json({
+      error: 'Failed to seed test users',
+      details: error.message
     });
   }
 });
@@ -301,7 +311,7 @@ router.post('/init-database', async (req, res) => {
         last_active TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `;
-    
+
     await db.query(createUsersQuery);
 
     // Add missing columns if they don't exist
@@ -336,7 +346,7 @@ router.post('/init-database', async (req, res) => {
 router.post('/reset-password', async (req, res) => {
   try {
     const { accessCode, email, newPassword } = req.body;
-    
+
     // Check admin access
     if (accessCode !== 'mahtabmehek1337') {
       return res.status(403).json({ error: 'Invalid access code' });
@@ -401,7 +411,7 @@ router.get('/list-users', async (req, res) => {
 router.post('/create-user', async (req, res) => {
   try {
     const { email, name, role, password, accessCode } = req.body;
-    
+
     // Verify admin access
     if (accessCode !== 'mahtabmehek1337') {
       return res.status(403).json({ error: 'Invalid access code' });
@@ -409,15 +419,15 @@ router.post('/create-user', async (req, res) => {
 
     // Validate required fields
     if (!email || !name || !role || !password) {
-      return res.status(400).json({ 
-        error: 'All fields required: email, name, role, password' 
+      return res.status(400).json({
+        error: 'All fields required: email, name, role, password'
       });
     }
 
     // Validate role
     if (!['student', 'instructor', 'staff', 'admin'].includes(role)) {
-      return res.status(400).json({ 
-        error: 'Invalid role. Must be: student, instructor, staff, or admin' 
+      return res.status(400).json({
+        error: 'Invalid role. Must be: student, instructor, staff, or admin'
       });
     }
 
@@ -450,11 +460,11 @@ router.post('/create-user', async (req, res) => {
        VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW(), $7, $8, $9, $10, $11)
        RETURNING id, email, name, role, is_approved, created_at`,
       [
-        userId, 
-        email, 
-        passwordHash, 
-        name, 
-        role, 
+        userId,
+        email,
+        passwordHash,
+        name,
+        role,
         isAutoApproved,
         role === 'student' ? 1 : (role === 'instructor' ? 5 : 10), // Default level
         role === 'student' ? 'Beginner' : (role === 'instructor' ? 'Advanced' : 'Expert'), // Default level name
@@ -484,9 +494,9 @@ router.post('/create-user', async (req, res) => {
 
   } catch (error) {
     console.error('Error creating user:', error);
-    res.status(500).json({ 
-      error: 'Failed to create user', 
-      details: error.message 
+    res.status(500).json({
+      error: 'Failed to create user',
+      details: error.message
     });
   }
 });
@@ -511,7 +521,7 @@ function getIdRangeForRole(role) {
 router.get('/id-ranges', async (req, res) => {
   try {
     const { accessCode } = req.query;
-    
+
     // Verify admin access
     if (accessCode !== 'mahtabmehek1337') {
       return res.status(403).json({ error: 'Invalid access code' });
@@ -533,9 +543,9 @@ router.get('/id-ranges', async (req, res) => {
       GROUP BY role
       ORDER BY role
     `;
-    
+
     const countResult = await db.query(countQuery);
-    
+
     const ranges = {
       admin: { min: 1, max: 99, description: 'Admin IDs: 1-99' },
       staff: { min: 100, max: 499, description: 'Staff IDs: 100-499' },
@@ -560,9 +570,9 @@ router.get('/id-ranges', async (req, res) => {
 
   } catch (error) {
     console.error('Error getting ID ranges:', error);
-    res.status(500).json({ 
-      error: 'Failed to get ID ranges', 
-      details: error.message 
+    res.status(500).json({
+      error: 'Failed to get ID ranges',
+      details: error.message
     });
   }
 });
@@ -571,7 +581,7 @@ router.get('/id-ranges', async (req, res) => {
 router.post('/migrate-user-ids', async (req, res) => {
   try {
     const { accessCode, dryRun = true } = req.body;
-    
+
     // Verify admin access
     if (accessCode !== 'mahtabmehek1337') {
       return res.status(403).json({ error: 'Invalid access code' });
@@ -593,7 +603,7 @@ router.post('/migrate-user-ids', async (req, res) => {
         (role = 'student' AND (id < 1000 OR id > 4999))
       ORDER BY role, id
     `;
-    
+
     const usersResult = await db.query(usersQuery);
     const usersToMigrate = usersResult.rows;
 
@@ -644,10 +654,10 @@ router.post('/migrate-user-ids', async (req, res) => {
 
     // Execute migration if not dry run
     await db.query('BEGIN');
-    
+
     try {
       const migrationResults = [];
-      
+
       // Create temporary mapping table
       await db.query(`
         CREATE TEMPORARY TABLE temp_id_mapping (
@@ -714,9 +724,9 @@ router.post('/migrate-user-ids', async (req, res) => {
 
   } catch (error) {
     console.error('Error migrating user IDs:', error);
-    res.status(500).json({ 
-      error: 'Failed to migrate user IDs', 
-      details: error.message 
+    res.status(500).json({
+      error: 'Failed to migrate user IDs',
+      details: error.message
     });
   }
 });
@@ -725,7 +735,7 @@ router.post('/migrate-user-ids', async (req, res) => {
 router.get('/user-id-status', async (req, res) => {
   try {
     const { accessCode } = req.query;
-    
+
     // Verify admin access
     if (accessCode !== 'mahtabmehek1337') {
       return res.status(403).json({ error: 'Invalid access code' });
@@ -759,7 +769,7 @@ router.get('/user-id-status', async (req, res) => {
       GROUP BY role
       ORDER BY role
     `;
-    
+
     const statusResult = await db.query(statusQuery);
 
     // Get specific users that need migration
@@ -806,9 +816,9 @@ router.get('/user-id-status', async (req, res) => {
 
   } catch (error) {
     console.error('Error checking user ID status:', error);
-    res.status(500).json({ 
-      error: 'Failed to check user ID status', 
-      details: error.message 
+    res.status(500).json({
+      error: 'Failed to check user ID status',
+      details: error.message
     });
   }
 });
@@ -817,7 +827,7 @@ router.get('/user-id-status', async (req, res) => {
 router.post('/approve-user/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
-    
+
     if (!userId) {
       return res.status(400).json({ error: 'User ID is required' });
     }
@@ -850,9 +860,9 @@ router.post('/approve-user/:userId', async (req, res) => {
 
   } catch (error) {
     console.error('Error approving user:', error);
-    res.status(500).json({ 
-      error: 'Failed to approve user', 
-      details: error.message 
+    res.status(500).json({
+      error: 'Failed to approve user',
+      details: error.message
     });
   }
 });
@@ -861,7 +871,7 @@ router.post('/approve-user/:userId', async (req, res) => {
 router.delete('/reject-user/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
-    
+
     if (!userId) {
       return res.status(400).json({ error: 'User ID is required' });
     }
@@ -897,9 +907,9 @@ router.delete('/reject-user/:userId', async (req, res) => {
 
   } catch (error) {
     console.error('Error rejecting user:', error);
-    res.status(500).json({ 
-      error: 'Failed to reject user', 
-      details: error.message 
+    res.status(500).json({
+      error: 'Failed to reject user',
+      details: error.message
     });
   }
 });
@@ -928,9 +938,9 @@ router.get('/pending-users', async (req, res) => {
 
   } catch (error) {
     console.error('Error fetching pending users:', error);
-    res.status(500).json({ 
-      error: 'Failed to fetch pending users', 
-      details: error.message 
+    res.status(500).json({
+      error: 'Failed to fetch pending users',
+      details: error.message
     });
   }
 });

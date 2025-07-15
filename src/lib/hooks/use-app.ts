@@ -86,6 +86,7 @@ export const useAppStore = create<AppStore>()(
 
           const response = await apiClient.login({ email, password })
           console.log('Login successful:', response)
+          console.log('🎯 TOKEN RECEIVED:', response.token ? `${response.token.substring(0, 30)}...` : 'No token')
 
           // Check if user is approved (admins are always approved)
           if (response.user.role !== 'admin' && !response.user.isApproved) {
@@ -99,6 +100,7 @@ export const useAppStore = create<AppStore>()(
           }
 
           // Set token in API client
+          console.log('🎯 CALLING setToken with:', response.token ? 'Valid token' : 'No token')
           apiClient.setToken(response.token)
 
           // Set user and redirect to dashboard

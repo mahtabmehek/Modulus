@@ -35,24 +35,25 @@ export function StaffDashboard() {
   useEffect(() => {
     const loadStats = async () => {
       try {
-        const [usersResponse, coursesResponse] = await Promise.all([
+        const [usersResponse, coursesResponse, pendingResponse] = await Promise.all([
           apiClient.getAllUsers(),
-          apiClient.getCourses()
+          apiClient.getCourses(),
+          apiClient.getPendingApprovals()
         ])
 
         const users = usersResponse.users || []
         const courses = coursesResponse.courses || []
+        const pendingUsers = pendingResponse.users || []
 
         const instructors = users.filter(u => u.role === 'instructor')
         const students = users.filter(u => u.role === 'student')
-        const pending = users.filter(u => u.status === 'pending')
 
         setStats({
           totalUsers: users.length,
           totalCourses: courses.length,
           totalInstructors: instructors.length,
           totalStudents: students.length,
-          pendingApprovals: pending.length,
+          pendingApprovals: pendingUsers.length,
         })
 
         setCourses(courses)
@@ -80,7 +81,7 @@ export function StaffDashboard() {
 
   const handleCreateCourse = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    
+
     // Validate required fields
     if (!courseFormData.title.trim()) {
       toast.error('Course title is required')
@@ -118,12 +119,31 @@ export function StaffDashboard() {
         code: courseFormData.code.trim().toUpperCase(),
         department: courseFormData.department,
         academicLevel: courseFormData.academicLevel,
-        totalCredits: parseInt(courseFormData.totalCredits),
+        totalCredits: parseInt(courseFormData.totalCredits, 10) || 0,
         description: descriptionText || `An comprehensive ${courseFormData.academicLevel} level course in ${courseFormData.title}. This course covers essential concepts and practical applications in the field, designed to provide students with thorough understanding and hands-on experience.`,
-        duration: parseInt(courseFormData.duration)
+        duration: parseInt(courseFormData.duration, 10) || 0
       }
 
-      const response = editingCourse 
+      // Validate parsed integer values
+      if (courseData.totalCredits <= 0) {
+        toast.error('Total credits must be a positive number')
+        setLoading(false)
+        return
+      }
+      
+      if (courseData.duration <= 0) {
+        toast.error('Duration must be a positive number')  
+        setLoading(false)
+        return
+      }
+
+      console.log('🎯 Course Data Debug:', {
+        isEditing: !!editingCourse,
+        courseData,
+        formData: courseFormData
+      })
+
+      const response = editingCourse
         ? await apiClient.updateCourse(editingCourse.id, courseData)
         : await apiClient.createCourse(courseData)
 
@@ -142,7 +162,7 @@ export function StaffDashboard() {
       toast.success(editingCourse ? 'Course updated successfully!' : 'Course created successfully!')
     } catch (error: any) {
       console.error('Failed to create course:', error)
-      
+
       // More specific error handling
       if (error.message && error.message.includes('400')) {
         if (error.message.includes('duplicate') || error.message.includes('exists')) {
@@ -186,11 +206,11 @@ export function StaffDashboard() {
     try {
       await apiClient.deleteCourse(editingCourse.id)
       toast.success('Course deleted successfully!')
-      
+
       // Refresh courses list
       const coursesResponse = await apiClient.getCourses()
       setCourses(coursesResponse.courses || [])
-      
+
       // Close modal and reset states
       setShowCourseModal(false)
       setEditingCourse(null)
@@ -358,13 +378,12 @@ export function StaffDashboard() {
                         <td className="py-3 px-4 text-foreground font-mono">{course.code}</td>
                         <td className="py-3 px-4 text-muted-foreground">{course.department}</td>
                         <td className="py-3 px-4">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            course.academicLevel === 'bachelor'
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${course.academicLevel === 'bachelor'
                               ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300'
                               : course.academicLevel === 'master'
                                 ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300'
                                 : 'bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-300'
-                          }`}>
+                            }`}>
                             {course.academicLevel}
                           </span>
                         </td>
@@ -375,7 +394,7 @@ export function StaffDashboard() {
                         </td>
                         <td className="py-3 px-4">
                           <div className="flex gap-2">
-                            <button 
+                            <button
                               className="text-blue-600 hover:text-blue-700 dark:text-blue-400 p-1"
                               title="Edit Course"
                               onClick={() => handleEditCourse(course)}
@@ -524,15 +543,15 @@ export function StaffDashboard() {
                   />
                   <div className="flex justify-between items-center mt-1">
                     <p className="text-xs text-muted-foreground">
-                      {courseFormData.description.trim() ? 
-                        `${courseFormData.description.trim().split(' ').filter(word => word.length > 0).length} words` : 
+                      {courseFormData.description.trim() ?
+                        `${courseFormData.description.trim().split(' ').filter(word => word.length > 0).length} words` :
                         'No description provided'
                       }
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {courseFormData.description.trim().length > 0 && 
-                        courseFormData.description.trim().split(' ').filter(word => word.length > 0).length < 10 ? 
-                        '⚠️ Minimum 10 words required' : 
+                      {courseFormData.description.trim().length > 0 &&
+                        courseFormData.description.trim().split(' ').filter(word => word.length > 0).length < 10 ?
+                        '⚠️ Minimum 10 words required' :
                         courseFormData.description.trim().length > 0 ? '✓ Valid' : ''
                       }
                     </p>
@@ -582,7 +601,7 @@ export function StaffDashboard() {
                 <AlertTriangle className="w-6 h-6 text-red-500 mr-3" />
                 <h3 className="text-lg font-semibold text-foreground">Delete Course</h3>
               </div>
-              
+
               <div className="mb-6">
                 <p className="text-muted-foreground mb-4">
                   Are you sure you want to delete the course "{editingCourse?.title}"?

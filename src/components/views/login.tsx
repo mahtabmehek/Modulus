@@ -16,7 +16,7 @@ export function LoginView() {
     if (error && typeof error === 'object' && error.message) {
       return error.message;
     }
-    
+
     // If the error has an errorType, provide specific messages
     if (error && typeof error === 'object' && error.errorType) {
       switch (error.errorType) {
@@ -28,7 +28,7 @@ export function LoginView() {
           return error.error || 'Login failed. Please try again.';
       }
     }
-    
+
     // Fallback for string errors
     if (typeof error === 'string') {
       if (error.includes('User not found')) {
@@ -39,23 +39,23 @@ export function LoginView() {
       }
       return error;
     }
-    
+
     return 'Login failed. Please try again.';
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!email || !password) return
-    
+
     setLoading(true)
     setError('')
-    
+
     const result = await login(email, password)
-    
+
     if (!result.success) {
       setError(getUserFriendlyError(result.error))
     }
-    
+
     setLoading(false)
   }
 
@@ -80,7 +80,7 @@ export function LoginView() {
               Enter your credentials to access the platform
             </p>
           </div>
-          
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
@@ -119,20 +119,20 @@ export function LoginView() {
               </div>
             )}
 
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               className="w-full bg-red-600 hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium py-3 px-4 rounded-lg transition-colors"
               disabled={loading || !email || !password}
             >
               {loading ? 'Signing In...' : 'Sign In'}
             </button>
           </form>
-          
+
           {/* Register Link */}
           <div className="mt-6 text-center">
             <p className="text-gray-600 text-sm">
               Don&apos;t have an account?{' '}
-              <button 
+              <button
                 onClick={() => navigate('register')}
                 className="text-red-600 hover:text-red-700 font-medium"
               >

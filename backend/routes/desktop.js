@@ -43,7 +43,7 @@ router.post('/create', authenticateToken, async (req, res) => {
     if (!desktopManager) {
       return res.status(503).json({ message: 'Desktop service not available in this environment' });
     }
-    
+
     const { labId } = req.body;
     const userId = req.user.id;
 
@@ -83,7 +83,7 @@ router.get('/session', authenticateToken, async (req, res) => {
     if (!desktopManager) {
       return res.status(503).json({ message: 'Desktop service not available in this environment' });
     }
-    
+
     const userId = req.user.id;
 
     // Check for active session in database
@@ -145,7 +145,7 @@ router.delete('/terminate', authenticateToken, async (req, res) => {
     if (!desktopManager) {
       return res.status(503).json({ message: 'Desktop service not available in this environment' });
     }
-    
+
     const userId = req.user.id;
 
     console.log(`Terminating desktop session for user ${userId}`);
@@ -204,7 +204,7 @@ router.post('/extend', authenticateToken, async (req, res) => {
     if (!desktopManager) {
       return res.status(503).json({ message: 'Desktop service not available in this environment' });
     }
-    
+
     const userId = req.user.id;
 
     const result = await desktopManager.extendUserSession(userId);

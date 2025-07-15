@@ -62,12 +62,12 @@ export function PendingApprovalView() {
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <p className="text-sm text-blue-700">
                 <strong>What happens next?</strong><br />
-                Staff will review your account and notify you via email once approved. 
+                Staff will review your account and notify you via email once approved.
                 You can then log in to access the platform.
               </p>
             </div>
 
-            <button 
+            <button
               onClick={handleSignOut}
               className="w-full bg-gray-600 hover:bg-gray-700 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
             >

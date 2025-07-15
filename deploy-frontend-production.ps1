@@ -15,7 +15,8 @@ Write-Host "`n🔧 Checking AWS configuration..." -ForegroundColor Yellow
 try {
     $awsIdentity = aws sts get-caller-identity --query "Account" --output text
     Write-Host "✅ AWS CLI configured for account: $awsIdentity" -ForegroundColor Green
-} catch {
+}
+catch {
     Write-Host "❌ AWS CLI not configured. Please run 'aws configure'" -ForegroundColor Red
     exit 1
 }
@@ -25,7 +26,8 @@ Write-Host "`n🪣 Checking S3 bucket..." -ForegroundColor Yellow
 try {
     aws s3api head-bucket --bucket $BUCKET_NAME --region $REGION 2>$null
     Write-Host "✅ S3 bucket exists: $BUCKET_NAME" -ForegroundColor Green
-} catch {
+}
+catch {
     Write-Host "❌ S3 bucket not found: $BUCKET_NAME" -ForegroundColor Red
     exit 1
 }
@@ -111,10 +113,12 @@ try {
     $response = Invoke-WebRequest -Uri "$API_URL/health" -Method GET -UseBasicParsing
     if ($response.StatusCode -eq 200) {
         Write-Host "✅ Backend API is healthy" -ForegroundColor Green
-    } else {
+    }
+    else {
         Write-Host "⚠️  Backend API returned status: $($response.StatusCode)" -ForegroundColor Yellow
     }
-} catch {
+}
+catch {
     Write-Host "⚠️  Could not reach backend API" -ForegroundColor Yellow
 }
 
