@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useAuth } from '@/components/providers/auth-provider'
 import { useApp } from '@/lib/hooks/use-app'
 import { Header } from '@/components/layout/header'
 import { StudentDashboard } from '@/components/dashboards/student-dashboard'
@@ -15,14 +16,17 @@ import { CourseCreationView } from '@/components/views/course-creation'
 import { UserCreationView } from '@/components/views/user-creation'
 import { DesktopView } from '@/components/views/desktop-view'
 import { ProfileView } from '@/components/views/profile-view'
-import { LoginView } from '@/components/views/login'
-import { RegisterView } from '@/components/views/register-page'
+import CognitoAuth from '@/components/auth/cognito-auth'
 import { PendingApprovalView } from '@/components/views/pending-approval'
 import { Footer } from '@/components/layout/footer'
 
 export default function Home() {
-  const { currentView, user, isAuthenticated, initialize, logout } = useApp()
+  const { isAuthenticated, isLoading, user: cognitoUser } = useAuth()
+  const { currentView, user: appUser, initialize } = useApp()
   const [isClient, setIsClient] = useState(false)
+
+  // Use Cognito user as the primary user, fallback to app user for backward compatibility
+  const user = cognitoUser || appUser
 
   // Handle client-side hydration and initialization
   useEffect(() => {
@@ -32,9 +36,14 @@ export default function Home() {
     return cleanup
   }, [initialize])
 
+  // Debug logging
+  useEffect(() => {
+    console.log('Auth state:', { isAuthenticated, isLoading, cognitoUser, user })
+  }, [isAuthenticated, isLoading, cognitoUser, user])
+
   const renderContent = () => {
     // Show loading during hydration to prevent mismatch
-    if (!isClient) {
+    if (!isClient || isLoading) {
       return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
           <div className="text-center">
@@ -45,23 +54,16 @@ export default function Home() {
       )
     }
 
-    // Public pages (no authentication required)
-    if (currentView.type === 'login') {
-      return <LoginView />
-    }
-
-    if (currentView.type === 'register') {
-      return <RegisterView />
+    // Show Cognito auth if not authenticated
+    if (!isAuthenticated) {
+      return <CognitoAuth />
     }
 
     if (currentView.type === 'pending-approval') {
       return <PendingApprovalView />
     }
 
-    // Protected pages (authentication required)
-    if (!isAuthenticated) {
-      return <LoginView />
-    }
+    // Protected pages (authentication required) - This is now handled above with CognitoAuth
 
     // Check if user is approved before allowing access to protected views (admins are always approved)
     if (user && user.role !== 'admin' && !user.isApproved) {

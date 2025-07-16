@@ -1,0 +1,21 @@
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - npm ci
+        - echo "Setting up environment for consistent styling..."
+        - echo "NEXT_PUBLIC_DEFAULT_THEME=light" >> .env.local
+        - echo "NEXT_PUBLIC_FORCE_THEME_CONSISTENCY=true" >> .env.local
+    build:
+      commands:
+        - echo "Building with consistent theme settings..."
+        - npm run build
+  artifacts:
+    baseDirectory: out
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - node_modules/**/*
+      - .next/cache/**/*

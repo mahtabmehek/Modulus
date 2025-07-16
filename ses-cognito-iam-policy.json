@@ -1,0 +1,26 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ses:SendEmail",
+        "ses:SendRawEmail",
+        "ses:GetSendQuota",
+        "ses:GetSendStatistics",
+        "ses:ListVerifiedEmailAddresses",
+        "ses:VerifyEmailIdentity",
+        "ses:GetIdentityVerificationAttributes"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "cognito-idp:UpdateUserPool",
+        "cognito-idp:DescribeUserPool"
+      ],
+      "Resource": "arn:aws:cognito-idp:eu-west-2:*:userpool/eu-west-2_4vo3VDZa5"
+    }
+  ]
+}

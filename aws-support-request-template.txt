@@ -1,0 +1,37 @@
+# AWS Support Request Template for Cognito Rate Limit Increase
+
+Subject: Request to Increase AWS Cognito Password Reset Rate Limits
+
+Dear AWS Support,
+
+I am requesting an increase in the rate limits for AWS Cognito forgot password operations for my User Pool.
+
+**Account Details:**
+- AWS Account ID: 376129881409
+- User Pool ID: eu-west-2_4vo3VDZa5
+- Region: eu-west-2 (London)
+- Application: Modulus LMS Platform
+
+**Current Issue:**
+- Users are experiencing "Attempt limit exceeded" errors when testing password reset functionality
+- Current rate limits are impacting development and user testing
+
+**Request:**
+- Increase forgot password attempt limits from current restriction to allow:
+  * At least 10 attempts per user per hour
+  * Reduced cooldown period to 1-2 minutes instead of current 5+ minutes
+
+**Business Justification:**
+- Development environment requires frequent testing of authentication flows
+- User experience is critical for our learning management system
+- We have proper email verification and other security measures in place
+
+**Expected Timeline:**
+- Development phase: Immediate need for testing
+- Production launch: [Your expected launch date]
+
+Please let me know if you need any additional information.
+
+Best regards,
+[Your Name]
+[Your Company]

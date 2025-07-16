@@ -1,0 +1,4 @@
+﻿# Cognito Configuration
+USER_POOL_ID=eu-west-2_4vo3VDZa5
+CLIENT_ID=4jfe4rmrv0mec1e2hrvmo32a2h
+REGION=eu-west-2

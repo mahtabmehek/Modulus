@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { ThemeProvider } from '@/components/providers/theme-provider'
+import { AuthProvider } from '@/components/providers/auth-provider'
+import { ThemeForcer } from '@/components/theme-forcer'
 import { Toaster } from 'react-hot-toast'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -28,12 +30,16 @@ export default function RootLayout({
       <body className={`${inter.className} min-h-screen`}>
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
+          defaultTheme="light"
+          enableSystem={false}
+          disableTransitionOnChange={false}
           storageKey="modulus-theme"
+          forcedTheme={undefined}
         >
-          {children}
+          <AuthProvider>
+            <ThemeForcer />
+            {children}
+          </AuthProvider>
           <Toaster 
             position="top-right"
             toastOptions={{
