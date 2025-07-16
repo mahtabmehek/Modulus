@@ -4,12 +4,11 @@ frontend:
     preBuild:
       commands:
         - npm ci
-        - echo "Setting up environment for consistent styling..."
-        - echo "NEXT_PUBLIC_DEFAULT_THEME=light" >> .env.local
+        - echo "NEXT_PUBLIC_DEFAULT_THEME=light" > .env.local
         - echo "NEXT_PUBLIC_FORCE_THEME_CONSISTENCY=true" >> .env.local
+        - echo "NEXT_PUBLIC_AWS_REGION=eu-west-2" >> .env.local
     build:
       commands:
-        - echo "Building with consistent theme settings..."
         - npm run build
   artifacts:
     baseDirectory: out
@@ -18,4 +17,10 @@ frontend:
   cache:
     paths:
       - node_modules/**/*
-      - .next/cache/**/*
+  environmentVariables:
+    - name: NEXT_PUBLIC_DEFAULT_THEME
+      value: light
+    - name: NEXT_PUBLIC_FORCE_THEME_CONSISTENCY
+      value: true
+    - name: NEXT_PUBLIC_AWS_REGION
+      value: eu-west-2
