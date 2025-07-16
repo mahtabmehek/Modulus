@@ -3,12 +3,14 @@ frontend:
   phases:
     preBuild:
       commands:
+        - echo "Starting build process..."
         - npm ci
-        - echo "NEXT_PUBLIC_DEFAULT_THEME=light" > .env.local
-        - echo "NEXT_PUBLIC_FORCE_THEME_CONSISTENCY=true" >> .env.local
-        - echo "NEXT_PUBLIC_AWS_REGION=eu-west-2" >> .env.local
     build:
       commands:
+        - echo "Building application..."
+        - export NEXT_PUBLIC_DEFAULT_THEME=light
+        - export NEXT_PUBLIC_FORCE_THEME_CONSISTENCY=true
+        - export NEXT_PUBLIC_AWS_REGION=eu-west-2
         - npm run build
   artifacts:
     baseDirectory: out
@@ -17,10 +19,3 @@ frontend:
   cache:
     paths:
       - node_modules/**/*
-  environmentVariables:
-    - name: NEXT_PUBLIC_DEFAULT_THEME
-      value: light
-    - name: NEXT_PUBLIC_FORCE_THEME_CONSISTENCY
-      value: true
-    - name: NEXT_PUBLIC_AWS_REGION
-      value: eu-west-2
