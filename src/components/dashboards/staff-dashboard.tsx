@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useApp } from '@/lib/hooks/use-app'
 import { apiClient } from '@/lib/api'
-import { Users, BookOpen, GraduationCap, UserCheck, UserPlus, BarChart3, Settings, Plus, RefreshCw, Eye, AlertTriangle, Search, X, Edit, CheckCircle, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Users, BookOpen, GraduationCap, UserCheck, UserPlus, BarChart3, Settings, Plus, RefreshCw, Eye, AlertTriangle, Search, X, Edit, CheckCircle, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Download, UserX, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 export function StaffDashboard() {
@@ -31,11 +31,51 @@ export function StaffDashboard() {
   })
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
+  const [showUserModal, setShowUserModal] = useState(false)
+  const [editingUser, setEditingUser] = useState<any>(null)
+  const [userFormData, setUserFormData] = useState({
+    name: '',
+    email: '',
+    role: 'student',
+    courseCode: '',
+    password: ''
+  })
   
   // Pending approvals state
   const [pendingApprovals, setPendingApprovals] = useState<any[]>([])
   const [approvalsPage, setApprovalsPage] = useState(1)
   const approvalsPerPage = 5
+
+  // User management state
+  const [allUsers, setAllUsers] = useState<any[]>([])
+  const [isUserTableCollapsed, setIsUserTableCollapsed] = useState(false)
+  const [userSearchTerm, setUserSearchTerm] = useState('')
+  const [usersPage, setUsersPage] = useState(1)
+  const usersPerPage = 10
+  const [showUserActions, setShowUserActions] = useState<{ [key: string]: boolean }>({})
+  const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null)
+
+  // User management filtering and pagination
+  const filteredUsersForManagement = allUsers.filter(user =>
+    user.name?.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+    user.email?.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+    user.role?.toLowerCase().includes(userSearchTerm.toLowerCase())
+  )
+
+  const sortedUsers = sortConfig
+    ? [...filteredUsersForManagement].sort((a, b) => {
+        const aValue = a[sortConfig.key] || ''
+        const bValue = b[sortConfig.key] || ''
+        const comparison = aValue.toString().localeCompare(bValue.toString())
+        return sortConfig.direction === 'asc' ? comparison : -comparison
+      })
+    : filteredUsersForManagement
+
+  const paginatedUsers = sortedUsers.slice(
+    (usersPage - 1) * usersPerPage,
+    usersPage * usersPerPage
+  )
+  const totalUsersPages = Math.ceil(sortedUsers.length / usersPerPage)
 
   // Pagination for approvals
   const paginatedApprovals = pendingApprovals.slice(
@@ -65,6 +105,11 @@ export function StaffDashboard() {
         const instructors = users.filter(u => u.role === 'instructor')
         const students = users.filter(u => u.role === 'student')
 
+        // Filter users for user management - staff can only see students and instructors
+        const filteredUsers = users.filter(u => 
+          u.role === 'student' || u.role === 'instructor'
+        )
+
         setStats({
           totalUsers: users.length,
           totalCourses: courses.length,
@@ -75,6 +120,7 @@ export function StaffDashboard() {
 
         setCourses(courses)
         setPendingApprovals(filteredPendingUsers)
+        setAllUsers(filteredUsers) // Add this line to load users for management
       } catch (error) {
         console.error('Failed to load staff dashboard stats:', error)
       } finally {
@@ -320,6 +366,214 @@ export function StaffDashboard() {
       }
     }
   }
+
+  // User management functions
+  const loadUsers = async () => {
+    setLoading(true)
+    try {
+      const response = await apiClient.getAllUsers()
+      const users = response.users || []
+      
+      // Filter out admin and staff users - staff can only see students and instructors
+      const filteredUsers = users.filter(u => 
+        u.role === 'student' || u.role === 'instructor'
+      )
+      
+      setAllUsers(filteredUsers)
+    } catch (error) {
+      console.error('Failed to load users:', error)
+      toast.error('Failed to load users. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const toggleUserActions = (userId: string) => {
+    setShowUserActions(prev => ({
+      ...prev,
+      [userId]: !prev[userId]
+    }))
+  }
+
+  const handleSort = (key: string) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev?.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+    }))
+  }
+
+  const handleEnableUser = async (userId: string) => {
+    try {
+      await apiClient.approveUser(Number(userId))
+      toast.success('User enabled successfully!')
+      await loadUsers()
+    } catch (error) {
+      console.error('Failed to enable user:', error)
+      toast.error('Failed to enable user. Please try again.')
+    }
+  }
+
+  const handleDisableUser = async (userId: string) => {
+    if (confirm('Are you sure you want to disable this user?')) {
+      try {
+        await apiClient.rejectUser(Number(userId))
+        toast.success('User disabled successfully!')
+        await loadUsers()
+      } catch (error) {
+        console.error('Failed to disable user:', error)
+        toast.error('Failed to disable user. Please try again.')
+      }
+    }
+  }
+
+  const handleDeleteUser = async (userId: string) => {
+    if (confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+      try {
+        await apiClient.deleteUser(Number(userId))
+        toast.success('User deleted successfully!')
+        await loadUsers()
+      } catch (error) {
+        console.error('Failed to delete user:', error)
+        toast.error('Failed to delete user. Please try again.')
+      }
+    }
+  }
+
+  const exportToCSV = () => {
+    const csvContent = [
+      ['Name', 'Email', 'Role', 'Course Code', 'Status'].join(','),
+      ...filteredUsersForManagement.map(user => [
+        user.name || 'Unknown User',
+        user.email,
+        user.role,
+        user.courseCode || 'No Course',
+        user.is_approved === false ? 'Disabled' : 'Active'
+      ].join(','))
+    ].join('\n')
+
+    const blob = new Blob([csvContent], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'users.csv'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const handleEditUser = (user: any) => {
+    setEditingUser(user)
+    setUserFormData({
+      name: user.name || '',
+      email: user.email || '',
+      role: user.role || 'student',
+      courseCode: user.courseCode || '',
+      password: '' // Password not needed for editing
+    })
+    setShowUserModal(true)
+    setShowUserActions({}) // Close dropdown
+  }
+
+  const handleCreateOrUpdateUser = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+
+    // Validate required fields
+    if (!userFormData.name.trim()) {
+      toast.error('Name is required')
+      return
+    }
+    if (!userFormData.email.trim()) {
+      toast.error('Email is required')
+      return
+    }
+    if (!userFormData.role) {
+      toast.error('Role is required')
+      return
+    }
+
+    // For new users, password is required
+    if (!editingUser && !userFormData.password.trim()) {
+      toast.error('Password is required for new users')
+      return
+    }
+
+    // Validate password length for new users
+    if (!editingUser && userFormData.password.length < 6) {
+      toast.error('Password must be at least 6 characters long')
+      return
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(userFormData.email)) {
+      toast.error('Please enter a valid email address')
+      return
+    }
+
+    try {
+      setLoading(true)
+      
+      const userData = {
+        name: userFormData.name.trim(),
+        email: userFormData.email.trim().toLowerCase(),
+        role: userFormData.role,
+        courseCode: userFormData.courseCode.trim() || null
+      }
+
+      if (editingUser) {
+        const updateData = {
+          name: userFormData.name.trim(),
+          email: userFormData.email.trim().toLowerCase(),
+          role: userFormData.role,
+          courseCode: userFormData.courseCode || null
+        }
+        await apiClient.updateUser(editingUser.id, updateData)
+        toast.success('User updated successfully!')
+      } else {
+        const createData = {
+          name: userFormData.name.trim(),
+          email: userFormData.email.trim().toLowerCase(),
+          role: userFormData.role,
+          password: userFormData.password,
+          courseCode: userFormData.courseCode || null
+        }
+        await apiClient.createUser(createData)
+        toast.success('User created successfully!')
+      }
+
+      setShowUserModal(false)
+      setEditingUser(null)
+      setUserFormData({
+        name: '',
+        email: '',
+        role: 'student',
+        courseCode: '',
+        password: ''
+      })
+      await loadUsers() // Refresh the list
+    } catch (error: any) {
+      console.error('User save error:', error)
+      toast.error(error.response?.data?.error || (editingUser ? 'Failed to update user' : 'Failed to create user'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element
+      if (!target.closest('.actions-dropdown') && Object.keys(showUserActions).length > 0) {
+        setShowUserActions({})
+      }
+    }
+
+    if (Object.values(showUserActions).some(isOpen => isOpen)) {
+      document.addEventListener('click', handleClickOutside, true)
+      return () => {
+        document.removeEventListener('click', handleClickOutside, true)
+      }
+    }
+  }, [showUserActions])
 
   const filteredCourses = courses.filter(course =>
     course.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -617,6 +871,224 @@ export function StaffDashboard() {
           )}
         </div>
 
+        {/* User Management Card */}
+        <div className="bg-card rounded-lg border border-border mt-8">
+          <div className="p-6 border-b border-border">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <h2 className="text-xl font-semibold text-foreground">
+                  User Management
+                </h2>
+                <button
+                  onClick={() => setIsUserTableCollapsed(!isUserTableCollapsed)}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  {isUserTableCollapsed ? <ChevronDown className="w-5 h-5" /> : <ChevronUp className="w-5 h-5" />}
+                </button>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={loadUsers}
+                  disabled={loading}
+                  className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg transition-colors"
+                >
+                  <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                  Refresh
+                </button>
+                <button
+                  onClick={() => setShowUserModal(true)}
+                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  Add User
+                </button>
+                <button
+                  onClick={exportToCSV}
+                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+                >
+                  <Download className="w-4 h-4" />
+                  Export
+                </button>
+              </div>
+            </div>
+
+            {/* Search Bar */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+              <input
+                type="text"
+                placeholder="Search by user ID, email, or name..."
+                value={userSearchTerm}
+                onChange={(e) => setUserSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-border rounded-lg bg-muted text-foreground placeholder-muted-foreground focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+
+          {!isUserTableCollapsed && (
+            <div className="p-6">
+              {loading ? (
+                <div className="flex items-center justify-center py-8">
+                  <RefreshCw className="w-6 h-6 animate-spin text-purple-600" />
+                  <span className="ml-2 text-muted-foreground">Loading users...</span>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-border">
+                        <th
+                          className="text-left py-3 px-4 font-medium text-foreground cursor-pointer hover:text-purple-600"
+                          onClick={() => handleSort('name')}
+                        >
+                          <div className="flex items-center gap-1">
+                            Name
+                            {sortConfig?.key === 'name' && (
+                              sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                            )}
+                          </div>
+                        </th>
+                        <th
+                          className="text-left py-3 px-4 font-medium text-foreground cursor-pointer hover:text-purple-600"
+                          onClick={() => handleSort('email')}
+                        >
+                          <div className="flex items-center gap-1">
+                            Email
+                            {sortConfig?.key === 'email' && (
+                              sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                            )}
+                          </div>
+                        </th>
+                        <th
+                          className="text-left py-3 px-4 font-medium text-foreground cursor-pointer hover:text-purple-600"
+                          onClick={() => handleSort('role')}
+                        >
+                          <div className="flex items-center gap-1">
+                            Role
+                            {sortConfig?.key === 'role' && (
+                              sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                            )}
+                          </div>
+                        </th>
+                        <th className="text-left py-3 px-4 font-medium text-foreground">Course Code</th>
+                        <th className="text-left py-3 px-4 font-medium text-foreground">Status</th>
+                        <th className="text-left py-3 px-4 font-medium text-foreground">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginatedUsers.length > 0 ? paginatedUsers.map((user) => (
+                        <tr key={user.id} className="border-b border-border">
+                          <td className="py-3 px-4 text-foreground">
+                            {user.name || 'Unknown User'}
+                          </td>
+                          <td className="py-3 px-4 text-muted-foreground">{user.email}</td>
+                          <td className="py-3 px-4">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${user.role === 'instructor'
+                                ? 'bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-300'
+                                : user.role === 'student'
+                                  ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300'
+                                  : 'bg-gray-100 text-gray-600 dark:bg-gray-900 dark:text-gray-300'
+                              }`}>
+                              {user.role}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-muted-foreground">
+                            {user.courseCode || 'No Course'}
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${user.is_approved === false
+                                ? 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300'
+                                : 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300'
+                              }`}>
+                              {user.is_approved === false ? 'Disabled' : 'Active'}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="relative actions-dropdown">
+                              <button
+                                onClick={() => toggleUserActions(user.id)}
+                                className="text-muted-foreground hover:text-foreground p-2 rounded-full hover:bg-muted transition-colors"
+                              >
+                                <Settings className="w-4 h-4" />
+                              </button>
+                              {showUserActions[user.id] && (
+                                <div className="absolute right-0 top-8 bg-card border border-border rounded-lg shadow-lg z-50 min-w-32">
+                                  <button
+                                    onClick={() => handleEditUser(user)}
+                                    className="flex items-center gap-2 w-full px-3 py-2 text-sm text-foreground hover:bg-muted first:rounded-t-lg"
+                                  >
+                                    <Edit className="w-4 h-4" />
+                                    Edit
+                                  </button>
+                                  {user.is_approved === false ? (
+                                    <button
+                                      onClick={() => handleEnableUser(user.id)}
+                                      className="flex items-center gap-2 w-full px-3 py-2 text-sm text-green-700 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/20"
+                                    >
+                                      <UserCheck className="w-4 h-4" />
+                                      Enable
+                                    </button>
+                                  ) : (
+                                    <button
+                                      onClick={() => handleDisableUser(user.id)}
+                                      className="flex items-center gap-2 w-full px-3 py-2 text-sm text-yellow-700 hover:bg-yellow-50 dark:text-yellow-400 dark:hover:bg-yellow-900/20"
+                                    >
+                                      <UserX className="w-4 h-4" />
+                                      Disable
+                                    </button>
+                                  )}
+                                  <button
+                                    onClick={() => handleDeleteUser(user.id)}
+                                    className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 last:rounded-b-lg"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                    Delete
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      )) : (
+                        <tr>
+                          <td colSpan={6} className="py-8 text-center text-muted-foreground">
+                            {userSearchTerm ? 'No users found matching your search.' : 'No users found. Click refresh to load users from the API.'}
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+
+                  {/* Users Pagination */}
+                  {totalUsersPages > 1 && (
+                    <div className="flex justify-center items-center space-x-2 mt-6 pt-4 border-t border-border">
+                      <button
+                        onClick={() => setUsersPage(prev => Math.max(1, prev - 1))}
+                        disabled={usersPage === 1}
+                        className="flex items-center gap-1 px-3 py-2 bg-muted hover:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed text-foreground rounded-lg transition-colors"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                        Previous
+                      </button>
+                      <span className="text-muted-foreground px-4">
+                        Page {usersPage} of {totalUsersPages} ({sortedUsers.length} total)
+                      </span>
+                      <button
+                        onClick={() => setUsersPage(prev => Math.min(totalUsersPages, prev + 1))}
+                        disabled={usersPage === totalUsersPages}
+                        className="flex items-center gap-1 px-3 py-2 bg-muted hover:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed text-foreground rounded-lg transition-colors"
+                      >
+                        Next
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
         {/* Course Creation Modal */}
         {showCourseModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -842,6 +1314,139 @@ export function StaffDashboard() {
                   {loading ? 'Deleting...' : 'Delete Course'}
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* User Edit/Create Modal */}
+        {showUserModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-card rounded-lg p-6 max-w-md w-full mx-4 border border-border">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-lg font-semibold text-foreground">
+                  {editingUser ? 'Edit User' : 'Create New User'}
+                </h3>
+                <button
+                  onClick={() => {
+                    setShowUserModal(false)
+                    setEditingUser(null)
+                    setUserFormData({
+                      name: '',
+                      email: '',
+                      role: 'student',
+                      courseCode: '',
+                      password: ''
+                    })
+                  }}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleCreateOrUpdateUser} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1">Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={userFormData.name}
+                    onChange={(e) => setUserFormData(prev => ({ ...prev, name: e.target.value }))}
+                    className="w-full px-3 py-2 bg-muted border border-border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-foreground"
+                    placeholder="e.g., John Doe"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1">Email</label>
+                  <input
+                    type="email"
+                    required
+                    value={userFormData.email}
+                    onChange={(e) => setUserFormData(prev => ({ ...prev, email: e.target.value }))}
+                    className="w-full px-3 py-2 bg-muted border border-border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-foreground"
+                    placeholder="e.g., john.doe@university.edu"
+                    disabled={!!editingUser} // Disable email editing for existing users
+                  />
+                  {editingUser && (
+                    <p className="text-xs text-muted-foreground mt-1">Email cannot be changed for existing users</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1">Role</label>
+                  <select
+                    required
+                    value={userFormData.role}
+                    onChange={(e) => setUserFormData(prev => ({ ...prev, role: e.target.value }))}
+                    className="w-full px-3 py-2 bg-muted border border-border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-foreground"
+                  >
+                    <option value="student">Student</option>
+                    <option value="instructor">Instructor</option>
+                  </select>
+                  <p className="text-xs text-muted-foreground mt-1">Staff can only create student and instructor accounts</p>
+                </div>
+
+                {!editingUser && (
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1">Password</label>
+                    <input
+                      type="password"
+                      required
+                      value={userFormData.password}
+                      onChange={(e) => setUserFormData(prev => ({ ...prev, password: e.target.value }))}
+                      className="w-full px-3 py-2 bg-muted border border-border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-foreground"
+                      placeholder="Minimum 6 characters"
+                      minLength={6}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">Password is required for new users</p>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1">Course Code (Optional)</label>
+                  <select
+                    value={userFormData.courseCode}
+                    onChange={(e) => setUserFormData(prev => ({ ...prev, courseCode: e.target.value }))}
+                    className="w-full px-3 py-2 bg-muted border border-border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-foreground"
+                  >
+                    <option value="">No Course Assignment</option>
+                    {courses.map((course) => (
+                      <option key={course.id} value={course.code}>
+                        {course.code} - {course.title}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-muted-foreground mt-1">Assign user to a specific course</p>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowUserModal(false)
+                      setEditingUser(null)
+                      setUserFormData({
+                        name: '',
+                        email: '',
+                        role: 'student',
+                        courseCode: '',
+                        password: ''
+                      })
+                    }}
+                    className="flex-1 px-4 py-2 bg-muted hover:bg-muted/80 text-foreground rounded-lg transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white rounded-lg transition-colors"
+                  >
+                    {loading ? 'Saving...' : (editingUser ? 'Update User' : 'Create User')}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}

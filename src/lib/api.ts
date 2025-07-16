@@ -171,9 +171,22 @@ class ApiClient {
     email: string
     password: string
     role: string
+    courseCode?: string | null
   }): Promise<{ message: string; user: any }> {
     return this.request('/auth/admin/create-user', {
       method: 'POST',
+      body: JSON.stringify(userData),
+    })
+  }
+
+  async updateUser(userId: string, userData: {
+    name: string
+    email: string
+    role: string
+    courseCode?: string | null
+  }): Promise<{ message: string; user: any }> {
+    return this.request(`/auth/admin/update-user/${userId}`, {
+      method: 'PUT',
       body: JSON.stringify(userData),
     })
   }
