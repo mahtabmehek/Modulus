@@ -52,7 +52,7 @@ export default function LabCreationView() {
   console.log('Lab Creation View - editLabId:', editLabId)
   console.log('Lab Creation View - currentView:', currentView)
 
-  const [modules, setModules] = useState<Array<{id: number, title: string, course_id: number}>>([])
+  const [modules, setModules] = useState<Array<{ id: number, title: string, course_id: number }>>([])
   const [loadingModules, setLoadingModules] = useState(true)
 
   const [labData, setLabData] = useState({
@@ -118,11 +118,11 @@ export default function LabCreationView() {
           'Content-Type': 'application/json'
         }
       })
-      
+
       if (response.ok) {
         const data = await response.json()
-        const allModules: Array<{id: number, title: string, course_id: number}> = []
-        
+        const allModules: Array<{ id: number, title: string, course_id: number }> = []
+
         // Extract modules from all courses
         data.courses?.forEach((course: any) => {
           if (course.modules) {
@@ -135,7 +135,7 @@ export default function LabCreationView() {
             })
           }
         })
-        
+
         setModules(allModules)
       }
     } catch (error) {
@@ -310,7 +310,7 @@ export default function LabCreationView() {
       toast.error('Lab title is required');
       return;
     }
-    
+
     if (labData.tags.length === 0) {
       toast.error('At least one tag is required');
       return;
@@ -332,9 +332,10 @@ export default function LabCreationView() {
         module_id: 1, // Always use module 1
         title: labData.title.trim(),
         description: labData.description?.trim() || '',
-        icon_url: labData.icon || undefined, // Use icon_url for now until database migration
+        icon_path: labData.icon || undefined,
         lab_type: labTypeMapping[labData.labType] || 'vm',
         vm_image: labData.vmImage?.trim() || undefined,
+        tags: cleanTags,
         points_possible: 0, // Set to 0 since we removed points system
         estimated_minutes: 60, // Default estimated time
         tasks: tasks // Include tasks and questions data
@@ -361,10 +362,12 @@ export default function LabCreationView() {
       navigate('dashboard')
     } catch (error: any) {
       console.error('Failed to save lab:', error)
-      
+
       // More detailed error message
       if (error.response?.data?.details) {
         console.error('Validation errors:', error.response.data.details);
+        
+        // Handle both array and string details
         if (Array.isArray(error.response.data.details)) {
           toast.error(`Validation failed: ${error.response.data.details.map((d: any) => d.msg || d.message || d).join(', ')}`);
         } else {
@@ -372,6 +375,8 @@ export default function LabCreationView() {
         }
       } else if (error.response?.data?.error) {
         toast.error(`Error: ${error.response.data.error}`);
+      } else if (error.message) {
+        toast.error(`Error: ${error.message}`);
       } else {
         toast.error(`Failed to ${editLabId ? 'update' : 'create'} lab. Please try again.`);
       }
@@ -654,20 +659,23 @@ export default function LabCreationView() {
                           </p>
                           <p className="text-xs text-gray-500 dark:text-gray-400">PNG, JPG or GIF (MAX. 2MB)</p>
                         </div>
-                        <input 
-                          type="file" 
-                          className="hidden" 
+                        <input
+                          type="file"
+                          className="hidden"
                           accept="image/*"
                           onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (file) {
                               try {
+                                // Show upload progress
+                                toast.loading('Uploading icon...', { id: 'icon-upload' });
+
                                 // Upload the file using the file upload API
                                 const formData = new FormData();
                                 formData.append('icon', file);
                                 formData.append('labName', labData.title || 'untitled-lab');
 
-                                const response = await fetch('/api/files/upload-lab-files', {
+                                const response = await fetch('http://localhost:3001/api/files/upload-lab-files', {
                                   method: 'POST',
                                   body: formData,
                                 });
@@ -676,31 +684,32 @@ export default function LabCreationView() {
                                   const result = await response.json();
                                   if (result.success && result.data.icon) {
                                     setLabData({ ...labData, icon: result.data.icon });
+                                    toast.success('Icon uploaded successfully!', { id: 'icon-upload' });
                                   } else {
                                     console.error('Icon upload failed:', result);
-                                    alert('Failed to upload icon');
+                                    toast.error('Failed to upload icon', { id: 'icon-upload' });
                                   }
                                 } else {
                                   console.error('Icon upload failed:', response.statusText);
-                                  alert('Failed to upload icon');
+                                  toast.error('Failed to upload icon', { id: 'icon-upload' });
                                 }
                               } catch (error) {
                                 console.error('Error uploading icon:', error);
-                                alert('Error uploading icon');
+                                toast.error('Error uploading icon', { id: 'icon-upload' });
                               }
                             }
                           }}
                         />
                       </label>
                     </div>
-                    
+
                     {/* Image Preview */}
                     {labData.icon && (
                       <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                         <div className="flex-shrink-0">
-                          <img 
-                            src={labData.icon} 
-                            alt="Lab icon preview" 
+                          <img
+                            src={labData.icon}
+                            alt="Lab icon preview"
                             className="w-12 h-12 rounded-lg object-cover border border-gray-200 dark:border-gray-600"
                           />
                         </div>

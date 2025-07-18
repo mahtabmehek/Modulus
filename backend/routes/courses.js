@@ -90,7 +90,7 @@ router.get('/my-course', authenticateToken, async (req, res) => {
   try {
     console.log('=== MY COURSE DEBUG START ===');
     console.log('GET MY COURSE - User:', req.user.userId, req.user.email);
-    
+
     const db = req.app.locals.db;
     console.log('Database connection:', !!db);
 
@@ -99,7 +99,7 @@ router.get('/my-course', authenticateToken, async (req, res) => {
     const userResult = await db.query('SELECT course_id FROM users WHERE id = $1', [req.user.userId]);
     console.log('User query result:', userResult.rows);
     const user = userResult.rows[0];
-    
+
     if (!user || !user.course_id) {
       console.log('MY COURSE - No course assigned to user');
       return res.json({
@@ -126,7 +126,7 @@ router.get('/my-course', authenticateToken, async (req, res) => {
     `;
 
     const courseResult = await db.query(courseQuery, [user.course_id]);
-    
+
     if (courseResult.rows.length === 0) {
       console.log('MY COURSE - Course not found or not published');
       return res.json({
@@ -204,7 +204,7 @@ router.get('/my-course', authenticateToken, async (req, res) => {
     };
 
     console.log('MY COURSE - Returning course:', courseData.title);
-    
+
     res.json({
       success: true,
       course: courseData
@@ -320,7 +320,7 @@ router.post('/', authenticateToken, requireStaffOrAdmin, validateCourse, async (
     // Ensure integer types for database operations
     const parsedDuration = parseInt(duration, 10);
     const parsedTotalCredits = parseInt(totalCredits, 10);
-    
+
     console.log('CREATE COURSE - Parsed values:', {
       parsedDuration,
       parsedTotalCredits,
@@ -338,7 +338,7 @@ router.post('/', authenticateToken, requireStaffOrAdmin, validateCourse, async (
     }
 
     console.log('CREATE COURSE - About to insert with values:', {
-      title, code, description, department, academicLevel, 
+      title, code, description, department, academicLevel,
       duration: parsedDuration, totalCredits: parsedTotalCredits, userId: req.user.userId
     });
 
@@ -398,7 +398,7 @@ router.put('/:id', authenticateToken, requireStaffOrAdmin, validateCourse, async
     // Ensure integer types for database queries
     const parsedDuration = parseInt(duration, 10);
     const parsedTotalCredits = parseInt(totalCredits, 10);
-    
+
     console.log('UPDATE COURSE - Parsed values:', {
       parsedDuration,
       parsedTotalCredits,
@@ -428,13 +428,13 @@ router.put('/:id', authenticateToken, requireStaffOrAdmin, validateCourse, async
     }
 
     console.log('UPDATE COURSE - About to update course with values:', {
-      title, code, description, department, academicLevel, 
+      title, code, description, department, academicLevel,
       duration: parsedDuration, totalCredits: parsedTotalCredits, id: parseInt(id, 10)
     });
 
     console.log('UPDATE COURSE - Parameter types:', {
       title: typeof title,
-      code: typeof code, 
+      code: typeof code,
       description: typeof description,
       department: typeof department,
       academicLevel: typeof academicLevel,
@@ -537,7 +537,7 @@ router.put('/:id/modules', authenticateToken, requireStaffOrAdmin, async (req, r
       // Insert new modules
       for (const module of modules) {
         console.log('Inserting module:', module);
-        
+
         const moduleResult = await db.query(
           `INSERT INTO modules (course_id, title, description, order_index, created_at, updated_at)
            VALUES ($1, $2, $3, $4, NOW(), NOW())
@@ -553,7 +553,7 @@ router.put('/:id/modules', authenticateToken, requireStaffOrAdmin, async (req, r
           for (let i = 0; i < module.labs.length; i++) {
             const lab = module.labs[i];
             console.log('Inserting lab:', lab);
-            
+
             await db.query(
               `INSERT INTO labs (module_id, title, description, order_index, created_at, updated_at)
                VALUES ($1, $2, $3, $4, NOW(), NOW())`,

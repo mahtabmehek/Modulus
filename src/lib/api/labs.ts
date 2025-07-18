@@ -23,7 +23,7 @@ export interface Lab {
   required_tools?: string[]
   network_requirements?: any
   auto_grade?: boolean
-  icon_url?: string
+  icon_path?: string
   tags?: string[]
 }
 
@@ -42,7 +42,7 @@ export interface CreateLabData {
   container_image?: string
   required_tools?: string[]
   network_requirements?: string
-  icon_url?: string
+  icon_path?: string
   tags?: string[]
 }
 

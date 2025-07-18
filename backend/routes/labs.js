@@ -31,45 +31,35 @@ const requireStaffOrAdmin = (req, res, next) => {
   next();
 };
 
-// Database configuration
-const { Pool } = require('pg');
-
-const pool = new Pool({
-  user: process.env.DB_USER || 'postgres',
-  host: process.env.DB_HOST || 'localhost',
-  database: process.env.DB_NAME || 'modulus',
-  password: process.env.DB_PASSWORD || 'password',
-  port: process.env.DB_PORT || 5432,
-});
-
 // GET /api/labs - Get all labs (with optional module filter)
 router.get('/', authenticateToken, async (req, res) => {
   try {
     const { module_id } = req.query;
-    
+    const db = req.app.locals.db;
+
     let query = `
       SELECT l.*, m.title as module_title, m.course_id 
       FROM labs l
       JOIN modules m ON l.module_id = m.id
     `;
     let params = [];
-    
+
     if (module_id) {
       query += ' WHERE l.module_id = $1';
       params = [module_id];
     }
-    
+
     query += ' ORDER BY l.created_at DESC';
-    
-    const result = await pool.query(query, params);
-    
+
+    const result = await db.query(query, params);
+
     res.json({
       success: true,
       data: result.rows
     });
   } catch (error) {
     console.error('Error fetching labs:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to fetch labs',
       details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
@@ -80,7 +70,8 @@ router.get('/', authenticateToken, async (req, res) => {
 router.get('/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    
+    const db = req.app.locals.db;
+
     const query = `
       SELECT l.*, m.title as module_title, m.course_id, c.title as course_title
       FROM labs l
@@ -88,20 +79,20 @@ router.get('/:id', authenticateToken, async (req, res) => {
       JOIN courses c ON m.course_id = c.id
       WHERE l.id = $1
     `;
-    
-    const result = await pool.query(query, [id]);
-    
+
+    const result = await db.query(query, [id]);
+
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Lab not found' });
     }
-    
+
     res.json({
       success: true,
       data: result.rows[0]
     });
   } catch (error) {
     console.error('Error fetching lab:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to fetch lab details',
       details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
@@ -109,8 +100,8 @@ router.get('/:id', authenticateToken, async (req, res) => {
 });
 
 // POST /api/labs - Create new lab (Admin/Instructor only)
-router.post('/', 
-  authenticateToken, 
+router.post('/',
+  authenticateToken,
   requireStaffOrAdmin,
   [
     body('module_id').isInt().withMessage('Valid module ID is required'),
@@ -124,13 +115,16 @@ router.post('/',
     body('points_possible').optional().isInt({ min: 0 }).withMessage('Points must be non-negative integer'),
     body('estimated_minutes').optional().isInt({ min: 1 }).withMessage('Estimated minutes must be positive'),
     body('icon_path').optional().isLength({ max: 500 }).withMessage('Icon path too long'),
+    body('icon_url').optional().isLength({ max: 5000 }).withMessage('Icon URL too long'),
     body('tags').optional().isArray().withMessage('Tags must be an array')
   ],
   async (req, res) => {
     try {
+      const db = req.app.locals.db;
+      
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           error: 'Validation failed',
           details: errors.array()
         });
@@ -148,22 +142,23 @@ router.post('/',
         points_possible,
         estimated_minutes,
         icon_path,
+        icon_url,
         tags,
         tasks // Add tasks to the expected fields
       } = req.body;
 
       // Verify module exists and user has access
-      const moduleCheck = await pool.query(
+      const moduleCheck = await db.query(
         'SELECT id FROM modules WHERE id = $1',
         [module_id]
       );
-      
+
       if (moduleCheck.rows.length === 0) {
         return res.status(404).json({ error: 'Module not found' });
       }
 
       // Get next order index
-      const orderResult = await pool.query(
+      const orderResult = await db.query(
         'SELECT COALESCE(MAX(order_index), 0) + 1 as next_order FROM labs WHERE module_id = $1',
         [module_id]
       );
@@ -171,7 +166,7 @@ router.post('/',
 
       // Use lab_type directly - must match database constraint: 'vm', 'container', 'web', 'simulation'
       const dbLabType = lab_type;
-      
+
       // Debug logging
       console.log('DEBUG LAB CREATION:');
       console.log('- Original lab_type:', lab_type);
@@ -181,8 +176,8 @@ router.post('/',
         INSERT INTO labs (
           module_id, title, description, lab_type, vm_image, 
           container_image, required_tools, network_requirements, 
-          points_possible, estimated_minutes, order_index, icon_url
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+          points_possible, estimated_minutes, order_index, icon_path, icon_url, tags
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
         RETURNING *
       `;
 
@@ -198,35 +193,37 @@ router.post('/',
         points_possible || 0,
         estimated_minutes || null,
         finalOrderIndex,
-        icon_path || null // Store icon_path in icon_url column for now
+        icon_path || null,
+        icon_url || null,
+        tags || null // Pass array directly for PostgreSQL array type
       ];
-      
+
       // Debug values array
       console.log('DEBUG VALUES ARRAY:');
       console.log('Values array:', values);
       console.log('lab_type value at index 3:', values[3]);
 
-      const result = await pool.query(query, values);
+      const result = await db.query(query, values);
       const createdLab = result.rows[0];
 
       // Save tasks and questions if provided
       if (tasks && Array.isArray(tasks) && tasks.length > 0) {
         for (let i = 0; i < tasks.length; i++) {
           const task = tasks[i];
-          
+
           // Insert task
-          const taskResult = await pool.query(
+          const taskResult = await db.query(
             'INSERT INTO tasks (lab_id, title, description, order_index) VALUES ($1, $2, $3, $4) RETURNING id',
             [createdLab.id, task.title, task.description, i + 1]
           );
           const taskId = taskResult.rows[0].id;
-          
+
           // Insert questions for this task
           if (task.questions && Array.isArray(task.questions)) {
             for (let j = 0; j < task.questions.length; j++) {
               const question = task.questions[j];
-              
-              await pool.query(`
+
+              await db.query(`
                 INSERT INTO questions (
                   task_id, type, title, description, expected_answer, 
                   is_required, points, order_index, images, attachments, 
@@ -258,7 +255,7 @@ router.post('/',
       });
     } catch (error) {
       console.error('Error creating lab:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Failed to create lab',
         details: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
@@ -281,13 +278,17 @@ router.put('/:id',
     body('points_possible').optional().isInt({ min: 0 }).withMessage('Points must be non-negative integer'),
     body('estimated_minutes').optional().isInt({ min: 1 }).withMessage('Estimated minutes must be positive'),
     body('icon_path').optional().isLength({ max: 500 }).withMessage('Icon path too long'),
-    body('tags').optional().isArray().withMessage('Tags must be an array')
+    body('icon_url').optional().isLength({ max: 5000 }).withMessage('Icon URL too long'),
+    body('tags').optional().isArray().withMessage('Tags must be an array'),
+    body('tasks').optional().isArray().withMessage('Tasks must be an array')
   ],
   async (req, res) => {
     try {
+      const db = req.app.locals.db;
+      
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           error: 'Validation failed',
           details: errors.array()
         });
@@ -297,25 +298,30 @@ router.put('/:id',
       const updates = req.body;
 
       // Check if lab exists
-      const labCheck = await pool.query('SELECT id FROM labs WHERE id = $1', [id]);
+      const labCheck = await db.query('SELECT id FROM labs WHERE id = $1', [id]);
       if (labCheck.rows.length === 0) {
         return res.status(404).json({ error: 'Lab not found' });
       }
 
-      // Use lab_type directly - no mapping needed, must match database constraint
+      // Extract tasks for separate handling and remove from updates
+      const { tasks, ...labUpdates } = updates;
 
-      // Build dynamic update query
+      // Build dynamic update query for lab fields only
       const updateFields = [];
       const updateValues = [];
       let paramCounter = 1;
 
-      Object.keys(updates).forEach(key => {
-        if (updates[key] !== undefined) {
+      // Valid lab table columns
+      const validLabColumns = [
+        'module_id', 'title', 'description', 'lab_type', 'vm_image', 
+        'container_image', 'required_tools', 'network_requirements', 
+        'points_possible', 'estimated_minutes', 'icon_path', 'icon_url', 'tags'
+      ];
+
+      Object.keys(labUpdates).forEach(key => {
+        if (labUpdates[key] !== undefined && validLabColumns.includes(key)) {
           updateFields.push(`${key} = $${paramCounter}`);
-          updateValues.push(
-            // Pass arrays directly for PostgreSQL array types (tags, required_tools)
-            updates[key]
-          );
+          updateValues.push(labUpdates[key]);
           paramCounter++;
         }
       });
@@ -334,7 +340,53 @@ router.put('/:id',
         RETURNING *
       `;
 
-      const result = await pool.query(query, updateValues);
+      const result = await db.query(query, updateValues);
+
+      // Handle tasks update if provided
+      if (tasks && Array.isArray(tasks)) {
+        // Delete existing tasks and questions for this lab
+        await db.query('DELETE FROM tasks WHERE lab_id = $1', [id]);
+
+        // Insert new tasks and questions
+        for (let i = 0; i < tasks.length; i++) {
+          const task = tasks[i];
+
+          // Insert task
+          const taskResult = await db.query(
+            'INSERT INTO tasks (lab_id, title, description, order_index) VALUES ($1, $2, $3, $4) RETURNING id',
+            [id, task.title, task.description, i + 1]
+          );
+          const taskId = taskResult.rows[0].id;
+
+          // Insert questions for this task
+          if (task.questions && Array.isArray(task.questions)) {
+            for (let j = 0; j < task.questions.length; j++) {
+              const question = task.questions[j];
+
+              await db.query(`
+                INSERT INTO questions (
+                  task_id, type, title, description, expected_answer, 
+                  is_required, points, order_index, images, attachments, 
+                  multiple_choice_options, hints
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+              `, [
+                taskId,
+                question.type,
+                question.title,
+                question.description,
+                question.flag || question.expectedAnswer || null,
+                !question.isOptional, // Convert isOptional to is_required (inverse)
+                question.points || 0,
+                j + 1,
+                question.images || null,
+                question.attachments || null,
+                question.multipleChoiceOptions ? JSON.stringify(question.multipleChoiceOptions) : null,
+                question.hints || null
+              ]);
+            }
+          }
+        }
+      }
 
       res.json({
         success: true,
@@ -343,7 +395,7 @@ router.put('/:id',
       });
     } catch (error) {
       console.error('Error updating lab:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Failed to update lab',
         details: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
@@ -354,6 +406,8 @@ router.put('/:id',
 // DELETE /api/labs/:id - Delete lab (Admin only)
 router.delete('/:id', authenticateToken, async (req, res) => {
   try {
+    const db = req.app.locals.db;
+    
     if (req.user.role !== 'admin') {
       return res.status(403).json({ error: 'Admin access required' });
     }
@@ -361,25 +415,25 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     const { id } = req.params;
 
     // Check if lab exists
-    const labCheck = await pool.query('SELECT id FROM labs WHERE id = $1', [id]);
+    const labCheck = await db.query('SELECT id FROM labs WHERE id = $1', [id]);
     if (labCheck.rows.length === 0) {
       return res.status(404).json({ error: 'Lab not found' });
     }
 
     // Check for active lab sessions
-    const activeSessions = await pool.query(
+    const activeSessions = await db.query(
       'SELECT id FROM lab_sessions WHERE lab_id = $1 AND status = $2',
       [id, 'active']
     );
 
     if (activeSessions.rows.length > 0) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'Cannot delete lab with active sessions',
         details: `${activeSessions.rows.length} active session(s) found`
       });
     }
 
-    await pool.query('DELETE FROM labs WHERE id = $1', [id]);
+    await db.query('DELETE FROM labs WHERE id = $1', [id]);
 
     res.json({
       success: true,
@@ -387,7 +441,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error('Error deleting lab:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to delete lab',
       details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
@@ -397,6 +451,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 // GET /api/labs/:id/sessions - Get lab sessions for a specific lab
 router.get('/:id/sessions', authenticateToken, async (req, res) => {
   try {
+    const db = req.app.locals.db;
     const { id } = req.params;
     const { status } = req.query;
 
@@ -415,7 +470,7 @@ router.get('/:id/sessions', authenticateToken, async (req, res) => {
 
     query += ' ORDER BY ls.created_at DESC';
 
-    const result = await pool.query(query, params);
+    const result = await db.query(query, params);
 
     res.json({
       success: true,
@@ -423,7 +478,7 @@ router.get('/:id/sessions', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching lab sessions:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to fetch lab sessions',
       details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
@@ -433,11 +488,12 @@ router.get('/:id/sessions', authenticateToken, async (req, res) => {
 // POST /api/labs/:id/start - Start a lab session
 router.post('/:id/start', authenticateToken, async (req, res) => {
   try {
+    const db = req.app.locals.db;
     const { id } = req.params;
     const userId = req.user.userId;
 
     // Check if lab exists
-    const labResult = await pool.query('SELECT * FROM labs WHERE id = $1', [id]);
+    const labResult = await db.query('SELECT * FROM labs WHERE id = $1', [id]);
     if (labResult.rows.length === 0) {
       return res.status(404).json({ error: 'Lab not found' });
     }
@@ -445,13 +501,13 @@ router.post('/:id/start', authenticateToken, async (req, res) => {
     const lab = labResult.rows[0];
 
     // Check for existing active session for this user and lab
-    const existingSession = await pool.query(
+    const existingSession = await db.query(
       'SELECT id FROM lab_sessions WHERE user_id = $1 AND lab_id = $2 AND status = $3',
       [userId, id, 'active']
     );
 
     if (existingSession.rows.length > 0) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'Active session already exists for this lab',
         sessionId: existingSession.rows[0].id
       });
@@ -475,7 +531,7 @@ router.post('/:id/start', authenticateToken, async (req, res) => {
       lab.lab_type === 'container' ? `container-${Date.now()}` : null
     ];
 
-    const sessionResult = await pool.query(sessionQuery, sessionValues);
+    const sessionResult = await db.query(sessionQuery, sessionValues);
 
     res.json({
       success: true,
@@ -487,7 +543,7 @@ router.post('/:id/start', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error('Error starting lab session:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to start lab session',
       details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
@@ -497,11 +553,12 @@ router.post('/:id/start', authenticateToken, async (req, res) => {
 // POST /api/labs/:id/stop - Stop a lab session
 router.post('/:id/stop', authenticateToken, async (req, res) => {
   try {
+    const db = req.app.locals.db;
     const { id } = req.params;
     const userId = req.user.userId;
 
     // Find active session
-    const sessionResult = await pool.query(
+    const sessionResult = await db.query(
       'SELECT * FROM lab_sessions WHERE user_id = $1 AND lab_id = $2 AND status = $3',
       [userId, id, 'active']
     );
@@ -520,7 +577,7 @@ router.post('/:id/stop', authenticateToken, async (req, res) => {
       RETURNING *
     `;
 
-    const result = await pool.query(updateQuery, ['completed', session.id]);
+    const result = await db.query(updateQuery, ['completed', session.id]);
 
     res.json({
       success: true,
@@ -529,7 +586,7 @@ router.post('/:id/stop', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error('Error stopping lab session:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to stop lab session',
       details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
