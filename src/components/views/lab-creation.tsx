@@ -48,6 +48,9 @@ export default function LabCreationView() {
   const { navigate, currentView } = useApp()
   const editLabId = currentView?.params?.editLabId
 
+  const [modules, setModules] = useState<Array<{id: number, title: string, course_id: number}>>([])
+  const [loadingModules, setLoadingModules] = useState(true)
+
   const [labData, setLabData] = useState({
     title: '',
     description: '',
@@ -56,7 +59,7 @@ export default function LabCreationView() {
     academicCategory: 'computing' as string,
     course: '',
     module: '',
-    moduleId: 1, // Add module ID field
+    moduleId: 0, // Will be set when user selects a module
     labType: 'mandatory' as 'mandatory' | 'challenge',
     // Technical details
     difficulty: 'beginner' as 'beginner' | 'intermediate' | 'advanced',
@@ -95,12 +98,50 @@ export default function LabCreationView() {
   const [isSaving, setIsSaving] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
 
-  // Load lab data for editing
+  // Load modules and lab data for editing
   useEffect(() => {
+    loadModules()
     if (editLabId) {
       loadLabForEditing(editLabId)
     }
   }, [editLabId])
+
+  const loadModules = async () => {
+    try {
+      const token = localStorage.getItem('modulus_token')
+      const response = await fetch('http://localhost:3001/api/courses', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        const allModules: Array<{id: number, title: string, course_id: number}> = []
+        
+        // Extract modules from all courses
+        data.courses?.forEach((course: any) => {
+          if (course.modules) {
+            course.modules.forEach((module: any) => {
+              allModules.push({
+                id: module.id,
+                title: module.title,
+                course_id: course.id
+              })
+            })
+          }
+        })
+        
+        setModules(allModules)
+      }
+    } catch (error) {
+      console.error('Error loading modules:', error)
+      toast.error('Failed to load modules')
+    } finally {
+      setLoadingModules(false)
+    }
+  }
 
   const loadLabForEditing = async (labId: number) => {
     try {
@@ -267,7 +308,7 @@ export default function LabCreationView() {
     try {
       // Create the lab using the new labs API that matches the database schema
       const labTypeMapping = {
-        'mandatory': 'virtual_machine',
+        'mandatory': 'vm',
         'challenge': 'container'
       }
 
@@ -276,7 +317,7 @@ export default function LabCreationView() {
         title: labData.title,
         description: labData.description,
         icon_url: labData.icon || undefined, // Add icon URL field
-        lab_type: labTypeMapping[labData.labType] || 'virtual_machine',
+        lab_type: labTypeMapping[labData.labType] || 'vm',
         vm_image: labData.vmImage || undefined,
         required_tools: labData.prerequisites.length > 0 ? labData.prerequisites : undefined,
         tags: labData.tags.length > 0 ? labData.tags : undefined,
@@ -509,7 +550,7 @@ export default function LabCreationView() {
 
               <button
                 onClick={handleSave}
-                disabled={isSaving || !labData.title.trim() || !labData.moduleId}
+                disabled={isSaving || !labData.title.trim() || !labData.moduleId || labData.moduleId === 0}
                 className="flex items-center px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
               >
                 {isSaving ? (
@@ -664,12 +705,20 @@ export default function LabCreationView() {
                     value={labData.moduleId}
                     onChange={(e) => setLabData({ ...labData, moduleId: parseInt(e.target.value) })}
                     className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    disabled={loadingModules}
                   >
-                    <option value={1}>Module 1: Introduction to Cybersecurity</option>
-                    <option value={2}>Module 2: Network Security</option>
-                    <option value={3}>Module 3: Web Application Security</option>
-                    <option value={4}>Module 4: Cryptography</option>
-                    <option value={5}>Module 5: Incident Response</option>
+                    {loadingModules ? (
+                      <option>Loading modules...</option>
+                    ) : (
+                      <>
+                        <option value="">Select a module</option>
+                        {modules.map(module => (
+                          <option key={module.id} value={module.id}>
+                            {module.title} (Course {module.course_id})
+                          </option>
+                        ))}
+                      </>
+                    )}
                   </select>
                 </div>
 
