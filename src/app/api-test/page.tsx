@@ -9,11 +9,7 @@ export default function ApiTestPage() {
 
   useEffect(() => {
     // Get the API URL that would be used
-    const url = process.env.NEXT_PUBLIC_API_URL || (
-      process.env.NODE_ENV === 'production'
-        ? 'https://9yr579qaz1.execute-api.eu-west-2.amazonaws.com/prod/api'
-        : 'http://localhost:3001/api'
-    )
+    const url = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
     setApiUrl(url)
 
     // Test the connection
@@ -23,7 +19,7 @@ export default function ApiTestPage() {
         if (response.ok) {
           const data = await response.json()
           setHealthData(data)
-          setConnectionStatus('✅ Connected to AWS')
+          setConnectionStatus('✅ Connected to Local API')
         } else {
           setConnectionStatus(`❌ Connection failed: ${response.status}`)
         }

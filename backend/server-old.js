@@ -1,4 +1,4 @@
-const express = require('express');
+﻿const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
@@ -71,25 +71,22 @@ const pool = new Pool({
   connectionTimeoutMillis: 5000
 });
 
-// Test database connection
-pool.connect()
-  .then(client => {
-    console.log('✅ Connected to database');
-    client.release();
-  })
-  .catch(err => {
-    console.error('❌ Database connection error:', err.message);
-    console.log('🔄 Falling back to mock database for local development');
-    
-    // Use mock database as fallback
-    try {
+  // Test database connection on startup
+  pool.connect()
+    .then(client => {
+      console.log('✅ Connected to database');
+      if (client.release) client.release();
+    })
+    .catch(err => {
+      console.error('❌ Database connection error:', err.message);
+      console.log('🔄 Falling back to mock database for local development');
+      
+      // Use mock database as fallback
       const MockDatabase = require('./mock-db');
       app.locals.db = new MockDatabase();
       console.log('✅ Mock database initialized');
-    } catch (mockErr) {
-      console.error('❌ Mock database not available:', mockErr.message);
-    }
-  });
+    });
+}
 
 // Make pool available to routes
 app.locals.db = pool;
@@ -107,7 +104,7 @@ if (desktopRoutes) {
   app.use('/api/desktop', desktopRoutes);
 }
 
-// Simple health check endpoint
+// Simple health check endpoint for ECS health checks
 app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'healthy',
@@ -159,13 +156,14 @@ process.on('SIGINT', () => {
   });
 });
 
-// Start the server
+// Export the app for Lambda deployment
+module.exports = app;
+
+// Only start the server if running directly (not in Lambda)
 if (require.main === module) {
   app.listen(PORT, () => {
     console.log(`🚀 Modulus Backend API listening on port ${PORT}`);
     console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`Database: ${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || 5432}/${process.env.DB_NAME || 'modulus'}`);
+    console.log(`Database: ${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME}`);
   });
 }
-
-module.exports = app;

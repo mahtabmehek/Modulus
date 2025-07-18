@@ -13,7 +13,7 @@ export default function ApiTestPage() {
     try {
       console.log('Making API call...')
       
-      const response = await fetch('http://modulus-alb-2046761654.eu-west-2.elb.amazonaws.com/api/auth/validate-access-code', {
+      const response = await fetch('http://localhost:3001/api/auth/validate-access-code', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
