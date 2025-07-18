@@ -879,9 +879,9 @@ router.delete('/admin/delete-user', authenticateToken, requireAdmin, async (req,
 router.put('/admin/update-user/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, email, role, is_approved } = req.body;
+    const { name, email, role, is_approved, courseId } = req.body;
 
-    console.log('UPDATE USER - Request:', { id, name, email, role, is_approved });
+    console.log('UPDATE USER - Request:', { id, name, email, role, is_approved, courseId });
 
     if (!id) {
       return res.status(400).json({ error: 'User ID is required' });
@@ -937,6 +937,12 @@ router.put('/admin/update-user/:id', authenticateToken, requireAdmin, async (req
       paramCount++;
     }
 
+    if (courseId !== undefined && courseId !== currentUser.course_id) {
+      updateFields.push(`course_id = $${paramCount}`);
+      updateValues.push(courseId);
+      paramCount++;
+    }
+
     // If no fields to update, return current user
     if (updateFields.length === 0) {
       return res.json({
@@ -947,13 +953,11 @@ router.put('/admin/update-user/:id', authenticateToken, requireAdmin, async (req
           email: currentUser.email,
           role: currentUser.role,
           isApproved: currentUser.is_approved,
+          courseId: currentUser.course_id,
           createdAt: currentUser.created_at
         }
       });
     }
-
-    // Add updated_at field
-    updateFields.push(`updated_at = NOW()`);
 
     // Add user ID for WHERE clause
     updateValues.push(userId);
@@ -982,8 +986,8 @@ router.put('/admin/update-user/:id', authenticateToken, requireAdmin, async (req
         email: updatedUser.email,
         role: updatedUser.role,
         isApproved: updatedUser.is_approved,
-        createdAt: updatedUser.created_at,
-        updatedAt: updatedUser.updated_at
+        courseId: updatedUser.course_id,
+        createdAt: updatedUser.created_at
       }
     });
 

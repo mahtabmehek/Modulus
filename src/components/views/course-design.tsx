@@ -98,7 +98,7 @@ export default function CourseDesignView() {
   const loadAvailableLabs = async () => {
     try {
       setLoading(true)
-      const token = localStorage.getItem('auth_token')
+      const token = localStorage.getItem('modulus_token')
       
       if (!token) {
         console.error('No token found')

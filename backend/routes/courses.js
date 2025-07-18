@@ -85,6 +85,140 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET /api/courses/my-course - Get current user's assigned course (MUST BE BEFORE /:id route)
+router.get('/my-course', authenticateToken, async (req, res) => {
+  try {
+    console.log('=== MY COURSE DEBUG START ===');
+    console.log('GET MY COURSE - User:', req.user.userId, req.user.email);
+    
+    const db = req.app.locals.db;
+    console.log('Database connection:', !!db);
+
+    // Get the user's assigned course_id
+    console.log('Querying user course_id...');
+    const userResult = await db.query('SELECT course_id FROM users WHERE id = $1', [req.user.userId]);
+    console.log('User query result:', userResult.rows);
+    const user = userResult.rows[0];
+    
+    if (!user || !user.course_id) {
+      console.log('MY COURSE - No course assigned to user');
+      return res.json({
+        success: true,
+        course: null
+      });
+    }
+
+    console.log('MY COURSE - User course ID:', user.course_id);
+
+    // Get the course by ID
+    const courseQuery = `
+      SELECT 
+        id,
+        title,
+        code,
+        description,
+        department,
+        academic_level,
+        duration,
+        total_credits
+      FROM courses 
+      WHERE id = $1 AND is_published = true
+    `;
+
+    const courseResult = await db.query(courseQuery, [user.course_id]);
+    
+    if (courseResult.rows.length === 0) {
+      console.log('MY COURSE - Course not found or not published');
+      return res.json({
+        success: true,
+        course: null
+      });
+    }
+
+    const course = courseResult.rows[0];
+
+    // Get modules for this course
+    const modulesQuery = `
+      SELECT 
+        id,
+        title,
+        description,
+        order_index
+      FROM modules 
+      WHERE course_id = $1 AND is_published = true
+      ORDER BY order_index
+    `;
+
+    const modulesResult = await db.query(modulesQuery, [course.id]);
+
+    // Get labs for each module
+    const modules = [];
+    for (const module of modulesResult.rows) {
+      const labsQuery = `
+        SELECT 
+          id,
+          title,
+          description,
+          order_index,
+          estimated_minutes,
+          points_possible
+        FROM labs 
+        WHERE module_id = $1 AND is_published = true
+        ORDER BY order_index
+      `;
+
+      const labsResult = await db.query(labsQuery, [module.id]);
+
+      modules.push({
+        id: module.id,
+        title: module.title,
+        description: module.description,
+        orderIndex: module.order_index,
+        labs: labsResult.rows.map(lab => ({
+          id: lab.id,
+          title: lab.title,
+          description: lab.description,
+          difficulty: 'intermediate',
+          estimatedDuration: lab.estimated_minutes || 30,
+          orderIndex: lab.order_index,
+          status: 'not_started',
+          completedAt: null,
+          score: null
+        })),
+        completedLabs: 0,
+        totalLabs: labsResult.rows.length
+      });
+    }
+
+    const courseData = {
+      id: course.id,
+      title: course.title,
+      code: course.code,
+      description: course.description,
+      department: course.department,
+      academicLevel: course.academic_level,
+      duration: course.duration,
+      totalCredits: course.total_credits,
+      completionPercentage: 0,
+      modules: modules
+    };
+
+    console.log('MY COURSE - Returning course:', courseData.title);
+    
+    res.json({
+      success: true,
+      course: courseData
+    });
+
+  } catch (error) {
+    console.error('=== MY COURSE ERROR ===');
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    console.error('Error details:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // GET /api/courses/:id - Get a specific course
 router.get('/:id', async (req, res) => {
   try {

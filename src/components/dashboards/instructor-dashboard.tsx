@@ -43,7 +43,7 @@ export function InstructorDashboard() {
   const loadLabs = async () => {
     try {
       setLoading(true)
-      const token = localStorage.getItem('auth_token')
+      const token = localStorage.getItem('modulus_token')
       
       if (!token) {
         console.error('No token found')

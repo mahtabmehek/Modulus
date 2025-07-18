@@ -116,7 +116,7 @@ router.post('/',
     body('module_id').isInt().withMessage('Valid module ID is required'),
     body('title').trim().isLength({ min: 1, max: 255 }).withMessage('Title must be 1-255 characters'),
     body('description').optional().isLength({ max: 2000 }).withMessage('Description must be under 2000 characters'),
-    body('lab_type').isIn(['virtual_machine', 'container', 'simulation', 'code_exercise']).withMessage('Valid lab type required'),
+    body('lab_type').isIn(['vm', 'container', 'web', 'simulation']).withMessage('Valid lab type required (vm, container, web, simulation)'),
     body('vm_image').optional().isLength({ max: 255 }).withMessage('VM image name too long'),
     body('container_image').optional().isLength({ max: 255 }).withMessage('Container image name too long'),
     body('required_tools').optional().isArray().withMessage('Required tools must be an array'),
@@ -168,14 +168,13 @@ router.post('/',
       );
       const finalOrderIndex = orderResult.rows[0].next_order;
 
-      // Map API lab_type values to database values
-      const labTypeMapping = {
-        'virtual_machine': 'vm',
-        'container': 'container',
-        'simulation': 'simulation',
-        'code_exercise': 'web'
-      };
-      const dbLabType = labTypeMapping[lab_type] || 'vm';
+      // Use lab_type directly - must match database constraint: 'vm', 'container', 'web', 'simulation'
+      const dbLabType = lab_type;
+      
+      // Debug logging
+      console.log('DEBUG LAB CREATION:');
+      console.log('- Original lab_type:', lab_type);
+      console.log('- Using lab_type directly:', dbLabType);
 
       const query = `
         INSERT INTO labs (
@@ -201,6 +200,11 @@ router.post('/',
         icon_url || null,
         tags ? JSON.stringify(tags) : null
       ];
+      
+      // Debug values array
+      console.log('DEBUG VALUES ARRAY:');
+      console.log('Values array:', values);
+      console.log('lab_type value at index 3:', values[3]);
 
       const result = await pool.query(query, values);
 
@@ -226,7 +230,7 @@ router.put('/:id',
   [
     body('title').optional().trim().isLength({ min: 1, max: 255 }).withMessage('Title must be 1-255 characters'),
     body('description').optional().isLength({ max: 2000 }).withMessage('Description must be under 2000 characters'),
-    body('lab_type').optional().isIn(['virtual_machine', 'container', 'simulation', 'code_exercise']).withMessage('Valid lab type required'),
+    body('lab_type').optional().isIn(['vm', 'container', 'web', 'simulation']).withMessage('Valid lab type required (vm, container, web, simulation)'),
     body('vm_image').optional().isLength({ max: 255 }).withMessage('VM image name too long'),
     body('container_image').optional().isLength({ max: 255 }).withMessage('Container image name too long'),
     body('required_tools').optional().isArray().withMessage('Required tools must be an array'),
@@ -255,17 +259,7 @@ router.put('/:id',
         return res.status(404).json({ error: 'Lab not found' });
       }
 
-      // Map lab_type if provided (same mapping as POST route)
-      const labTypeMapping = {
-        'virtual_machine': 'vm',
-        'container': 'container',
-        'simulation': 'simulation',
-        'code_exercise': 'web'
-      };
-
-      if (updates.lab_type && labTypeMapping[updates.lab_type]) {
-        updates.lab_type = labTypeMapping[updates.lab_type];
-      }
+      // Use lab_type directly - no mapping needed, must match database constraint
 
       // Build dynamic update query
       const updateFields = [];

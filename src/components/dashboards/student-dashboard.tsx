@@ -1,16 +1,46 @@
 'use client'
 
 import { useApp } from '@/lib/hooks/use-app'
-import { BookOpen, Trophy, Flame, Clock, Play, ArrowRight, User } from 'lucide-react'
+import { getMyCourse, Course } from '@/lib/api/courses'
+import { useEffect, useState } from 'react'
+import { BookOpen, Trophy, Flame, Clock, Play, ArrowRight, User, AlertCircle } from 'lucide-react'
 
 export function StudentDashboard() {
   const { user, navigate } = useApp()
+  const [course, setCourse] = useState<Course | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchCourse = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+        const response = await getMyCourse()
+        setCourse(response.course)
+        console.log('Student course loaded:', response.course)
+      } catch (err) {
+        console.error('Error loading course:', err)
+        setError(err instanceof Error ? err.message : 'Failed to load course')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchCourse()
+  }, [])
 
   const stats = {
-    totalLabs: 10,
-    completedLabs: 4,
+    totalLabs: course?.modules.reduce((total, module) => total + module.totalLabs, 0) || 0,
+    completedLabs: course?.modules.reduce((total, module) => total + module.completedLabs, 0) || 0,
     streakDays: user?.streakDays || 0,
     totalPoints: user?.totalPoints || 0,
+  }
+
+  const getModuleIcon = (index: number) => {
+    const icons = [BookOpen, Trophy, Flame, Clock, Play]
+    const IconComponent = icons[index % icons.length]
+    return IconComponent
   }
 
   return (
@@ -33,60 +63,80 @@ export function StudentDashboard() {
             <div>
               <h2 className="text-xl font-semibold mb-4 text-foreground">Your Learning Path</h2>
               
-              <div className="bg-card rounded-lg p-6 border border-border">
-                <h3 className="text-lg font-semibold mb-2 text-foreground">BSc (Hons) Computer Science</h3>
-                <p className="text-muted-foreground mb-6">
-                  Foundational concepts in computer science, from programming to cybersecurity.
-                </p>
-
-                <div className="space-y-4">
-                  <h4 className="font-medium text-foreground">Modules in this path:</h4>
-                  
-                  {/* Module 1 */}
-                  <div 
-                    className="flex items-center justify-between p-4 bg-muted rounded-lg cursor-pointer hover:bg-muted/80 transition-colors"
-                    onClick={() => navigate('module', { moduleId: 'module-1' })}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <BookOpen className="w-5 h-5 text-red-400" />
-                      <div>
-                        <p className="font-medium text-foreground">Web Technologies</p>
-                        <p className="text-sm text-muted-foreground">3/3 Completed</p>
-                      </div>
-                    </div>
-                    <ArrowRight className="w-5 h-5 text-muted-foreground" />
-                  </div>
-
-                  {/* Module 2 */}
-                  <div 
-                    className="flex items-center justify-between p-4 bg-muted rounded-lg cursor-pointer hover:bg-muted/80 transition-colors"
-                    onClick={() => navigate('module', { moduleId: 'module-2' })}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <Trophy className="w-5 h-5 text-red-400" />
-                      <div>
-                        <p className="font-medium text-foreground">Systems and Cyber Security</p>
-                        <p className="text-sm text-muted-foreground">2/4 Completed</p>
-                      </div>
-                    </div>
-                    <ArrowRight className="w-5 h-5 text-muted-foreground" />
-                  </div>
-
-                  {/* Module 3 */}
-                  <div 
-                    className="flex items-center justify-between p-4 bg-muted rounded-lg cursor-pointer hover:bg-muted/80 transition-colors"
-                    onClick={() => navigate('module', { moduleId: 'module-3' })}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <Flame className="w-5 h-5 text-red-400" />
-                      <div>
-                        <p className="font-medium text-foreground">Developing Applications</p>
-                        <p className="text-sm text-muted-foreground">1/3 Completed</p>
-                      </div>
+              {loading ? (
+                <div className="bg-card rounded-lg p-6 border border-border">
+                  <div className="animate-pulse">
+                    <div className="h-6 bg-muted rounded mb-2"></div>
+                    <div className="h-4 bg-muted rounded mb-6"></div>
+                    <div className="space-y-4">
+                      <div className="h-4 bg-muted rounded"></div>
+                      <div className="h-16 bg-muted rounded"></div>
+                      <div className="h-16 bg-muted rounded"></div>
+                      <div className="h-16 bg-muted rounded"></div>
                     </div>
                   </div>
                 </div>
-              </div>
+              ) : error ? (
+                <div className="bg-card rounded-lg p-6 border border-border">
+                  <div className="flex items-center space-x-3 text-red-400">
+                    <AlertCircle className="w-5 h-5" />
+                    <p>Error loading course: {error}</p>
+                  </div>
+                </div>
+              ) : !course ? (
+                <div className="bg-card rounded-lg p-6 border border-border text-center">
+                  <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2 text-foreground">No Course Assigned</h3>
+                  <p className="text-muted-foreground">
+                    You haven't been assigned to any course yet. Contact your instructor or administrator.
+                  </p>
+                </div>
+              ) : (
+                <div className="bg-card rounded-lg p-6 border border-border mb-6">
+                  <h3 className="text-lg font-semibold mb-2 text-foreground">{course.title}</h3>
+                  <p className="text-muted-foreground mb-2">
+                    {course.code} • {course.department} • {course.academicLevel}
+                  </p>
+                  <p className="text-muted-foreground mb-6">
+                    {course.description}
+                  </p>
+
+                  {course.modules.length > 0 && (
+                    <div className="space-y-4">
+                      <h4 className="font-medium text-foreground">Modules in this course:</h4>
+                      
+                      {course.modules.map((module, index) => {
+                        const IconComponent = getModuleIcon(index)
+                        const completionText = `${module.completedLabs}/${module.totalLabs} Completed`
+                        
+                        return (
+                          <div 
+                            key={module.id}
+                            className="flex items-center justify-between p-4 bg-muted rounded-lg cursor-pointer hover:bg-muted/80 transition-colors"
+                            onClick={() => navigate('module', { moduleId: module.id.toString(), courseId: course.id.toString() })}
+                          >
+                            <div className="flex items-center space-x-3">
+                              <IconComponent className="w-5 h-5 text-red-400" />
+                                <div>
+                                  <p className="font-medium text-foreground">{module.title}</p>
+                                  <p className="text-sm text-muted-foreground">{completionText}</p>
+                                </div>
+                              </div>
+                              <ArrowRight className="w-5 h-5 text-muted-foreground" />
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+
+                    {course.modules.length === 0 && (
+                      <div className="text-center py-4">
+                        <Clock className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                        <p className="text-muted-foreground">No modules available yet</p>
+                      </div>
+                    )}
+                  </div>
+              )}
             </div>
 
             {/* Timeline Section */}

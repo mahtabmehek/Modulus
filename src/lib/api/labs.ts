@@ -48,7 +48,7 @@ export interface CreateLabData {
 
 class LabAPI {
   private getAuthHeaders() {
-    const token = localStorage.getItem('auth_token')
+    const token = localStorage.getItem('modulus_token')
     return {
       'Content-Type': 'application/json',
       ...(token && { Authorization: `Bearer ${token}` })

@@ -19,7 +19,7 @@ class ApiClient {
     this.baseUrl = baseUrl
     // Load token from localStorage if available
     if (typeof window !== 'undefined') {
-      this.token = localStorage.getItem('auth_token')
+      this.token = localStorage.getItem('modulus_token')
     }
   }
 
@@ -32,15 +32,15 @@ class ApiClient {
     this.token = token
     if (typeof window !== 'undefined') {
       if (token) {
-        localStorage.setItem('auth_token', token)
+        localStorage.setItem('modulus_token', token)
         console.log('✅ Token saved to localStorage')
       } else {
-        localStorage.removeItem('auth_token')
+        localStorage.removeItem('modulus_token')
         console.log('🗑️ Token removed from localStorage')
       }
       
       // Verify it was saved
-      const savedToken = localStorage.getItem('auth_token')
+      const savedToken = localStorage.getItem('modulus_token')
       console.log('🔍 Verification - Token in localStorage:', savedToken ? `${savedToken.substring(0, 30)}...` : 'null')
     }
   }
