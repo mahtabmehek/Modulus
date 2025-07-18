@@ -3,12 +3,15 @@
 import { useState, useEffect } from 'react'
 import { useApp } from '@/lib/hooks/use-app'
 import { apiClient } from '@/lib/api'
-import { ArrowLeft, BookOpen, Code, GraduationCap } from 'lucide-react'
+import { labAPI, Lab } from '@/lib/api/labs'
+import { ArrowLeft, BookOpen, Code, GraduationCap, Clock, Award } from 'lucide-react'
 
 export function ModuleView() {
   const { navigate, currentView } = useApp()
   const [currentModule, setCurrentModule] = useState<any>(null)
+  const [labs, setLabs] = useState<Lab[]>([])
   const [loading, setLoading] = useState(true)
+  const [labsLoading, setLabsLoading] = useState(true)
 
   // Get moduleId from either the direct property or params
   const moduleId = currentView.params?.moduleId
@@ -46,7 +49,28 @@ export function ModuleView() {
       setLoading(false)
     }
 
+    const loadLabsData = async () => {
+      if (moduleId) {
+        try {
+          console.log('🔍 Loading labs for module:', moduleId)
+          console.log('🔍 Module ID type:', typeof moduleId)
+          const moduleIdNumber = parseInt(moduleId)
+          console.log('🔍 Parsed module ID:', moduleIdNumber)
+          const labsData = await labAPI.getLabs(moduleIdNumber)
+          console.log('✅ Labs loaded:', labsData)
+          console.log('✅ Number of labs:', labsData.length)
+          setLabs(labsData)
+        } catch (error) {
+          console.error('❌ Failed to load labs:', error)
+          console.error('❌ Error details:', error instanceof Error ? error.message : String(error))
+          setLabs([])
+        }
+      }
+      setLabsLoading(false)
+    }
+
     loadModuleData()
+    loadLabsData()
   }, [moduleId])
 
   if (loading) {
@@ -110,12 +134,56 @@ export function ModuleView() {
         <div>
           <h2 className="text-xl font-semibold mb-6">Labs in this Module</h2>
 
-          <div className="bg-card rounded-lg p-6 border border-border text-center">
-            <p className="text-muted-foreground">Labs will be loaded here from the API.</p>
-            <p className="text-sm text-muted-foreground mt-2">
-              Module ID: {moduleId}
-            </p>
-          </div>
+          {labsLoading ? (
+            <div className="bg-card rounded-lg p-6 border border-border text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-muted-foreground">Loading labs...</p>
+            </div>
+          ) : labs.length > 0 ? (
+            <div className="grid gap-4">
+              {labs.map((lab) => (
+                <div
+                  key={lab.id}
+                  className="bg-card rounded-lg p-6 border border-border hover:border-blue-500 transition-colors cursor-pointer"
+                  onClick={() => navigate('lab', { labId: lab.id.toString() })}
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <h3 className="text-lg font-semibold text-foreground">{lab.title}</h3>
+                    <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded-full">
+                      {lab.lab_type || 'Lab'}
+                    </span>
+                  </div>
+                  
+                  {lab.description && (
+                    <p className="text-muted-foreground mb-4">{lab.description}</p>
+                  )}
+                  
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                      <Clock className="w-4 h-4" />
+                      <span>{lab.estimated_minutes || 30} min</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Award className="w-4 h-4" />
+                      <span>{lab.points_possible || 0} pts</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <BookOpen className="w-4 h-4" />
+                      <span>Order: {lab.order_index}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-card rounded-lg p-6 border border-border text-center">
+              <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground">No labs available for this module yet.</p>
+              <p className="text-sm text-muted-foreground mt-2">
+                Module ID: {moduleId}
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>
