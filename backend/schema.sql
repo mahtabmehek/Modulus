@@ -130,7 +130,10 @@ CREATE TABLE IF NOT EXISTS labs (
     
     -- Scoring
     points_possible INTEGER DEFAULT 100,
-    auto_grade BOOLEAN DEFAULT FALSE
+    auto_grade BOOLEAN DEFAULT FALSE,
+    
+    -- Icon/Image
+    icon_url TEXT
 );
 
 -- User progress tracking

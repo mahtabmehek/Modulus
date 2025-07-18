@@ -17,6 +17,14 @@ export interface Lab {
   module_title?: string
   course_id?: number
   course_title?: string
+  lab_type?: string
+  vm_image?: string
+  container_image?: string
+  required_tools?: string[]
+  network_requirements?: any
+  auto_grade?: boolean
+  icon_url?: string
+  tags?: string[]
 }
 
 export interface CreateLabData {
@@ -29,11 +37,18 @@ export interface CreateLabData {
   points_possible?: number
   max_attempts?: number
   is_published?: boolean
+  lab_type?: string
+  vm_image?: string
+  container_image?: string
+  required_tools?: string[]
+  network_requirements?: string
+  icon_url?: string
+  tags?: string[]
 }
 
 class LabAPI {
   private getAuthHeaders() {
-    const token = localStorage.getItem('token')
+    const token = localStorage.getItem('auth_token')
     return {
       'Content-Type': 'application/json',
       ...(token && { Authorization: `Bearer ${token}` })

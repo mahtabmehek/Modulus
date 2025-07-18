@@ -11,6 +11,7 @@ import { PathView } from '@/components/views/path-view'
 import { ModuleView } from '@/components/views/module-view'
 import LabView from '@/components/views/lab-view'
 import LabCreationView from '@/components/views/lab-creation'
+import CourseDesignView from '@/components/views/course-design'
 import { CourseCreationView } from '@/components/views/course-creation'
 import { UserCreationView } from '@/components/views/user-creation'
 import { DesktopView } from '@/components/views/desktop-view'
@@ -91,7 +92,7 @@ export default function Home() {
       case 'lab-creation':
         return <LabCreationView />
       case 'course-creation':
-        return <CourseCreationView />
+        return <CourseDesignView />
       case 'user-creation':
         return <UserCreationView />
       case 'desktop':

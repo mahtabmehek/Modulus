@@ -122,7 +122,9 @@ router.post('/',
     body('required_tools').optional().isArray().withMessage('Required tools must be an array'),
     body('network_requirements').optional().isLength({ max: 1000 }).withMessage('Network requirements too long'),
     body('points_possible').optional().isInt({ min: 0 }).withMessage('Points must be non-negative integer'),
-    body('estimated_minutes').optional().isInt({ min: 1 }).withMessage('Estimated minutes must be positive')
+    body('estimated_minutes').optional().isInt({ min: 1 }).withMessage('Estimated minutes must be positive'),
+    body('icon_url').optional().isLength({ max: 2000 }).withMessage('Icon URL too long'),
+    body('tags').optional().isArray().withMessage('Tags must be an array')
   ],
   async (req, res) => {
     try {
@@ -144,7 +146,9 @@ router.post('/',
         required_tools,
         network_requirements,
         points_possible,
-        estimated_minutes
+        estimated_minutes,
+        icon_url,
+        tags
       } = req.body;
 
       // Verify module exists and user has access
@@ -157,12 +161,28 @@ router.post('/',
         return res.status(404).json({ error: 'Module not found' });
       }
 
+      // Get next order index
+      const orderResult = await pool.query(
+        'SELECT COALESCE(MAX(order_index), 0) + 1 as next_order FROM labs WHERE module_id = $1',
+        [module_id]
+      );
+      const finalOrderIndex = orderResult.rows[0].next_order;
+
+      // Map API lab_type values to database values
+      const labTypeMapping = {
+        'virtual_machine': 'vm',
+        'container': 'container',
+        'simulation': 'simulation',
+        'code_exercise': 'web'
+      };
+      const dbLabType = labTypeMapping[lab_type] || 'vm';
+
       const query = `
         INSERT INTO labs (
           module_id, title, description, lab_type, vm_image, 
           container_image, required_tools, network_requirements, 
-          points_possible, estimated_minutes
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+          points_possible, estimated_minutes, order_index, icon_url, tags
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
         RETURNING *
       `;
 
@@ -170,13 +190,16 @@ router.post('/',
         module_id,
         title,
         description || null,
-        lab_type,
+        dbLabType,
         vm_image || null,
         container_image || null,
         required_tools ? JSON.stringify(required_tools) : null,
         network_requirements || null,
         points_possible || 0,
-        estimated_minutes || null
+        estimated_minutes || null,
+        finalOrderIndex,
+        icon_url || null,
+        tags ? JSON.stringify(tags) : null
       ];
 
       const result = await pool.query(query, values);
@@ -209,7 +232,9 @@ router.put('/:id',
     body('required_tools').optional().isArray().withMessage('Required tools must be an array'),
     body('network_requirements').optional().isLength({ max: 1000 }).withMessage('Network requirements too long'),
     body('points_possible').optional().isInt({ min: 0 }).withMessage('Points must be non-negative integer'),
-    body('estimated_minutes').optional().isInt({ min: 1 }).withMessage('Estimated minutes must be positive')
+    body('estimated_minutes').optional().isInt({ min: 1 }).withMessage('Estimated minutes must be positive'),
+    body('icon_url').optional().isLength({ max: 2000 }).withMessage('Icon URL too long'),
+    body('tags').optional().isArray().withMessage('Tags must be an array')
   ],
   async (req, res) => {
     try {
@@ -230,6 +255,18 @@ router.put('/:id',
         return res.status(404).json({ error: 'Lab not found' });
       }
 
+      // Map lab_type if provided (same mapping as POST route)
+      const labTypeMapping = {
+        'virtual_machine': 'vm',
+        'container': 'container',
+        'simulation': 'simulation',
+        'code_exercise': 'web'
+      };
+
+      if (updates.lab_type && labTypeMapping[updates.lab_type]) {
+        updates.lab_type = labTypeMapping[updates.lab_type];
+      }
+
       // Build dynamic update query
       const updateFields = [];
       const updateValues = [];
@@ -239,7 +276,7 @@ router.put('/:id',
         if (updates[key] !== undefined) {
           updateFields.push(`${key} = $${paramCounter}`);
           updateValues.push(
-            key === 'required_tools' && Array.isArray(updates[key]) 
+            (key === 'required_tools' || key === 'tags') && Array.isArray(updates[key]) 
               ? JSON.stringify(updates[key]) 
               : updates[key]
           );

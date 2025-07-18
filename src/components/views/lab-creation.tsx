@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { useApp } from '@/lib/hooks/use-app'
-import { apiClient } from '@/lib/api'
+import { labAPI } from '@/lib/api/labs'
 import {
   ArrowLeft,
   Save,
@@ -45,15 +45,18 @@ interface Question {
 }
 
 export default function LabCreationView() {
-  const { navigate } = useApp()
+  const { navigate, currentView } = useApp()
+  const editLabId = currentView?.params?.editLabId
 
   const [labData, setLabData] = useState({
     title: '',
     description: '',
+    icon: '', // Add icon field for lab image/icon
     // Academic organization
     academicCategory: 'computing' as string,
     course: '',
     module: '',
+    moduleId: 1, // Add module ID field
     labType: 'mandatory' as 'mandatory' | 'challenge',
     // Technical details
     difficulty: 'beginner' as 'beginner' | 'intermediate' | 'advanced',
@@ -91,6 +94,46 @@ export default function LabCreationView() {
 
   const [isSaving, setIsSaving] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
+
+  // Load lab data for editing
+  useEffect(() => {
+    if (editLabId) {
+      loadLabForEditing(editLabId)
+    }
+  }, [editLabId])
+
+  const loadLabForEditing = async (labId: number) => {
+    try {
+      const lab = await labAPI.getLab(labId)
+      if (lab) {
+        setLabData({
+          title: lab.title || '',
+          description: lab.description || '',
+          icon: lab.icon_url || '',
+          academicCategory: 'computing',
+          course: '',
+          module: '',
+          moduleId: lab.module_id || 1,
+          labType: lab.lab_type === 'vm' ? 'mandatory' : 'challenge',
+          difficulty: 'beginner',
+          category: 'programming',
+          estimatedTime: lab.estimated_minutes || 60,
+          vmImage: lab.vm_image || '',
+          vmResources: {
+            cpu: 2,
+            memory: 4,
+            storage: 20
+          },
+          prerequisites: lab.required_tools || [],
+          learningObjectives: [],
+          tags: lab.tags || []
+        })
+      }
+    } catch (error) {
+      console.error('Error loading lab for editing:', error)
+      toast.error('Failed to load lab data')
+    }
+  }
 
   const addTask = () => {
     const newTask: Task = {
@@ -222,23 +265,43 @@ export default function LabCreationView() {
     setIsSaving(true)
 
     try {
-      // Create the lab using the API
-      const response = await apiClient.createLab({
-        name: labData.title,
-        type: labData.labType,
-        description: labData.description,
-        instructions: tasks.map(task => `${task.title}: ${task.description}`).join('\n'),
-        estimatedDuration: labData.estimatedTime,
-        difficulty: labData.difficulty,
-        module_id: 1 // Default module ID - should be selected by user
-      })
+      // Create the lab using the new labs API that matches the database schema
+      const labTypeMapping = {
+        'mandatory': 'virtual_machine',
+        'challenge': 'container'
+      }
 
-      console.log('Lab created:', response)
-      toast.success('Lab created successfully!')
+      const labPayload = {
+        module_id: labData.moduleId,
+        title: labData.title,
+        description: labData.description,
+        icon_url: labData.icon || undefined, // Add icon URL field
+        lab_type: labTypeMapping[labData.labType] || 'virtual_machine',
+        vm_image: labData.vmImage || undefined,
+        required_tools: labData.prerequisites.length > 0 ? labData.prerequisites : undefined,
+        tags: labData.tags.length > 0 ? labData.tags : undefined,
+        points_possible: tasks.reduce((total, task) =>
+          total + task.questions.reduce((taskTotal, question) => taskTotal + question.points, 0), 0
+        ),
+        estimated_minutes: labData.estimatedTime
+      }
+
+      let response
+      if (editLabId) {
+        // Update existing lab
+        response = await labAPI.updateLab(editLabId, labPayload)
+        toast.success('Lab updated successfully!')
+      } else {
+        // Create new lab
+        response = await labAPI.createLab(labPayload)
+        toast.success('Lab created successfully!')
+      }
+
+      console.log('Lab saved:', response)
       navigate('dashboard')
     } catch (error) {
       console.error('Failed to save lab:', error)
-      toast.error('Failed to save lab. Please try again.')
+      toast.error(`Failed to ${editLabId ? 'update' : 'create'} lab. Please try again.`)
     } finally {
       setIsSaving(false)
     }
@@ -446,7 +509,7 @@ export default function LabCreationView() {
 
               <button
                 onClick={handleSave}
-                disabled={isSaving || !labData.title.trim()}
+                disabled={isSaving || !labData.title.trim() || !labData.moduleId}
                 className="flex items-center px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
               >
                 {isSaving ? (
@@ -595,6 +658,23 @@ export default function LabCreationView() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Module *
+                  </label>
+                  <select
+                    value={labData.moduleId}
+                    onChange={(e) => setLabData({ ...labData, moduleId: parseInt(e.target.value) })}
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  >
+                    <option value={1}>Module 1: Introduction to Cybersecurity</option>
+                    <option value={2}>Module 2: Network Security</option>
+                    <option value={3}>Module 3: Web Application Security</option>
+                    <option value={4}>Module 4: Cryptography</option>
+                    <option value={5}>Module 5: Incident Response</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Description
                   </label>
                   <textarea
@@ -604,6 +684,67 @@ export default function LabCreationView() {
                     rows={4}
                     className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Lab Icon/Image
+                  </label>
+                  <div className="space-y-3">
+                    {/* File Upload Input */}
+                    <div className="flex items-center justify-center w-full">
+                      <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:hover:bg-bray-800 dark:bg-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:hover:border-gray-500 dark:hover:bg-gray-600">
+                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                          <Upload className="w-8 h-8 mb-4 text-gray-500 dark:text-gray-400" />
+                          <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
+                            <span className="font-semibold">Click to upload</span> lab icon
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">PNG, JPG or GIF (MAX. 2MB)</p>
+                        </div>
+                        <input 
+                          type="file" 
+                          className="hidden" 
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              // Convert file to base64 or handle file upload
+                              const reader = new FileReader();
+                              reader.onload = (e) => {
+                                const result = e.target?.result as string;
+                                setLabData({ ...labData, icon: result });
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                        />
+                      </label>
+                    </div>
+                    
+                    {/* Image Preview */}
+                    {labData.icon && (
+                      <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <div className="flex-shrink-0">
+                          <img 
+                            src={labData.icon} 
+                            alt="Lab icon preview" 
+                            className="w-12 h-12 rounded-lg object-cover border border-gray-200 dark:border-gray-600"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-gray-900 dark:text-white">Preview</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">This is how your icon will appear</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setLabData({ ...labData, icon: '' })}
+                          className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -708,6 +849,76 @@ export default function LabCreationView() {
                       />
                     </div>
                   </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Tags Section */}
+            <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6 flex items-center">
+                <Flag className="w-5 h-5 mr-2 text-green-600 dark:text-green-400" />
+                Tags & Keywords
+              </h2>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Add Tags
+                  </label>
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {labData.tags.map((tag, index) => (
+                      <span
+                        key={index}
+                        className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                      >
+                        {tag}
+                        <button
+                          onClick={() => {
+                            const newTags = labData.tags.filter((_, i) => i !== index)
+                            setLabData({ ...labData, tags: newTags })
+                          }}
+                          className="ml-2 text-blue-600 hover:text-blue-800 dark:text-blue-300 dark:hover:text-blue-100"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      id="tagInput"
+                      placeholder="Enter a tag and press Enter"
+                      className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault()
+                          const input = e.target as HTMLInputElement
+                          const tag = input.value.trim()
+                          if (tag && !labData.tags.includes(tag)) {
+                            setLabData({ ...labData, tags: [...labData.tags, tag] })
+                            input.value = ''
+                          }
+                        }
+                      }}
+                    />
+                    <button
+                      onClick={() => {
+                        const input = document.getElementById('tagInput') as HTMLInputElement
+                        const tag = input.value.trim()
+                        if (tag && !labData.tags.includes(tag)) {
+                          setLabData({ ...labData, tags: [...labData.tags, tag] })
+                          input.value = ''
+                        }
+                      }}
+                      className="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                    Add relevant tags to help categorize and search for this lab
+                  </p>
                 </div>
               </div>
             </section>

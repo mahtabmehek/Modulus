@@ -66,8 +66,12 @@ export function Header() {
               className="flex items-center cursor-pointer"
               onClick={() => navigate('dashboard')}
             >
-              <div className="w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">M</span>
+              <div className="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                <img 
+                  src="/logo.svg" 
+                  alt="Modulus Logo" 
+                  className="w-8 h-8"
+                />
               </div>
               <span className="ml-3 text-xl font-bold text-white">
                 Modulus

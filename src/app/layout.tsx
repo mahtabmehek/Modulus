@@ -11,6 +11,14 @@ export const metadata: Metadata = {
   description: 'Advanced Learning Management System with hands-on labs and gamification',
   keywords: ['learning', 'education', 'cybersecurity', 'labs', 'LMS'],
   authors: [{ name: 'mahtabmehek' }],
+  icons: {
+    icon: [
+      { url: '/logo.svg', type: 'image/svg+xml' },
+      { url: '/favicon.svg', type: 'image/svg+xml' }
+    ],
+    shortcut: '/favicon.svg',
+    apple: '/logo.svg',
+  },
 }
 
 export const viewport: Viewport = {

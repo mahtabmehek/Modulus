@@ -23,8 +23,8 @@ const authenticateToken = (req, res, next) => {
 };
 
 const requireAdmin = (req, res, next) => {
-  if (!req.user || req.user.role !== 'admin') {
-    return res.status(403).json({ message: 'Admin access required' });
+  if (!req.user || (req.user.role !== 'admin' && req.user.role !== 'staff')) {
+    return res.status(403).json({ message: 'Admin or staff access required' });
   }
   next();
 };
@@ -871,6 +871,124 @@ router.delete('/admin/delete-user', authenticateToken, requireAdmin, async (req,
 
   } catch (error) {
     console.error('Delete user error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// PUT /api/auth/admin/update-user/:id - Update user information
+router.put('/admin/update-user/:id', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, email, role, is_approved } = req.body;
+
+    console.log('UPDATE USER - Request:', { id, name, email, role, is_approved });
+
+    if (!id) {
+      return res.status(400).json({ error: 'User ID is required' });
+    }
+
+    const db = req.app.locals.db;
+    const userId = parseInt(id, 10);
+
+    // Check if user exists
+    const checkResult = await db.query('SELECT * FROM users WHERE id = $1', [userId]);
+    if (checkResult.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const currentUser = checkResult.rows[0];
+
+    // Build update query dynamically based on provided fields
+    let updateFields = [];
+    let updateValues = [];
+    let paramCount = 1;
+
+    if (name !== undefined && name !== currentUser.name) {
+      updateFields.push(`name = $${paramCount}`);
+      updateValues.push(name);
+      paramCount++;
+    }
+
+    if (email !== undefined && email !== currentUser.email) {
+      // Check if email is already taken by another user
+      const emailCheck = await db.query(
+        'SELECT id FROM users WHERE email = $1 AND id != $2',
+        [email, userId]
+      );
+      
+      if (emailCheck.rows.length > 0) {
+        return res.status(400).json({ error: 'Email is already taken by another user' });
+      }
+
+      updateFields.push(`email = $${paramCount}`);
+      updateValues.push(email);
+      paramCount++;
+    }
+
+    if (role !== undefined && role !== currentUser.role) {
+      updateFields.push(`role = $${paramCount}`);
+      updateValues.push(role);
+      paramCount++;
+    }
+
+    if (is_approved !== undefined && is_approved !== currentUser.is_approved) {
+      updateFields.push(`is_approved = $${paramCount}`);
+      updateValues.push(is_approved);
+      paramCount++;
+    }
+
+    // If no fields to update, return current user
+    if (updateFields.length === 0) {
+      return res.json({
+        message: 'No changes detected',
+        user: {
+          id: currentUser.id,
+          name: currentUser.name,
+          email: currentUser.email,
+          role: currentUser.role,
+          isApproved: currentUser.is_approved,
+          createdAt: currentUser.created_at
+        }
+      });
+    }
+
+    // Add updated_at field
+    updateFields.push(`updated_at = NOW()`);
+
+    // Add user ID for WHERE clause
+    updateValues.push(userId);
+    const whereParam = `$${paramCount}`;
+
+    const updateQuery = `
+      UPDATE users 
+      SET ${updateFields.join(', ')} 
+      WHERE id = ${whereParam} 
+      RETURNING *
+    `;
+
+    console.log('UPDATE USER - Query:', updateQuery);
+    console.log('UPDATE USER - Values:', updateValues);
+
+    const result = await db.query(updateQuery, updateValues);
+    const updatedUser = result.rows[0];
+
+    console.log('UPDATE USER - Success:', updatedUser);
+
+    res.json({
+      message: 'User updated successfully',
+      user: {
+        id: updatedUser.id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        role: updatedUser.role,
+        isApproved: updatedUser.is_approved,
+        createdAt: updatedUser.created_at,
+        updatedAt: updatedUser.updated_at
+      }
+    });
+
+  } catch (error) {
+    console.error('Update user error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

@@ -138,8 +138,12 @@ export default function LocalAuth() {
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
             <Card className="w-full max-w-md">
                 <CardHeader className="text-center">
-                    <div className="mx-auto h-12 w-12 rounded-full bg-blue-600 flex items-center justify-center mb-4">
-                        <ShieldCheck className="h-6 w-6 text-white" />
+                    <div className="mx-auto mb-4">
+                        <img 
+                            src="/logo.svg" 
+                            alt="Modulus Logo" 
+                            className="h-16 w-16 mx-auto"
+                        />
                     </div>
                     <CardTitle className="text-2xl font-bold text-gray-900">
                         Modulus LMS

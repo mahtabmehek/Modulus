@@ -106,6 +106,40 @@ router.get('/:id', async (req, res) => {
     }
 
     const course = result.rows[0];
+
+    // Fetch modules for this course
+    const modulesResult = await db.query(
+      `SELECT id, title, description, order_index
+       FROM modules 
+       WHERE course_id = $1
+       ORDER BY order_index`,
+      [id]
+    );
+
+    // Fetch labs for each module
+    const modules = [];
+    for (const module of modulesResult.rows) {
+      const labsResult = await db.query(
+        `SELECT id, title, description, order_index
+         FROM labs 
+         WHERE module_id = $1
+         ORDER BY order_index`,
+        [module.id]
+      );
+
+      modules.push({
+        id: module.id.toString(),
+        title: module.title,
+        description: module.description,
+        order_index: module.order_index,
+        labs: labsResult.rows.map(lab => ({
+          id: lab.id,
+          title: lab.title,
+          description: lab.description
+        }))
+      });
+    }
+
     res.json({
       course: {
         id: course.id,
@@ -118,7 +152,8 @@ router.get('/:id', async (req, res) => {
         totalCredits: course.total_credits,
         createdAt: course.created_at,
         updatedAt: course.updated_at,
-        createdBy: course.created_by_name
+        createdBy: course.created_by_name,
+        modules: modules
       }
     });
 
@@ -331,6 +366,86 @@ router.delete('/:id', authenticateToken, requireStaffOrAdmin, async (req, res) =
 
   } catch (error) {
     console.error('Delete course error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// PUT /api/courses/:id/modules - Save course modules
+router.put('/:id/modules', authenticateToken, requireStaffOrAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { modules } = req.body;
+    const db = req.app.locals.db;
+
+    console.log('SAVE MODULES - Course ID:', id);
+    console.log('SAVE MODULES - Modules data:', JSON.stringify(modules, null, 2));
+
+    // Check if course exists
+    const courseCheck = await db.query(
+      'SELECT id FROM courses WHERE id = $1',
+      [parseInt(id, 10)]
+    );
+
+    if (courseCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Course not found' });
+    }
+
+    // Begin transaction
+    await db.query('BEGIN');
+
+    try {
+      // First, delete existing modules for this course
+      await db.query(
+        'DELETE FROM modules WHERE course_id = $1',
+        [parseInt(id, 10)]
+      );
+
+      // Insert new modules
+      for (const module of modules) {
+        console.log('Inserting module:', module);
+        
+        const moduleResult = await db.query(
+          `INSERT INTO modules (course_id, title, description, order_index, created_at, updated_at)
+           VALUES ($1, $2, $3, $4, NOW(), NOW())
+           RETURNING id`,
+          [parseInt(id, 10), module.title, module.description, module.order_index]
+        );
+
+        const moduleId = moduleResult.rows[0].id;
+        console.log('Inserted module with ID:', moduleId);
+
+        // Insert labs for this module if any
+        if (module.labs && module.labs.length > 0) {
+          for (let i = 0; i < module.labs.length; i++) {
+            const lab = module.labs[i];
+            console.log('Inserting lab:', lab);
+            
+            await db.query(
+              `INSERT INTO labs (module_id, title, description, order_index, created_at, updated_at)
+               VALUES ($1, $2, $3, $4, NOW(), NOW())`,
+              [moduleId, lab.title, lab.description || '', i]
+            );
+          }
+        }
+      }
+
+      // Commit transaction
+      await db.query('COMMIT');
+
+      console.log('SAVE MODULES - Successfully saved all modules');
+      res.json({
+        message: 'Course modules saved successfully',
+        moduleCount: modules.length
+      });
+
+    } catch (error) {
+      // Rollback transaction on error
+      await db.query('ROLLBACK');
+      throw error;
+    }
+
+  } catch (error) {
+    console.error('Save modules error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
