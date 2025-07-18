@@ -61,7 +61,7 @@ INSERT INTO modules (course_id, title, description, order_index, is_published, c
 -- Course 4: AWS Cloud Architecture
 (4, 'AWS Core Services and Architecture', 'EC2, S3, VPC, and fundamental AWS architectural patterns.', 1, true, 'mixed', 200),
 (4, 'Infrastructure as Code with CloudFormation', 'Automated infrastructure deployment using CloudFormation and CDK.', 2, true, 'lab', 300),
-(4, 'Serverless Computing with Lambda', 'Lambda functions, API Gateway, and event-driven architecture patterns.', 3, true, 'lab', 270),
+(4, 'Serverless Computing Architecture', 'Event-driven architecture patterns, microservices, and serverless design principles.', 3, true, 'lab', 270),
 (4, 'Cloud Security and Compliance', 'IAM, encryption, compliance frameworks, and security best practices.', 4, true, 'lab', 240),
 (4, 'High Availability and Disaster Recovery', 'Multi-region deployment, backup strategies, and disaster recovery planning.', 5, true, 'lab', 320),
 
