@@ -124,7 +124,7 @@ export default function CourseDesignView() {
   const loadAvailableCourses = async () => {
     try {
       console.log('🔄 Loading available courses...')
-      const token = localStorage.getItem('authToken')
+      const token = localStorage.getItem('modulus_token')
       
       console.log('🔑 Token status:', token ? 'Found' : 'Not found')
       
@@ -163,7 +163,7 @@ export default function CourseDesignView() {
       console.log('🔄 Loading course for editing:', courseId)
       setLoading(true)
       
-      const token = localStorage.getItem('authToken')
+      const token = localStorage.getItem('modulus_token')
       const headers: Record<string, string> = {
         'Content-Type': 'application/json'
       }
@@ -279,7 +279,7 @@ export default function CourseDesignView() {
         modules: courseData.modules
       })
 
-      const token = localStorage.getItem('authToken')
+      const token = localStorage.getItem('modulus_token')
       const headers: Record<string, string> = {
         'Content-Type': 'application/json'
       }
