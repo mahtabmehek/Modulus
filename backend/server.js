@@ -12,6 +12,7 @@ const healthRoutes = require('./routes/health');
 const adminRoutes = require('./routes/admin');
 const coursesRoutes = require('./routes/courses');
 const labsRoutes = require('./routes/labs');
+const filesRoutes = require('./routes/files');
 
 // Load desktop routes for local development
 let desktopRoutes = null;
@@ -101,6 +102,11 @@ app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/courses', coursesRoutes);
 app.use('/api/labs', labsRoutes);
+app.use('/api/files', filesRoutes);
+
+// Migration routes (temporary)
+const migrationRoutes = require('./routes/migration');
+app.use('/api/migration', migrationRoutes);
 
 // Only use desktop routes if available
 if (desktopRoutes) {

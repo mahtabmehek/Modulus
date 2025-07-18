@@ -123,7 +123,7 @@ router.post('/',
     body('network_requirements').optional().isLength({ max: 1000 }).withMessage('Network requirements too long'),
     body('points_possible').optional().isInt({ min: 0 }).withMessage('Points must be non-negative integer'),
     body('estimated_minutes').optional().isInt({ min: 1 }).withMessage('Estimated minutes must be positive'),
-    body('icon_url').optional().isLength({ max: 2000 }).withMessage('Icon URL too long'),
+    body('icon_path').optional().isLength({ max: 500 }).withMessage('Icon path too long'),
     body('tags').optional().isArray().withMessage('Tags must be an array')
   ],
   async (req, res) => {
@@ -147,8 +147,9 @@ router.post('/',
         network_requirements,
         points_possible,
         estimated_minutes,
-        icon_url,
-        tags
+        icon_path,
+        tags,
+        tasks // Add tasks to the expected fields
       } = req.body;
 
       // Verify module exists and user has access
@@ -180,8 +181,8 @@ router.post('/',
         INSERT INTO labs (
           module_id, title, description, lab_type, vm_image, 
           container_image, required_tools, network_requirements, 
-          points_possible, estimated_minutes, order_index, icon_url, tags
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+          points_possible, estimated_minutes, order_index, icon_url
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
         RETURNING *
       `;
 
@@ -192,13 +193,12 @@ router.post('/',
         dbLabType,
         vm_image || null,
         container_image || null,
-        required_tools ? JSON.stringify(required_tools) : null,
+        required_tools || null, // Pass array directly for PostgreSQL array type
         network_requirements || null,
         points_possible || 0,
         estimated_minutes || null,
         finalOrderIndex,
-        icon_url || null,
-        tags ? JSON.stringify(tags) : null
+        icon_path || null // Store icon_path in icon_url column for now
       ];
       
       // Debug values array
@@ -207,11 +207,54 @@ router.post('/',
       console.log('lab_type value at index 3:', values[3]);
 
       const result = await pool.query(query, values);
+      const createdLab = result.rows[0];
+
+      // Save tasks and questions if provided
+      if (tasks && Array.isArray(tasks) && tasks.length > 0) {
+        for (let i = 0; i < tasks.length; i++) {
+          const task = tasks[i];
+          
+          // Insert task
+          const taskResult = await pool.query(
+            'INSERT INTO tasks (lab_id, title, description, order_index) VALUES ($1, $2, $3, $4) RETURNING id',
+            [createdLab.id, task.title, task.description, i + 1]
+          );
+          const taskId = taskResult.rows[0].id;
+          
+          // Insert questions for this task
+          if (task.questions && Array.isArray(task.questions)) {
+            for (let j = 0; j < task.questions.length; j++) {
+              const question = task.questions[j];
+              
+              await pool.query(`
+                INSERT INTO questions (
+                  task_id, type, title, description, expected_answer, 
+                  is_required, points, order_index, images, attachments, 
+                  multiple_choice_options, hints
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+              `, [
+                taskId,
+                question.type,
+                question.title,
+                question.description,
+                question.flag || question.expectedAnswer || null,
+                !question.isOptional, // Convert isOptional to is_required (inverse)
+                question.points || 0,
+                j + 1,
+                question.images || null,
+                question.attachments || null,
+                question.multipleChoiceOptions ? JSON.stringify(question.multipleChoiceOptions) : null,
+                question.hints || null
+              ]);
+            }
+          }
+        }
+      }
 
       res.status(201).json({
         success: true,
         message: 'Lab created successfully',
-        data: result.rows[0]
+        data: createdLab
       });
     } catch (error) {
       console.error('Error creating lab:', error);
@@ -237,7 +280,7 @@ router.put('/:id',
     body('network_requirements').optional().isLength({ max: 1000 }).withMessage('Network requirements too long'),
     body('points_possible').optional().isInt({ min: 0 }).withMessage('Points must be non-negative integer'),
     body('estimated_minutes').optional().isInt({ min: 1 }).withMessage('Estimated minutes must be positive'),
-    body('icon_url').optional().isLength({ max: 2000 }).withMessage('Icon URL too long'),
+    body('icon_path').optional().isLength({ max: 500 }).withMessage('Icon path too long'),
     body('tags').optional().isArray().withMessage('Tags must be an array')
   ],
   async (req, res) => {
@@ -270,9 +313,8 @@ router.put('/:id',
         if (updates[key] !== undefined) {
           updateFields.push(`${key} = $${paramCounter}`);
           updateValues.push(
-            (key === 'required_tools' || key === 'tags') && Array.isArray(updates[key]) 
-              ? JSON.stringify(updates[key]) 
-              : updates[key]
+            // Pass arrays directly for PostgreSQL array types (tags, required_tools)
+            updates[key]
           );
           paramCounter++;
         }

@@ -93,8 +93,10 @@ class LabAPI {
     })
 
     if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.error || 'Failed to create lab')
+      const error = await response.json().catch(() => ({ error: 'Unknown error' }))
+      const errorWithResponse = new Error(error.error || 'Failed to create lab') as any
+      errorWithResponse.response = { data: error }
+      throw errorWithResponse
     }
 
     const data = await response.json()
@@ -109,8 +111,10 @@ class LabAPI {
     })
 
     if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.error || 'Failed to update lab')
+      const error = await response.json().catch(() => ({ error: 'Unknown error' }))
+      const errorWithResponse = new Error(error.error || 'Failed to update lab') as any
+      errorWithResponse.response = { data: error }
+      throw errorWithResponse
     }
 
     const data = await response.json()

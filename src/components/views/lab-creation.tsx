@@ -33,7 +33,6 @@ interface Question {
   title: string
   description: string
   flag?: string
-  isOptional: boolean
   points: number
   images?: string[]
   attachments?: string[]
@@ -46,7 +45,12 @@ interface Question {
 
 export default function LabCreationView() {
   const { navigate, currentView } = useApp()
+  // Get editLabId from navigation parameters to enable edit mode
   const editLabId = currentView?.params?.editLabId
+
+  // Debug logging
+  console.log('Lab Creation View - editLabId:', editLabId)
+  console.log('Lab Creation View - currentView:', currentView)
 
   const [modules, setModules] = useState<Array<{id: number, title: string, course_id: number}>>([])
   const [loadingModules, setLoadingModules] = useState(true)
@@ -88,8 +92,7 @@ export default function LabCreationView() {
           title: 'Find the initial flag',
           description: 'Locate the flag hidden in the welcome message.',
           flag: 'MODULUS{w3lc0m3_t0_th3_l4b}',
-          isOptional: false,
-          points: 10
+          points: 0
         }
       ]
     }
@@ -150,7 +153,7 @@ export default function LabCreationView() {
         setLabData({
           title: lab.title || '',
           description: lab.description || '',
-          icon: lab.icon_url || '',
+          icon: lab.icon_path || lab.icon_url || '',
           academicCategory: 'computing',
           course: '',
           module: '',
@@ -202,8 +205,7 @@ export default function LabCreationView() {
       type: 'flag',
       title: 'New Question',
       description: '',
-      isOptional: false,
-      points: 10,
+      points: 0,
       images: [],
       attachments: [],
       hints: []
@@ -303,6 +305,17 @@ export default function LabCreationView() {
   }
 
   const handleSave = async () => {
+    // Validate required fields before saving
+    if (!labData.title.trim()) {
+      toast.error('Lab title is required');
+      return;
+    }
+    
+    if (labData.tags.length === 0) {
+      toast.error('At least one tag is required');
+      return;
+    }
+
     setIsSaving(true)
 
     try {
@@ -312,37 +325,56 @@ export default function LabCreationView() {
         'challenge': 'container'
       }
 
+      // Ensure tags are properly formatted as an array of strings
+      const cleanTags = labData.tags.filter(tag => tag && tag.trim()).map(tag => tag.trim())
+
       const labPayload = {
-        module_id: labData.moduleId,
-        title: labData.title,
-        description: labData.description,
-        icon_url: labData.icon || undefined, // Add icon URL field
+        module_id: 1, // Always use module 1
+        title: labData.title.trim(),
+        description: labData.description?.trim() || '',
+        icon_url: labData.icon || undefined, // Use icon_url for now until database migration
         lab_type: labTypeMapping[labData.labType] || 'vm',
-        vm_image: labData.vmImage || undefined,
-        required_tools: labData.prerequisites.length > 0 ? labData.prerequisites : undefined,
-        tags: labData.tags.length > 0 ? labData.tags : undefined,
-        points_possible: tasks.reduce((total, task) =>
-          total + task.questions.reduce((taskTotal, question) => taskTotal + question.points, 0), 0
-        ),
-        estimated_minutes: labData.estimatedTime
+        vm_image: labData.vmImage?.trim() || undefined,
+        points_possible: 0, // Set to 0 since we removed points system
+        estimated_minutes: 60, // Default estimated time
+        tasks: tasks // Include tasks and questions data
       }
+
+      console.log('Sending lab payload:', labPayload);
+      console.log('editLabId:', editLabId);
+      console.log('Will use update path:', !!editLabId);
 
       let response
       if (editLabId) {
         // Update existing lab
+        console.log('Updating lab with ID:', editLabId);
         response = await labAPI.updateLab(editLabId, labPayload)
         toast.success('Lab updated successfully!')
       } else {
         // Create new lab
+        console.log('Creating new lab');
         response = await labAPI.createLab(labPayload)
         toast.success('Lab created successfully!')
       }
 
       console.log('Lab saved:', response)
       navigate('dashboard')
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to save lab:', error)
-      toast.error(`Failed to ${editLabId ? 'update' : 'create'} lab. Please try again.`)
+      
+      // More detailed error message
+      if (error.response?.data?.details) {
+        console.error('Validation errors:', error.response.data.details);
+        if (Array.isArray(error.response.data.details)) {
+          toast.error(`Validation failed: ${error.response.data.details.map((d: any) => d.msg || d.message || d).join(', ')}`);
+        } else {
+          toast.error(`Validation failed: ${error.response.data.details}`);
+        }
+      } else if (error.response?.data?.error) {
+        toast.error(`Error: ${error.response.data.error}`);
+      } else {
+        toast.error(`Failed to ${editLabId ? 'update' : 'create'} lab. Please try again.`);
+      }
     } finally {
       setIsSaving(false)
     }
@@ -535,7 +567,7 @@ export default function LabCreationView() {
               </button>
               <div className="h-6 border-l border-gray-300 dark:border-gray-600"></div>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                Create New Lab
+                {editLabId ? 'Edit Lab' : 'Create New Lab'}
               </h1>
             </div>
 
@@ -550,18 +582,18 @@ export default function LabCreationView() {
 
               <button
                 onClick={handleSave}
-                disabled={isSaving || !labData.title.trim() || !labData.moduleId || labData.moduleId === 0}
+                disabled={isSaving || !labData.title.trim() || labData.tags.length === 0}
                 className="flex items-center px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
               >
                 {isSaving ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Saving...
+                    {editLabId ? 'Updating...' : 'Saving...'}
                   </>
                 ) : (
                   <>
                     <Save className="w-4 h-4 mr-2" />
-                    Save Lab
+                    {editLabId ? 'Update Lab' : 'Save Lab'}
                   </>
                 )}
               </button>
@@ -574,109 +606,6 @@ export default function LabCreationView() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Form */}
           <div className="lg:col-span-2 space-y-8">
-            {/* Academic Organization */}
-            <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
-                Academic Organization
-              </h2>
-
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Academic Field *
-                    </label>
-                    <select
-                      value={labData.academicCategory}
-                      onChange={(e) => setLabData({
-                        ...labData,
-                        academicCategory: e.target.value,
-                        category: getSubcategories(e.target.value)[0] || ''
-                      })}
-                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    >
-                      {academicCategories.map(cat => (
-                        <option key={cat} value={cat}>
-                          {cat.split('-').map(word =>
-                            word.charAt(0).toUpperCase() + word.slice(1)
-                          ).join(' ')}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Course *
-                    </label>
-                    <select
-                      value={labData.course}
-                      onChange={(e) => setLabData({ ...labData, course: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    >
-                      <option value="">Select Course</option>
-                      {courses.filter(course =>
-                        course.toLowerCase().includes(labData.academicCategory) ||
-                        (labData.academicCategory === 'computing' && course.includes('Computer Science')) ||
-                        (labData.academicCategory === 'medicine' && course.includes('MBBS')) ||
-                        (labData.academicCategory === 'business' && (course.includes('Business') || course.includes('MBA')))
-                      ).map(course => (
-                        <option key={course} value={course}>{course}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Module
-                    </label>
-                    <input
-                      type="text"
-                      value={labData.module}
-                      onChange={(e) => setLabData({ ...labData, module: e.target.value })}
-                      placeholder="e.g., Module 3: Data Structures"
-                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Lab Type *
-                    </label>
-                    <select
-                      value={labData.labType}
-                      onChange={(e) => setLabData({ ...labData, labType: e.target.value as 'mandatory' | 'challenge' })}
-                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    >
-                      <option value="mandatory">Mandatory</option>
-                      <option value="challenge">Challenge</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Subject Area
-                  </label>
-                  <select
-                    value={labData.category}
-                    onChange={(e) => setLabData({ ...labData, category: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  >
-                    {categories.map(cat => (
-                      <option key={cat} value={cat}>
-                        {cat.split('-').map(word =>
-                          word.charAt(0).toUpperCase() + word.slice(1)
-                        ).join(' ')}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </section>
-
             {/* Lab Basic Information */}
             <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
@@ -695,31 +624,6 @@ export default function LabCreationView() {
                     placeholder="e.g., SQL Injection Fundamentals"
                     className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Module *
-                  </label>
-                  <select
-                    value={labData.moduleId}
-                    onChange={(e) => setLabData({ ...labData, moduleId: parseInt(e.target.value) })}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    disabled={loadingModules}
-                  >
-                    {loadingModules ? (
-                      <option>Loading modules...</option>
-                    ) : (
-                      <>
-                        <option value="">Select a module</option>
-                        {modules.map(module => (
-                          <option key={module.id} value={module.id}>
-                            {module.title} (Course {module.course_id})
-                          </option>
-                        ))}
-                      </>
-                    )}
-                  </select>
                 </div>
 
                 <div>
@@ -754,16 +658,36 @@ export default function LabCreationView() {
                           type="file" 
                           className="hidden" 
                           accept="image/*"
-                          onChange={(e) => {
+                          onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (file) {
-                              // Convert file to base64 or handle file upload
-                              const reader = new FileReader();
-                              reader.onload = (e) => {
-                                const result = e.target?.result as string;
-                                setLabData({ ...labData, icon: result });
-                              };
-                              reader.readAsDataURL(file);
+                              try {
+                                // Upload the file using the file upload API
+                                const formData = new FormData();
+                                formData.append('icon', file);
+                                formData.append('labName', labData.title || 'untitled-lab');
+
+                                const response = await fetch('/api/files/upload-lab-files', {
+                                  method: 'POST',
+                                  body: formData,
+                                });
+
+                                if (response.ok) {
+                                  const result = await response.json();
+                                  if (result.success && result.data.icon) {
+                                    setLabData({ ...labData, icon: result.data.icon });
+                                  } else {
+                                    console.error('Icon upload failed:', result);
+                                    alert('Failed to upload icon');
+                                  }
+                                } else {
+                                  console.error('Icon upload failed:', response.statusText);
+                                  alert('Failed to upload icon');
+                                }
+                              } catch (error) {
+                                console.error('Error uploading icon:', error);
+                                alert('Error uploading icon');
+                              }
                             }
                           }}
                         />
@@ -796,123 +720,9 @@ export default function LabCreationView() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Difficulty
-                    </label>
-                    <select
-                      value={labData.difficulty}
-                      onChange={(e) => setLabData({ ...labData, difficulty: e.target.value as any })}
-                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    >
-                      <option value="beginner">Beginner</option>
-                      <option value="intermediate">Intermediate</option>
-                      <option value="advanced">Advanced</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Estimated Time (minutes)
-                    </label>
-                    <input
-                      type="number"
-                      value={labData.estimatedTime}
-                      onChange={(e) => setLabData({ ...labData, estimatedTime: parseInt(e.target.value) || 0 })}
-                      min="15"
-                      max="480"
-                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    />
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            {/* VM Configuration */}
-            <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6 flex items-center">
-                <Monitor className="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400" />
-                Virtual Machine Configuration
-              </h2>
-
-              <div className="space-y-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    VM Image
-                  </label>
-                  <input
-                    type="text"
-                    value={labData.vmImage}
-                    onChange={(e) => setLabData({ ...labData, vmImage: e.target.value })}
-                    placeholder="e.g., ubuntu-20.04-security or custom-vulnhub-image"
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
-                    Resource Requirements
-                  </label>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">CPU Cores</label>
-                      <input
-                        type="number"
-                        value={labData.vmResources.cpu}
-                        onChange={(e) => setLabData({
-                          ...labData,
-                          vmResources: { ...labData.vmResources, cpu: parseInt(e.target.value) || 1 }
-                        })}
-                        min="1"
-                        max="8"
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Memory (GB)</label>
-                      <input
-                        type="number"
-                        value={labData.vmResources.memory}
-                        onChange={(e) => setLabData({
-                          ...labData,
-                          vmResources: { ...labData.vmResources, memory: parseInt(e.target.value) || 1 }
-                        })}
-                        min="1"
-                        max="32"
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Storage (GB)</label>
-                      <input
-                        type="number"
-                        value={labData.vmResources.storage}
-                        onChange={(e) => setLabData({
-                          ...labData,
-                          vmResources: { ...labData.vmResources, storage: parseInt(e.target.value) || 10 }
-                        })}
-                        min="10"
-                        max="100"
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            {/* Tags Section */}
-            <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6 flex items-center">
-                <Flag className="w-5 h-5 mr-2 text-green-600 dark:text-green-400" />
-                Tags & Keywords
-              </h2>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Add Tags
+                    Tags & Keywords *
                   </label>
                   <div className="flex flex-wrap gap-2 mb-3">
                     {labData.tags.map((tag, index) => (
@@ -968,6 +778,29 @@ export default function LabCreationView() {
                   <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
                     Add relevant tags to help categorize and search for this lab
                   </p>
+                </div>
+              </div>
+            </section>
+
+            {/* VM Configuration */}
+            <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6 flex items-center">
+                <Monitor className="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400" />
+                Virtual Machine Configuration
+              </h2>
+
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Public Image URL
+                  </label>
+                  <input
+                    type="text"
+                    value={labData.vmImage}
+                    onChange={(e) => setLabData({ ...labData, vmImage: e.target.value })}
+                    placeholder="e.g., ubuntu-20.04-security or custom-vulnhub-image"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
                 </div>
               </div>
             </section>
@@ -1077,25 +910,6 @@ export default function LabCreationView() {
                                   placeholder="Question title"
                                   className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
                                 />
-                              </div>
-                              <div className="flex space-x-2">
-                                <input
-                                  type="number"
-                                  value={question.points}
-                                  onChange={(e) => updateQuestion(task.id, question.id, { points: parseInt(e.target.value) || 0 })}
-                                  placeholder="Points"
-                                  min="0"
-                                  className="w-20 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
-                                />
-                                <label className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-                                  <input
-                                    type="checkbox"
-                                    checked={question.isOptional}
-                                    onChange={(e) => updateQuestion(task.id, question.id, { isOptional: e.target.checked })}
-                                    className="mr-1"
-                                  />
-                                  Optional
-                                </label>
                               </div>
                             </div>
 
@@ -1215,100 +1029,6 @@ export default function LabCreationView() {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Lab Statistics */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Lab Overview</h3>
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Field:</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">
-                    {labData.academicCategory.split('-').map(word =>
-                      word.charAt(0).toUpperCase() + word.slice(1)
-                    ).join(' ')}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Type:</span>
-                  <span className={`text-sm font-medium ${labData.labType === 'mandatory'
-                      ? 'text-blue-600 dark:text-blue-400'
-                      : 'text-purple-600 dark:text-purple-400'
-                    }`}>
-                    {labData.labType.charAt(0).toUpperCase() + labData.labType.slice(1)}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Tasks:</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">{tasks.length}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Questions:</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">
-                    {tasks.reduce((total, task) => total + task.questions.length, 0)}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Total Points:</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">
-                    {tasks.reduce((total, task) =>
-                      total + task.questions.reduce((taskTotal, question) => taskTotal + question.points, 0), 0
-                    )}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Estimated Time:</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">{labData.estimatedTime}min</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Quick Tips */}
-            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6">
-              <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-4 flex items-center">
-                <AlertCircle className="w-4 h-4 mr-2" />
-                Lab Creation Tips
-              </h3>
-              <ul className="space-y-2 text-sm text-blue-800 dark:text-blue-200">
-                <li>• Define clear learning objectives</li>
-                <li>• Use progressive difficulty levels</li>
-                <li>• Include diverse question types</li>
-                <li>• Add visual aids and attachments</li>
-                <li>• Provide helpful hints and feedback</li>
-                <li>• Test thoroughly before publishing</li>
-              </ul>
-            </div>
-
-            {/* Resource Usage */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Resource Requirements</h3>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">CPU:</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">
-                    {labData.vmResources.cpu} cores
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Memory:</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">
-                    {labData.vmResources.memory}GB RAM
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Storage:</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">
-                    {labData.vmResources.storage}GB disk
-                  </span>
-                </div>
-                <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Cost per hour:</span>
-                    <span className="text-sm font-semibold text-green-600 dark:text-green-400">
-                      $0.{(labData.vmResources.cpu * 2 + labData.vmResources.memory * 0.5).toFixed(0).padStart(2, '0')}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>

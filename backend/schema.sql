@@ -133,8 +133,10 @@ CREATE TABLE IF NOT EXISTS labs (
     points_possible INTEGER DEFAULT 100,
     auto_grade BOOLEAN DEFAULT FALSE,
     
-    -- Icon/Image
-    icon_url TEXT
+    -- Icon/Image and Metadata
+    icon_url TEXT,
+    icon_path VARCHAR(500),
+    tags TEXT[]
 );
 
 -- User progress tracking
