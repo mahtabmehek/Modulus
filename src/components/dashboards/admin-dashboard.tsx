@@ -52,6 +52,7 @@ export function AdminDashboard() {
   const [showCourseModal, setShowCourseModal] = useState(false)
   const [isUserTableCollapsed, setIsUserTableCollapsed] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
+  const [labSearchTerm, setLabSearchTerm] = useState('')
   const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null)
   const [selectedUser, setSelectedUser] = useState<any>(null)
   const [showUserActions, setShowUserActions] = useState<{ [key: string]: boolean }>({})
@@ -1123,6 +1124,20 @@ export function AdminDashboard() {
               </div>
             </div>
 
+            {/* Search Input */}
+            <div className="mb-6">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <input
+                  type="text"
+                  placeholder="Search labs by name or description..."
+                  value={labSearchTerm}
+                  onChange={(e) => setLabSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                />
+              </div>
+            </div>
+
             {loading ? (
               <div className="flex items-center justify-center py-8">
                 <RefreshCw className="w-6 h-6 animate-spin text-purple-600" />
@@ -1130,7 +1145,15 @@ export function AdminDashboard() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {labs.map((lab) => (
+                {labs
+                  .filter((lab) => {
+                    if (!labSearchTerm) return true
+                    const searchLower = labSearchTerm.toLowerCase()
+                    const title = (lab.title || lab.name || '').toLowerCase()
+                    const description = (lab.description || lab.type || '').toLowerCase()
+                    return title.includes(searchLower) || description.includes(searchLower)
+                  })
+                  .map((lab) => (
                   <div key={lab.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 text-center">
                     {/* Lab Icon */}
                     <div className="w-16 h-16 bg-blue-600 rounded-xl flex items-center justify-center mx-auto mb-6">
@@ -1160,14 +1183,20 @@ export function AdminDashboard() {
               </div>
             )}
 
-            {!loading && labs.length === 0 && (
+            {!loading && labs.filter((lab) => {
+              if (!labSearchTerm) return true
+              const searchLower = labSearchTerm.toLowerCase()
+              const title = (lab.title || lab.name || '').toLowerCase()
+              const description = (lab.description || lab.type || '').toLowerCase()
+              return title.includes(searchLower) || description.includes(searchLower)
+            }).length === 0 && (
               <div className="text-center py-8">
                 <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                 <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                  No labs found
+                  {labSearchTerm ? 'No labs match your search' : 'No labs found'}
                 </h4>
                 <p className="text-gray-600 dark:text-gray-400">
-                  No labs have been created yet.
+                  {labSearchTerm ? `No labs match "${labSearchTerm}". Try a different search term.` : 'No labs have been created yet.'}
                 </p>
               </div>
             )}

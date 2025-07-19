@@ -280,6 +280,20 @@ class ApiClient {
     })
   }
 
+  async reorderTasks(labId: string, tasks: { id: string; order_index: number }[]): Promise<{ message: string }> {
+    return this.request(`/labs/${labId}/tasks/reorder`, {
+      method: 'PUT',
+      body: JSON.stringify({ tasks }),
+    })
+  }
+
+  async reorderQuestions(taskId: string, questions: { id: string; order_index: number }[]): Promise<{ message: string }> {
+    return this.request(`/labs/tasks/${taskId}/questions/reorder`, {
+      method: 'PUT',
+      body: JSON.stringify({ questions }),
+    })
+  }
+
   // Desktop Session Management
   desktop = {
     // Create new desktop session

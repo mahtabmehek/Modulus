@@ -5,17 +5,35 @@ const jwt = require('jsonwebtoken');
 const path = require('path');
 const { body, validationResult } = require('express-validator');
 const { pool, testConnection } = require('./db');
+const rateLimit = require('express-rate-limit');
 
 const app = express();
 
+// Rate limiting for development
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 1000, // limit each IP to 1000 requests per windowMs
+  message: 'Too many requests from this IP, please try again later.'
+});
+
 // Middleware
+app.use(limiter);
 app.use(cors({
-    origin: true,
+    origin: ['http://localhost:3000', 'http://localhost:3002', 'http://localhost:3003'],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    optionsSuccessStatus: 200
 }));
 app.use(express.json());
+
+// Handle preflight OPTIONS requests globally
+app.options('*', (req, res) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    res.status(200).end();
+});
 
 // Import and use file routes
 const filesRouter = require('./routes/files');
@@ -42,13 +60,24 @@ app.use('/api/users', usersRouter);
 const healthRouter = require('./routes/health');
 app.use('/api/health', healthRouter);
 
-// Static file serving with CORS headers
-app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
-    setHeaders: (res, path) => {
-        res.header('Access-Control-Allow-Origin', '*');
-        res.header('Cross-Origin-Resource-Policy', 'cross-origin');
+// Static file serving with enhanced CORS headers
+app.use('/uploads', (req, res, next) => {
+    // Set CORS headers for static files
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    res.header('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.header('Cross-Origin-Embedder-Policy', 'unsafe-none');
+    res.header('Cache-Control', 'public, max-age=31536000');
+    
+    // Handle preflight OPTIONS requests
+    if (req.method === 'OPTIONS') {
+        res.status(200).end();
+        return;
     }
-}));
+    
+    next();
+}, express.static(path.join(__dirname, 'uploads')));
 
 // Test database connection on startup
 testConnection().catch(console.error);

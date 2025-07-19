@@ -61,7 +61,7 @@ export default function LabCreationView() {
   const [labData, setLabData] = useState({
     title: '',
     description: '',
-    icon: '', // Add icon field for lab image/icon
+    icon: '' as string | File, // Support both File objects (browser) and strings (server URLs)
     // Academic organization
     academicCategory: 'computing' as string,
     course: '',
@@ -186,7 +186,11 @@ export default function LabCreationView() {
         setLabData({
           title: lab.title || '',
           description: lab.description || '',
-          icon: lab.icon_path || '',
+          icon: lab.icon_path ? (
+            lab.icon_path.startsWith('http://') || lab.icon_path.startsWith('https://') 
+              ? lab.icon_path 
+              : lab.icon_path // Keep as relative path, will be converted in display logic
+          ) : '',
           academicCategory: 'computing',
           course: '',
           module: '',
@@ -317,9 +321,9 @@ export default function LabCreationView() {
       Array.from(files).forEach(file => {
         formData.append('images', file);
       });
-      const labName = labData.title || 'unnamed-lab';
-      formData.append('labName', labName);
-      console.log('Uploading images with labName:', labName);
+      const safeLabelName = (labData.title || 'unnamed-lab').replace(/[^a-zA-Z0-9\-_]/g, '_').toLowerCase();
+      formData.append('labName', safeLabelName);
+      console.log('Uploading images with safeLabelName:', safeLabelName);
 
       const response = await fetch('http://localhost:3001/api/files/upload-lab-files', {
         method: 'POST',
@@ -364,7 +368,8 @@ export default function LabCreationView() {
       Array.from(files).forEach(file => {
         formData.append('attachments', file);
       });
-      formData.append('labName', labData.title || 'unnamed-lab');
+      const safeLabelName = (labData.title || 'unnamed-lab').replace(/[^a-zA-Z0-9\-_]/g, '_').toLowerCase();
+      formData.append('labName', safeLabelName);
 
       const response = await fetch('http://localhost:3001/api/files/upload-lab-files', {
         method: 'POST',
@@ -457,6 +462,147 @@ export default function LabCreationView() {
     console.log('🔄 SYNCHRONOUS setState complete')
   }
 
+  const uploadAllPendingFiles = async (tasks: LabTask[]) => {
+    console.log('📤 UPLOADING ALL PENDING FILES: Processing browser-stored files');
+    
+    // Create consistent safe lab name for all uploads
+    const safeLabelName = (labData.title || 'unnamed-lab').replace(/[^a-zA-Z0-9\-_]/g, '_').toLowerCase();
+    console.log('📤 Safe label name for ALL uploads:', safeLabelName);
+    
+    let uploadedIconPath = null; // Track uploaded icon path
+    
+    // First, handle lab icon if it's a File object
+    let updatedLabData = { ...labData };
+    if (labData.icon instanceof File) {
+      console.log('🖼️ UPLOADING: Lab icon -', labData.icon.name);
+      console.log('🖼️ Current lab title:', labData.title);
+      
+      try {
+        const formData = new FormData();
+        formData.append('icon', labData.icon);
+        formData.append('labName', safeLabelName);
+        
+        console.log('🖼️ Starting upload request...');
+        const response = await fetch('http://localhost:3001/api/files/upload-lab-files', {
+          method: 'POST',
+          body: formData,
+        });
+        
+        console.log('🖼️ Upload response status:', response.status);
+        if (response.ok) {
+          const result = await response.json();
+          console.log('🖼️ Upload result:', result);
+          if (result.success && result.data.icon) {
+            console.log('🖼️ SUCCESS: Lab icon uploaded -', result.data.icon);
+            console.log('🖼️ Full path will be: http://localhost:3001' + result.data.icon);
+            // Capture the uploaded icon path
+            uploadedIconPath = result.data.icon;
+            // Store the server path (relative) so it can be converted to full URL when needed
+            updatedLabData = { ...updatedLabData, icon: result.data.icon };
+            setLabData(updatedLabData); // Update state with server path
+          } else {
+            console.error('🖼️ Upload succeeded but no icon path returned:', result);
+          }
+        } else {
+          const errorText = await response.text();
+          console.error('🖼️ ERROR: Failed to upload lab icon. Status:', response.status, 'Response:', errorText);
+        }
+      } catch (error) {
+        console.error('🖼️ ERROR: Lab icon upload failed:', error);
+      }
+    }
+    
+    const processedTasks = await Promise.all(tasks.map(async (task) => {
+      if (!(task as any).questions) return task;
+      
+      const processedQuestions = await Promise.all((task as any).questions.map(async (question: any) => {
+        let updatedImages = [...(question.images || [])];
+        let updatedAttachments = [...(question.attachments || [])];
+        
+        // Process images - upload File objects to server
+        const imageFiles = question.images?.filter((img: any) => img instanceof File) as File[];
+        if (imageFiles && imageFiles.length > 0) {
+          console.log(`📷 UPLOADING: ${imageFiles.length} images for question "${question.title}"`);
+          
+          try {
+            const formData = new FormData();
+            imageFiles.forEach(file => formData.append('images', file));
+            formData.append('labName', safeLabelName);
+            
+            const response = await fetch('http://localhost:3001/api/files/upload-lab-files', {
+              method: 'POST',
+              body: formData,
+            });
+            
+            if (response.ok) {
+              const result = await response.json();
+              if (result.success && result.data.images) {
+                console.log(`📷 SUCCESS: ${result.data.images.length} images uploaded`);
+                
+                // Replace File objects with server URLs
+                const existingUrls = question.images?.filter((img: any) => typeof img === 'string') as string[] || [];
+                const newUrls = result.data.images.map((url: string) => `http://localhost:3001${url}`);
+                updatedImages = [...existingUrls, ...newUrls];
+              }
+            } else {
+              console.error('📷 ERROR: Failed to upload images:', response.statusText);
+            }
+          } catch (error) {
+            console.error('📷 ERROR: Image upload failed:', error);
+          }
+        }
+        
+        // Process attachments - upload File objects to server
+        const attachmentFiles = question.attachments?.filter((att: any) => att instanceof File) as File[];
+        if (attachmentFiles && attachmentFiles.length > 0) {
+          console.log(`📎 UPLOADING: ${attachmentFiles.length} attachments for question "${question.title}"`);
+          
+          try {
+            const formData = new FormData();
+            attachmentFiles.forEach(file => formData.append('attachments', file));
+            formData.append('labName', safeLabelName);
+            
+            const response = await fetch('http://localhost:3001/api/files/upload-lab-files', {
+              method: 'POST',
+              body: formData,
+            });
+            
+            if (response.ok) {
+              const result = await response.json();
+              if (result.success && result.data.attachments) {
+                console.log(`📎 SUCCESS: ${result.data.attachments.length} attachments uploaded`);
+                
+                // Replace File objects with server URLs
+                const existingUrls = question.attachments?.filter((att: any) => typeof att === 'string') as string[] || [];
+                const newUrls = result.data.attachments.map((url: string) => `http://localhost:3001${url}`);
+                updatedAttachments = [...existingUrls, ...newUrls];
+              }
+            } else {
+              console.error('📎 ERROR: Failed to upload attachments:', response.statusText);
+            }
+          } catch (error) {
+            console.error('📎 ERROR: Attachment upload failed:', error);
+          }
+        }
+        
+        return {
+          ...question,
+          images: updatedImages,
+          attachments: updatedAttachments
+        };
+      }));
+      
+      return {
+        ...task,
+        questions: processedQuestions
+      };
+    }));
+    
+    console.log('📤 ALL FILE UPLOADS COMPLETE');
+    console.log('📤 Returning uploaded icon path:', uploadedIconPath);
+    return { tasks: processedTasks, iconPath: uploadedIconPath };
+  };
+
   const handleSave = async () => {
     // Validate required fields before saving
     if (!labData.title.trim()) {
@@ -481,11 +627,19 @@ export default function LabCreationView() {
       // Ensure tags are properly formatted as an array of strings
       const cleanTags = labData.tags.filter(tag => tag && tag.trim()).map(tag => tag.trim())
 
+      // Process file uploads first - upload all browser-stored files to server
+      console.log('📤 STEP 1: Uploading all browser-stored files to server...');
+      const uploadResult = await uploadAllPendingFiles(dragDropTasks);
+      const tasksWithUploadedFiles = uploadResult.tasks;
+      const uploadedIconPath = uploadResult.iconPath;
+      
+      console.log('🖼️ Received uploaded icon path:', uploadedIconPath);
+      
       // Ensure tasks and questions have proper order_index values
-      const tasksWithOrderIndex = dragDropTasks.map((task, taskIndex) => ({
+      const tasksWithOrderIndex = tasksWithUploadedFiles.map((task, taskIndex) => ({
         ...task,
         order_index: task.order_index || (taskIndex + 1),
-        questions: task.questions?.map((question, questionIndex) => ({
+        questions: (task as any).questions?.map((question: any, questionIndex: number) => ({
           ...question,
           order_index: question.order_index || (questionIndex + 1)
         })) || []
@@ -495,8 +649,8 @@ export default function LabCreationView() {
       console.log('📋 Total tasks to save:', tasksWithOrderIndex.length)
       tasksWithOrderIndex.forEach((task, i) => {
         console.log(`📝 Task ${i + 1}: ID=${task.id}, Title="${task.title}", Order=${task.order_index}`)
-        if (task.questions && task.questions.length > 0) {
-          task.questions.forEach((q, j) => {
+        if ((task as any).questions && (task as any).questions.length > 0) {
+          (task as any).questions.forEach((q: any, j: number) => {
             console.log(`  ❓ Question ${j + 1}: ID=${q.id}, Title="${q.title}", Order=${q.order_index}`)
           })
         }
@@ -506,7 +660,7 @@ export default function LabCreationView() {
         module_id: 1, // Always use module 1
         title: labData.title.trim(),
         description: labData.description?.trim() || '',
-        icon_path: labData.icon || undefined,
+        icon_path: uploadedIconPath || (typeof labData.icon === 'string' && labData.icon && !labData.icon.startsWith('blob:') ? labData.icon : null),
         lab_type: labTypeMapping[labData.labType] || 'vm',
         vm_image: labData.vmImage?.trim() || undefined,
         tags: cleanTags,
@@ -515,6 +669,7 @@ export default function LabCreationView() {
         tasks: tasksWithOrderIndex // Use tasks with proper order_index
       }
 
+      console.log('💾 FINAL LAB PAYLOAD with icon_path:', labPayload.icon_path);
       console.log('Sending lab payload:', labPayload);
       console.log('Tasks being sent:', dragDropTasks);
       console.log('editLabId:', editLabId);
@@ -878,42 +1033,15 @@ export default function LabCreationView() {
                           type="file"
                           className="hidden"
                           accept="image/*"
-                          onChange={async (e) => {
+                          onChange={(e) => {
                             const file = e.target.files?.[0];
                             if (file) {
-                              try {
-                                // Show upload progress
-                                toast.loading('Uploading icon...', { id: 'icon-upload' });
-
-                                // Upload the file using the file upload API
-                                const formData = new FormData();
-                                formData.append('icon', file);
-                                formData.append('labName', labData.title || 'untitled-lab');
-
-                                const response = await fetch('http://localhost:3001/api/files/upload-lab-files', {
-                                  method: 'POST',
-                                  body: formData,
-                                });
-
-                                if (response.ok) {
-                                  const result = await response.json();
-                                  if (result.success && result.data.icon) {
-                                    // Store the full URL for easier access
-                                    const fullIconUrl = `http://localhost:3001${result.data.icon}`;
-                                    setLabData({ ...labData, icon: fullIconUrl });
-                                    toast.success('Icon uploaded successfully!', { id: 'icon-upload' });
-                                  } else {
-                                    console.error('Icon upload failed:', result);
-                                    toast.error('Failed to upload icon', { id: 'icon-upload' });
-                                  }
-                                } else {
-                                  console.error('Icon upload failed:', response.statusText);
-                                  toast.error('Failed to upload icon', { id: 'icon-upload' });
-                                }
-                              } catch (error) {
-                                console.error('Error uploading icon:', error);
-                                toast.error('Error uploading icon', { id: 'icon-upload' });
-                              }
+                              // Store File object in browser for immediate preview
+                              console.log('🖼️ Lab icon selected:', file.name, 'Size:', file.size, 'bytes');
+                              setLabData({ ...labData, icon: file });
+                              toast.success('Icon ready for upload! Will be saved when you create/save the lab.', { 
+                                duration: 3000 
+                              });
                             }
                           }}
                         />
@@ -925,7 +1053,13 @@ export default function LabCreationView() {
                       <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                         <div className="flex-shrink-0">
                           <img
-                            src={labData.icon}
+                            src={labData.icon instanceof File ? 
+                              URL.createObjectURL(labData.icon) : 
+                              (labData.icon.startsWith('http://') || labData.icon.startsWith('https://') ? 
+                                labData.icon : 
+                                `http://localhost:3001${labData.icon.startsWith('/') ? labData.icon : '/' + labData.icon}`
+                              )
+                            }
                             alt="Lab icon preview"
                             className="w-12 h-12 rounded-lg object-cover border border-gray-200 dark:border-gray-600"
                             onError={(e) => {
@@ -936,8 +1070,16 @@ export default function LabCreationView() {
                           />
                         </div>
                         <div className="flex-1">
-                          <p className="text-sm font-medium text-gray-900 dark:text-white">Preview</p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">This is how your icon will appear</p>
+                          <p className="text-sm font-medium text-gray-900 dark:text-white">
+                            {labData.icon instanceof File ? labData.icon.name : 'Preview'}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            {labData.icon instanceof File ? (
+                              <span className="text-blue-600 dark:text-blue-400">📷 Ready to upload</span>
+                            ) : (
+                              'This is how your icon will appear'
+                            )}
+                          </p>
                         </div>
                         <button
                           type="button"

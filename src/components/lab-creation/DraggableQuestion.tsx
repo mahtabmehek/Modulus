@@ -10,8 +10,8 @@ interface Question {
   description: string;
   flag?: string;
   points: number;
-  images?: string[];
-  attachments?: string[];
+  images?: (string | File)[];  // Support both URLs and File objects
+  attachments?: (string | File)[];  // Support both URLs and File objects
   multipleChoiceOptions?: {
     option: string;
     isCorrect: boolean;
@@ -88,17 +88,49 @@ export function DraggableQuestion({
       if (imageFiles.length > 0) {
         const dt = new DataTransfer();
         imageFiles.forEach(file => dt.items.add(file));
-        console.log('Calling onImageUpload with', dt.files.length, 'files');
-        onImageUpload?.(question.id, dt.files);
+        console.log('📷 DRAG & DROP: Storing', dt.files.length, 'images in browser');
+        handleImageUpload(dt.files);
       }
       
       if (otherFiles.length > 0) {
         const dt = new DataTransfer();
         otherFiles.forEach(file => dt.items.add(file));
-        console.log('Calling onAttachmentUpload with', dt.files.length, 'files');
-        onAttachmentUpload?.(question.id, dt.files);
+        console.log('📎 DRAG & DROP: Storing', dt.files.length, 'attachments in browser');
+        handleAttachmentUpload(dt.files);
       }
     }
+  };
+
+  const handleImageUpload = (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+
+    // Store files immediately in browser memory for preview
+    const currentImages = question.images || [];
+    const newFiles = Array.from(files);
+    
+    console.log('📷 BROWSER STORAGE: Adding', newFiles.length, 'images to question', question.id);
+    
+    // Add File objects directly to the images array for immediate display
+    const updatedImages = [...currentImages, ...newFiles];
+    onUpdate(question.id, { images: updatedImages });
+    
+    console.log('📷 Images stored in browser memory:', updatedImages.length, 'total images');
+  };
+
+  const handleAttachmentUpload = (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+
+    // Store files immediately in browser memory
+    const currentAttachments = question.attachments || [];
+    const newFiles = Array.from(files);
+    
+    console.log('📎 BROWSER STORAGE: Adding', newFiles.length, 'attachments to question', question.id);
+    
+    // Add File objects directly to the attachments array for immediate display
+    const updatedAttachments = [...currentAttachments, ...newFiles];
+    onUpdate(question.id, { attachments: updatedAttachments });
+    
+    console.log('📎 Attachments stored in browser memory:', updatedAttachments.length, 'total attachments');
   };
 
   const removeImage = (index: number) => {
@@ -212,8 +244,10 @@ export function DraggableQuestion({
         accept="image/*"
         multiple
         onChange={(e) => {
-          console.log('Image input onChange called with', e.target.files?.length, 'files');
-          onImageUpload?.(question.id, e.target.files);
+          console.log('📷 FILE INPUT: Selected', e.target.files?.length, 'images');
+          handleImageUpload(e.target.files);
+          // Clear the input so the same file can be selected again
+          e.target.value = '';
         }}
         className="hidden"
       />
@@ -222,8 +256,10 @@ export function DraggableQuestion({
         type="file"
         multiple
         onChange={(e) => {
-          console.log('Attachment input onChange called with', e.target.files?.length, 'files');
-          onAttachmentUpload?.(question.id, e.target.files);
+          console.log('📎 FILE INPUT: Selected', e.target.files?.length, 'attachments');
+          handleAttachmentUpload(e.target.files);
+          // Clear the input so the same file can be selected again
+          e.target.value = '';
         }}
         className="hidden"
       />
@@ -243,22 +279,63 @@ export function DraggableQuestion({
             Images ({question.images.length})
           </label>
           <div className="flex flex-wrap gap-2">
-            {question.images.map((img, idx) => (
-              <div key={idx} className="relative group">
-                <img 
-                  src={img} 
-                  alt="Question" 
-                  className="w-16 h-16 object-cover rounded border border-gray-300 dark:border-gray-600" 
-                />
-                <button
-                  onClick={() => removeImage(idx)}
-                  className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                  title="Remove image"
-                >
-                  <X className="w-2 h-2" />
-                </button>
-              </div>
-            ))}
+            {question.images.map((img, idx) => {
+              // Handle File objects (browser storage), full URLs (already uploaded), and relative paths (server storage)
+              let imageUrl: string;
+              let fileName: string;
+              let isInBrowser = false;
+              
+              if (img instanceof File) {
+                // New file in browser - create object URL
+                imageUrl = URL.createObjectURL(img);
+                fileName = img.name;
+                isInBrowser = true;
+                console.log(`🖼️ Image ${idx}: File object (${fileName}) -> ${imageUrl.substring(0, 50)}...`);
+              } else if (typeof img === 'string') {
+                if (img.startsWith('http://') || img.startsWith('https://')) {
+                  // Already a full URL
+                  imageUrl = img;
+                  console.log(`🖼️ Image ${idx}: Full URL -> ${imageUrl}`);
+                } else if (img.startsWith('/uploads/') || img.startsWith('uploads/')) {
+                  // Relative path from server - construct full URL
+                  imageUrl = `http://localhost:3001${img.startsWith('/') ? img : '/' + img}`;
+                  console.log(`🖼️ Image ${idx}: Server path (${img}) -> ${imageUrl}`);
+                } else {
+                  // Fallback - assume it's a relative path
+                  imageUrl = `http://localhost:3001/uploads/${img}`;
+                  console.log(`🖼️ Image ${idx}: Fallback path (${img}) -> ${imageUrl}`);
+                }
+                fileName = img.split('/').pop() || 'Image';
+              } else {
+                // Fallback
+                imageUrl = '';
+                fileName = 'Image';
+                console.log(`🖼️ Image ${idx}: Unknown type -> fallback`);
+              }
+              
+              return (
+                <div key={idx} className="relative group">
+                  <img 
+                    src={imageUrl} 
+                    alt={fileName}
+                    className="w-16 h-16 object-cover rounded border border-gray-300 dark:border-gray-600" 
+                    title={fileName}
+                  />
+                  <button
+                    onClick={() => removeImage(idx)}
+                    className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="Remove image"
+                  >
+                    <X className="w-2 h-2" />
+                  </button>
+                  {isInBrowser && (
+                    <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-75 text-white text-xs px-1 py-0.5 rounded-b">
+                      📷 In browser
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
@@ -270,20 +347,29 @@ export function DraggableQuestion({
             Attachments ({question.attachments.length})
           </label>
           <div className="space-y-1">
-            {question.attachments.map((attachment, idx) => (
-              <div key={idx} className="flex items-center justify-between bg-gray-100 dark:bg-gray-600 px-2 py-1 rounded text-xs">
-                <span className="text-gray-700 dark:text-gray-300 truncate">
-                  {typeof attachment === 'string' ? attachment.split('/').pop() || 'File' : attachment}
-                </span>
-                <button
-                  onClick={() => removeAttachment(idx)}
-                  className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 ml-2"
-                  title="Remove attachment"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </div>
-            ))}
+            {question.attachments.map((attachment, idx) => {
+              // Handle both File objects (browser storage) and URLs (server storage)
+              const fileName = attachment instanceof File ? attachment.name : 
+                              (typeof attachment === 'string' ? attachment.split('/').pop() || 'File' : 'File');
+              const isInBrowser = attachment instanceof File;
+              
+              return (
+                <div key={idx} className="flex items-center justify-between bg-gray-100 dark:bg-gray-600 px-2 py-1 rounded text-xs">
+                  <span className="text-gray-700 dark:text-gray-300 truncate flex items-center">
+                    {isInBrowser && <span className="text-blue-500 mr-1">📎</span>}
+                    {fileName}
+                    {isInBrowser && <span className="text-blue-500 ml-1 text-xs">(in browser)</span>}
+                  </span>
+                  <button
+                    onClick={() => removeAttachment(idx)}
+                    className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 ml-2"
+                    title="Remove attachment"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
