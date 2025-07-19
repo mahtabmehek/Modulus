@@ -62,6 +62,9 @@ router.post('/upload-lab-files', upload.fields([
 ]), async (req, res) => {
     try {
         const files = req.files;
+        const labName = req.body.labName || 'unnamed-lab';
+        const safeName = labName.replace(/[^a-zA-Z0-9\-_]/g, '_').toLowerCase();
+        
         const result = {
             icon: null,
             images: [],
@@ -69,18 +72,18 @@ router.post('/upload-lab-files', upload.fields([
         };
 
         if (files.icon && files.icon[0]) {
-            result.icon = `/uploads/labs/${req.body.labName}/${files.icon[0].filename}`;
+            result.icon = `/uploads/labs/${safeName}/${files.icon[0].filename}`;
         }
 
         if (files.images) {
             result.images = files.images.map(file =>
-                `/uploads/labs/${req.body.labName}/${file.filename}`
+                `/uploads/labs/${safeName}/${file.filename}`
             );
         }
 
         if (files.attachments) {
             result.attachments = files.attachments.map(file =>
-                `/uploads/labs/${req.body.labName}/${file.filename}`
+                `/uploads/labs/${safeName}/${file.filename}`
             );
         }
 
@@ -101,6 +104,12 @@ router.post('/upload-lab-files', upload.fields([
 // GET /api/files/labs/:labName/:filename
 router.get('/labs/:labName/:filename', async (req, res) => {
     try {
+        // Set CORS headers for file serving
+        res.header('Access-Control-Allow-Origin', '*');
+        res.header('Access-Control-Allow-Methods', 'GET');
+        res.header('Access-Control-Allow-Headers', 'Content-Type');
+        res.header('Cross-Origin-Resource-Policy', 'cross-origin');
+        
         const { labName, filename } = req.params;
         const safeName = labName.replace(/[^a-zA-Z0-9\-_]/g, '_').toLowerCase();
         const filePath = path.join(__dirname, '../uploads/labs', safeName, filename);

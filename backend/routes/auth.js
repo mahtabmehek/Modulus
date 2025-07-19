@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
+const { pool } = require('../db');
 const router = express.Router();
 
 // Authentication middleware for local development
@@ -163,7 +164,7 @@ router.post('/validate-access-code', [
     }
 
     // Check database for other access codes (for future expansion)
-    const db = req.app.locals.db;
+    const db = pool;
     const result = await db.query(
       'SELECT * FROM access_codes WHERE code = $1 AND is_active = true AND (expires_at IS NULL OR expires_at > NOW())',
       [accessCode]
@@ -235,7 +236,7 @@ router.post('/register', validateRegistration, async (req, res) => {
     const role = roleFromAccessCode;
     console.log(`🔧 Access code: ${accessCode} mapped to role: ${role}`);
 
-    const db = req.app.locals.db;
+    const db = pool;
 
     // Check if user already exists
     const existingUser = await db.query(
@@ -316,7 +317,7 @@ router.post('/login', validateLogin, async (req, res) => {
     }
 
     const { email, password } = req.body;
-    const db = req.app.locals.db;
+    const db = pool;
 
     // Get user from database
     const result = await db.query(
@@ -404,7 +405,7 @@ router.post('/logout', authenticateToken, (req, res) => {
 // GET /api/auth/me
 router.get('/me', authenticateToken, async (req, res) => {
   try {
-    const db = req.app.locals.db;
+    const db = pool;
     const result = await db.query(
       `SELECT id, email, name, role, is_approved, created_at, last_active,
               level, level_name, badges, streak_days, total_points
@@ -453,7 +454,7 @@ router.put('/change-password', [
     }
 
     const { currentPassword, newPassword } = req.body;
-    const db = req.app.locals.db;
+    const db = pool;
 
     // Get current user
     const result = await db.query(
@@ -502,7 +503,7 @@ router.post('/create-test-users', async (req, res) => {
       }
     }
 
-    const db = req.app.locals.db;
+    const db = pool;
     const saltRounds = 12;
 
     const testUsers = [
@@ -592,7 +593,7 @@ router.post('/create-test-users', async (req, res) => {
 // GET /api/auth/admin/pending-approvals - Get users pending approval
 router.get('/admin/pending-approvals', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const db = req.app.locals.db;
+    const db = pool;
 
     const result = await db.query(
       `SELECT id, email, name, role, created_at 
@@ -621,7 +622,7 @@ router.get('/admin/pending-approvals', authenticateToken, requireAdmin, async (r
 router.post('/admin/approve-user', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { userId } = req.body;
-    const db = req.app.locals.db;
+    const db = pool;
 
     const result = await db.query(
       `UPDATE users 
@@ -650,7 +651,7 @@ router.post('/admin/approve-user', authenticateToken, requireAdmin, async (req, 
 router.post('/admin/reject-user', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { userId } = req.body;
-    const database = req.app.locals.db;
+    const database = pool;
 
     const deleteResult = await database.query(
       `DELETE FROM users 
@@ -677,7 +678,7 @@ router.post('/admin/reject-user', authenticateToken, requireAdmin, async (req, r
 // GET /api/auth/admin/users - Get all users (admin only)
 router.get('/admin/users', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const database = req.app.locals.db;
+    const database = pool;
 
     const usersResult = await database.query(
       `SELECT id, email, name, role, is_approved, created_at, last_active 
@@ -719,7 +720,7 @@ router.post('/admin/create-user', authenticateToken, requireAdmin,
       }
 
       const { email, password, name, role } = req.body;
-      const db = req.app.locals.db;
+      const db = pool;
 
       // Check if user already exists
       const existingUser = await db.query(
@@ -773,7 +774,7 @@ router.post('/admin/disable-user', authenticateToken, requireAdmin, async (req, 
       return res.status(400).json({ error: 'User ID is required' });
     }
 
-    const db = req.app.locals.db;
+    const db = pool;
 
     // Update user to set them as disabled
     const result = await db.query(
@@ -813,7 +814,7 @@ router.post('/admin/enable-user', authenticateToken, requireAdmin, async (req, r
       return res.status(400).json({ error: 'User ID is required' });
     }
 
-    const db = req.app.locals.db;
+    const db = pool;
 
     // Update user to set them as enabled (approved)
     const result = await db.query(
@@ -853,7 +854,7 @@ router.delete('/admin/delete-user', authenticateToken, requireAdmin, async (req,
       return res.status(400).json({ error: 'User ID is required' });
     }
 
-    const db = req.app.locals.db;
+    const db = pool;
 
     // Check if user exists first
     const checkResult = await db.query('SELECT * FROM users WHERE id = $1', [userId]);
@@ -887,7 +888,7 @@ router.put('/admin/update-user/:id', authenticateToken, requireAdmin, async (req
       return res.status(400).json({ error: 'User ID is required' });
     }
 
-    const db = req.app.locals.db;
+    const db = pool;
     const userId = parseInt(id, 10);
 
     // Check if user exists
@@ -915,7 +916,7 @@ router.put('/admin/update-user/:id', authenticateToken, requireAdmin, async (req
         'SELECT id FROM users WHERE email = $1 AND id != $2',
         [email, userId]
       );
-      
+
       if (emailCheck.rows.length > 0) {
         return res.status(400).json({ error: 'Email is already taken by another user' });
       }

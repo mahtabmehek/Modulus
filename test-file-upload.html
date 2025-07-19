@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test File Upload</title>
+</head>
+<body>
+    <h1>Test File Upload</h1>
+    
+    <form id="uploadForm" enctype="multipart/form-data">
+        <div>
+            <label>Lab Name:</label>
+            <input type="text" id="labName" value="test-lab" />
+        </div>
+        <div>
+            <label>Icon:</label>
+            <input type="file" id="iconFile" accept="image/*" />
+        </div>
+        <div>
+            <label>Images:</label>
+            <input type="file" id="imageFiles" accept="image/*" multiple />
+        </div>
+        <div>
+            <label>Attachments:</label>
+            <input type="file" id="attachmentFiles" multiple />
+        </div>
+        <button type="button" onclick="uploadFiles()">Upload</button>
+    </form>
+    
+    <div id="result"></div>
+    
+    <script>
+        async function uploadFiles() {
+            const formData = new FormData();
+            
+            const labName = document.getElementById('labName').value;
+            formData.append('labName', labName);
+            
+            const iconFile = document.getElementById('iconFile').files[0];
+            if (iconFile) {
+                formData.append('icon', iconFile);
+            }
+            
+            const imageFiles = document.getElementById('imageFiles').files;
+            for (let file of imageFiles) {
+                formData.append('images', file);
+            }
+            
+            const attachmentFiles = document.getElementById('attachmentFiles').files;
+            for (let file of attachmentFiles) {
+                formData.append('attachments', file);
+            }
+            
+            try {
+                const response = await fetch('http://localhost:3001/api/files/upload-lab-files', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                document.getElementById('result').innerHTML = '<pre>' + JSON.stringify(result, null, 2) + '</pre>';
+                
+                // Test accessing the uploaded files
+                if (result.success) {
+                    if (result.data.icon) {
+                        const iconUrl = `http://localhost:3001${result.data.icon}`;
+                        console.log('Testing icon URL:', iconUrl);
+                        const img = new Image();
+                        img.onload = () => console.log('✅ Icon loaded successfully');
+                        img.onerror = () => console.log('❌ Icon failed to load');
+                        img.src = iconUrl;
+                    }
+                }
+            } catch (error) {
+                document.getElementById('result').innerHTML = 'Error: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -44,7 +44,7 @@ export function InstructorDashboard() {
     try {
       setLoading(true)
       const token = localStorage.getItem('modulus_token')
-      
+
       if (!token) {
         console.error('No token found')
         return
@@ -167,7 +167,7 @@ export function InstructorDashboard() {
               Quick Actions
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <button 
+              <button
                 onClick={() => navigate('lab-creation')}
                 className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 text-left hover:border-blue-300 dark:hover:border-blue-600 transition-colors"
               >
@@ -179,8 +179,8 @@ export function InstructorDashboard() {
                   Design interactive labs with virtual environments
                 </p>
               </button>
-              
-              <button 
+
+              <button
                 onClick={() => navigate('course-creation')}
                 className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 text-left hover:border-blue-300 dark:hover:border-blue-600 transition-colors"
               >
@@ -207,11 +207,10 @@ export function InstructorDashboard() {
                     <button
                       onClick={prevLabPage}
                       disabled={currentLabPage === 0}
-                      className={`p-2 rounded-lg transition-colors ${
-                        currentLabPage === 0
+                      className={`p-2 rounded-lg transition-colors ${currentLabPage === 0
                           ? 'text-gray-400 dark:text-gray-600 cursor-not-allowed'
                           : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-                      }`}
+                        }`}
                     >
                       <ChevronLeft className="w-5 h-5" />
                     </button>
@@ -221,18 +220,17 @@ export function InstructorDashboard() {
                     <button
                       onClick={nextLabPage}
                       disabled={currentLabPage >= totalLabPages - 1}
-                      className={`p-2 rounded-lg transition-colors ${
-                        currentLabPage >= totalLabPages - 1
+                      className={`p-2 rounded-lg transition-colors ${currentLabPage >= totalLabPages - 1
                           ? 'text-gray-400 dark:text-gray-600 cursor-not-allowed'
                           : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-                      }`}
+                        }`}
                     >
                       <ChevronRight className="w-5 h-5" />
                     </button>
                   </div>
                 )}
               </div>
-              <button 
+              <button
                 onClick={handleCreateLab}
                 className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center transition-colors"
               >
@@ -240,7 +238,7 @@ export function InstructorDashboard() {
                 Create New Lab
               </button>
             </div>
-            
+
             {loading ? (
               <div className="p-6 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 text-center">
                 <p className="text-gray-500 dark:text-gray-400">Loading labs...</p>
@@ -253,7 +251,7 @@ export function InstructorDashboard() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {currentLabs.map((lab) => (
-                  <div 
+                  <div
                     key={lab.id}
                     className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 hover:border-blue-300 dark:hover:border-blue-600 transition-colors"
                   >
@@ -261,9 +259,9 @@ export function InstructorDashboard() {
                       {/* Lab Icon - Centered at top */}
                       <div className="mb-4">
                         {lab.icon_url ? (
-                          <img 
-                            src={lab.icon_url} 
-                            alt={lab.title} 
+                          <img
+                            src={lab.icon_url}
+                            alt={lab.title}
                             className="w-16 h-16 rounded-lg object-cover border border-gray-200 dark:border-gray-600"
                             onError={(e) => {
                               // Show default icon if image fails to load
@@ -278,7 +276,7 @@ export function InstructorDashboard() {
                           </div>
                         )}
                       </div>
-                      
+
                       {/* Title and Description - Centered below icon */}
                       <div className="flex-grow mb-4">
                         <h3 className="font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2">
@@ -287,12 +285,12 @@ export function InstructorDashboard() {
                         <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-3 mb-3">
                           {lab.description || 'No description provided'}
                         </p>
-                        
+
                         {/* Tags */}
                         {lab.tags && lab.tags.length > 0 && (
                           <div className="flex flex-wrap gap-1 mb-3 justify-center">
                             {lab.tags.slice(0, 3).map((tag, index) => (
-                              <span 
+                              <span
                                 key={index}
                                 className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
                               >
@@ -308,7 +306,7 @@ export function InstructorDashboard() {
                           </div>
                         )}
                       </div>
-                      
+
                       {/* Action Buttons */}
                       <div className="flex gap-2 w-full">
                         <button
@@ -339,7 +337,7 @@ export function InstructorDashboard() {
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                 Your Courses
               </h2>
-              <button 
+              <button
                 onClick={() => navigate('course-creation')}
                 className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg flex items-center transition-colors"
               >
@@ -347,7 +345,7 @@ export function InstructorDashboard() {
                 Create New Course
               </button>
             </div>
-            
+
             {coursesLoading ? (
               <div className="p-6 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 text-center">
                 <p className="text-gray-500 dark:text-gray-400">Loading courses...</p>
@@ -360,7 +358,7 @@ export function InstructorDashboard() {
             ) : (
               <div className="space-y-3">
                 {displayedCourses.map((course) => (
-                  <div 
+                  <div
                     key={course.id}
                     className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 hover:border-green-300 dark:hover:border-green-600 transition-colors"
                   >
@@ -390,7 +388,7 @@ export function InstructorDashboard() {
                           </div>
                         </div>
                       </div>
-                      
+
                       <div className="flex items-center space-x-2">
                         <button
                           onClick={() => handleViewCourse(course.id)}
@@ -410,7 +408,7 @@ export function InstructorDashboard() {
                     </div>
                   </div>
                 ))}
-                
+
                 {/* Show more button */}
                 {courses.length > 4 && (
                   <div className="text-center pt-4">

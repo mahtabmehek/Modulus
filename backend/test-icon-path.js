@@ -8,32 +8,29 @@ const pool = new Pool({
     password: 'mahtab',
 });
 
-async function testIconPath() {
+async function checkIconPath() {
     try {
-        // Test that icon_path column exists and works
+        // Check recent labs with icon paths
         const result = await pool.query(`
-            SELECT column_name, data_type, character_maximum_length 
-            FROM information_schema.columns 
-            WHERE table_name = 'labs' AND column_name IN ('icon_path', 'icon_url')
-            ORDER BY column_name
+            SELECT id, title, icon_path, icon_url 
+            FROM labs 
+            ORDER BY updated_at DESC 
+            LIMIT 5
         `);
         
-        console.log('✅ Icon columns in labs table:');
+        console.log('📋 Recent labs with icon data:');
         console.table(result.rows);
         
-        // Test a simple update
-        console.log('\n🧪 Testing icon_path update...');
-        const testUpdate = await pool.query(`
-            UPDATE labs 
-            SET icon_path = '/test/path.jpg' 
-            WHERE id = 1 
-            RETURNING id, title, icon_path
-        `);
+        // Check if files exist for these paths
+        const fs = require('fs');
+        const path = require('path');
         
-        if (testUpdate.rows.length > 0) {
-            console.log('✅ Successfully updated icon_path:', testUpdate.rows[0]);
-        } else {
-            console.log('ℹ️  No lab with id=1 found to test');
+        for (const lab of result.rows) {
+            if (lab.icon_path) {
+                const fullPath = path.join(__dirname, '..', lab.icon_path);
+                const exists = fs.existsSync(fullPath);
+                console.log(`🔍 Lab "${lab.title}": icon_path="${lab.icon_path}" - File exists: ${exists}`);
+            }
         }
         
     } catch (error) {
@@ -43,4 +40,4 @@ async function testIconPath() {
     }
 }
 
-testIconPath();
+checkIconPath();

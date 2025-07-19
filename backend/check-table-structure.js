@@ -19,20 +19,20 @@ async function checkTableStructure() {
             WHERE table_name = $1 
             ORDER BY ordinal_position
         `, ['users']);
-        
+
         console.log('Users table columns:');
         console.log('='.repeat(50));
         result.rows.forEach(col => {
             console.log(`${col.column_name.padEnd(20)} | ${col.data_type.padEnd(15)} | Nullable: ${col.is_nullable}`);
         });
         console.log('='.repeat(50));
-        
+
         // Check if updated_at column exists
         const hasUpdatedAt = result.rows.some(col => col.column_name === 'updated_at');
         console.log(`\nHas updated_at column: ${hasUpdatedAt}`);
-        
+
         await pool.end();
-        
+
     } catch (error) {
         console.error('Error:', error.message);
         await pool.end();

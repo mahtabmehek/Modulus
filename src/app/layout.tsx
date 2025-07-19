@@ -42,8 +42,8 @@ export default function RootLayout({
           storageKey="modulus-theme"
         >
           {children}
-          <Toaster 
-            position="top-right"
+          <Toaster
+            position="bottom-right"
             toastOptions={{
               duration: 4000,
               style: {

@@ -5,60 +5,60 @@ require('dotenv').config();
 const JWT_SECRET = process.env.JWT_SECRET || 'modulus-lms-secret-key-change-in-production';
 
 const pool = new Pool({
-  user: process.env.DB_USER || 'postgres',
-  host: process.env.DB_HOST || 'localhost',
-  database: process.env.DB_NAME || 'modulus',
-  password: process.env.DB_PASSWORD || 'postgres',
-  port: process.env.DB_PORT || 5432,
+    user: process.env.DB_USER || 'postgres',
+    host: process.env.DB_HOST || 'localhost',
+    database: process.env.DB_NAME || 'modulus',
+    password: process.env.DB_PASSWORD || 'postgres',
+    port: process.env.DB_PORT || 5432,
 });
 
 async function testMyEnrollments() {
-  try {
-    console.log('🧪 Testing my-enrollments logic...');
+    try {
+        console.log('🧪 Testing my-enrollments logic...');
 
-    // First login to get a real token
-    const bcrypt = require('bcryptjs');
-    const userResult = await pool.query('SELECT * FROM users WHERE email = $1', ['student@test.com']);
-    const user = userResult.rows[0];
+        // First login to get a real token
+        const bcrypt = require('bcryptjs');
+        const userResult = await pool.query('SELECT * FROM users WHERE email = $1', ['student@test.com']);
+        const user = userResult.rows[0];
 
-    if (!user) {
-      console.log('❌ User not found');
-      return;
-    }
+        if (!user) {
+            console.log('❌ User not found');
+            return;
+        }
 
-    // Create a real JWT token like the login endpoint does
-    const token = jwt.sign(
-      { 
-        id: user.id, 
-        email: user.email, 
-        role: user.role 
-      },
-      JWT_SECRET,
-      { expiresIn: '24h' }
-    );
+        // Create a real JWT token like the login endpoint does
+        const token = jwt.sign(
+            {
+                id: user.id,
+                email: user.email,
+                role: user.role
+            },
+            JWT_SECRET,
+            { expiresIn: '24h' }
+        );
 
-    console.log('✅ Generated token for user:', user.email);
+        console.log('✅ Generated token for user:', user.email);
 
-    // Verify the token
-    const decoded = jwt.verify(token, JWT_SECRET);
-    console.log('✅ Decoded token:', decoded);
+        // Verify the token
+        const decoded = jwt.verify(token, JWT_SECRET);
+        console.log('✅ Decoded token:', decoded);
 
-    // Now test the my-enrollments logic
-    console.log('\n🔍 Testing my-enrollments logic...');
+        // Now test the my-enrollments logic
+        console.log('\n🔍 Testing my-enrollments logic...');
 
-    // Get user's course code
-    const courseCodeResult = await pool.query('SELECT course_code FROM users WHERE id = $1', [decoded.id]);
-    const courseCode = courseCodeResult.rows[0]?.course_code;
-    
-    console.log('User course code:', courseCode);
+        // Get user's course code
+        const courseCodeResult = await pool.query('SELECT course_code FROM users WHERE id = $1', [decoded.id]);
+        const courseCode = courseCodeResult.rows[0]?.course_code;
 
-    if (!courseCode) {
-      console.log('❌ No course code assigned');
-      return;
-    }
+        console.log('User course code:', courseCode);
 
-    // Test the course query
-    const courseQuery = `
+        if (!courseCode) {
+            console.log('❌ No course code assigned');
+            return;
+        }
+
+        // Test the course query
+        const courseQuery = `
       SELECT 
         c.id as course_id,
         c.title,
@@ -96,22 +96,22 @@ async function testMyEnrollments() {
       LIMIT 5
     `;
 
-    const result = await pool.query(courseQuery, [decoded.id, courseCode]);
-    console.log(`\n📊 Query returned ${result.rows.length} rows`);
-    
-    if (result.rows.length > 0) {
-      console.log('Sample row:', result.rows[0]);
-      console.log('✅ Query executed successfully');
-    } else {
-      console.log('❌ No data returned from query');
-    }
+        const result = await pool.query(courseQuery, [decoded.id, courseCode]);
+        console.log(`\n📊 Query returned ${result.rows.length} rows`);
 
-    await pool.end();
-    
-  } catch (error) {
-    console.error('❌ Error testing my-enrollments:', error);
-    await pool.end();
-  }
+        if (result.rows.length > 0) {
+            console.log('Sample row:', result.rows[0]);
+            console.log('✅ Query executed successfully');
+        } else {
+            console.log('❌ No data returned from query');
+        }
+
+        await pool.end();
+
+    } catch (error) {
+        console.error('❌ Error testing my-enrollments:', error);
+        await pool.end();
+    }
 }
 
 testMyEnrollments();

@@ -1,6 +1,7 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
+const { pool } = require('../db');
 const router = express.Router();
 
 const JWT_SECRET = process.env.JWT_SECRET || 'modulus-lms-secret-key-change-in-production';
@@ -52,7 +53,7 @@ const validateCourse = [
 // GET /api/courses - Get all courses
 router.get('/', async (req, res) => {
   try {
-    const db = req.app.locals.db;
+    const db = pool;
 
     const result = await db.query(
       `SELECT 
@@ -91,7 +92,7 @@ router.get('/my-course', authenticateToken, async (req, res) => {
     console.log('=== MY COURSE DEBUG START ===');
     console.log('GET MY COURSE - User:', req.user.userId, req.user.email);
 
-    const db = req.app.locals.db;
+    const db = pool;
     console.log('Database connection:', !!db);
 
     // Get the user's assigned course_id
@@ -223,7 +224,7 @@ router.get('/my-course', authenticateToken, async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const db = req.app.locals.db;
+    const db = pool;
 
     const result = await db.query(
       `SELECT 
@@ -315,7 +316,7 @@ router.post('/', authenticateToken, requireStaffOrAdmin, validateCourse, async (
     }
 
     const { title, code, description, department, academicLevel, duration, totalCredits } = req.body;
-    const db = req.app.locals.db;
+    const db = pool;
 
     // Ensure integer types for database operations
     const parsedDuration = parseInt(duration, 10);
@@ -393,7 +394,7 @@ router.put('/:id', authenticateToken, requireStaffOrAdmin, validateCourse, async
 
     const { id } = req.params;
     const { title, code, description, department, academicLevel, duration, totalCredits } = req.body;
-    const db = req.app.locals.db;
+    const db = pool;
 
     // Ensure integer types for database queries
     const parsedDuration = parseInt(duration, 10);
@@ -482,7 +483,7 @@ router.put('/:id', authenticateToken, requireStaffOrAdmin, validateCourse, async
 router.delete('/:id', authenticateToken, requireStaffOrAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const db = req.app.locals.db;
+    const db = pool;
 
     const result = await db.query(
       'DELETE FROM courses WHERE id = $1 RETURNING id, title, code',
@@ -509,7 +510,7 @@ router.put('/:id/modules', authenticateToken, requireStaffOrAdmin, async (req, r
   try {
     const { id } = req.params;
     const { modules } = req.body;
-    const db = req.app.locals.db;
+    const db = pool;
 
     console.log('SAVE MODULES - Course ID:', id);
     console.log('SAVE MODULES - Modules data:', JSON.stringify(modules, null, 2));

@@ -1,6 +1,7 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
+const { pool } = require('../db');
 const router = express.Router();
 
 const JWT_SECRET = process.env.JWT_SECRET || 'modulus-lms-secret-key-change-in-production';
@@ -35,7 +36,7 @@ const requireStaffOrAdmin = (req, res, next) => {
 router.get('/', authenticateToken, async (req, res) => {
   try {
     const { module_id } = req.query;
-    const db = req.app.locals.db;
+    const db = pool;
 
     let query = `
       SELECT l.*, m.title as module_title, m.course_id 
@@ -70,7 +71,7 @@ router.get('/', authenticateToken, async (req, res) => {
 router.get('/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const db = req.app.locals.db;
+    const db = pool;
 
     const query = `
       SELECT l.*, m.title as module_title, m.course_id, c.title as course_title
@@ -120,7 +121,7 @@ router.post('/',
   ],
   async (req, res) => {
     try {
-      const db = req.app.locals.db;
+      const db = pool;
       
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -284,7 +285,7 @@ router.put('/:id',
   ],
   async (req, res) => {
     try {
-      const db = req.app.locals.db;
+      const db = pool;
       
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -406,7 +407,7 @@ router.put('/:id',
 // DELETE /api/labs/:id - Delete lab (Admin only)
 router.delete('/:id', authenticateToken, async (req, res) => {
   try {
-    const db = req.app.locals.db;
+    const db = pool;
     
     if (req.user.role !== 'admin') {
       return res.status(403).json({ error: 'Admin access required' });
@@ -448,10 +449,164 @@ router.delete('/:id', authenticateToken, async (req, res) => {
   }
 });
 
+// PUT /api/labs/:id/tasks/reorder - Reorder tasks
+router.put('/:id/tasks/reorder',
+  authenticateToken,
+  requireStaffOrAdmin,
+  async (req, res) => {
+    try {
+      const db = pool;
+      const { id } = req.params;
+      const { tasks } = req.body;
+
+      if (!Array.isArray(tasks)) {
+        return res.status(400).json({ error: 'Tasks must be an array' });
+      }
+
+      // Start transaction
+      const client = await db.connect();
+      try {
+        await client.query('BEGIN');
+
+        // Update each task's order_index
+        for (const task of tasks) {
+          await client.query(
+            'UPDATE tasks SET order_index = $1 WHERE id = $2 AND lab_id = $3',
+            [task.order_index, task.id, id]
+          );
+        }
+
+        await client.query('COMMIT');
+        res.json({ message: 'Task order updated successfully' });
+      } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+      } finally {
+        client.release();
+      }
+    } catch (error) {
+      console.error('Error reordering tasks:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+);
+
+// PUT /api/tasks/:id/questions/reorder - Reorder questions within a task
+router.put('/tasks/:id/questions/reorder',
+  authenticateToken,
+  requireStaffOrAdmin,
+  async (req, res) => {
+    try {
+      const db = pool;
+      const { id } = req.params;
+      const { questions } = req.body;
+
+      if (!Array.isArray(questions)) {
+        return res.status(400).json({ error: 'Questions must be an array' });
+      }
+
+      // Start transaction
+      const client = await db.connect();
+      try {
+        await client.query('BEGIN');
+
+        // Update each question's order_index
+        for (const question of questions) {
+          await client.query(
+            'UPDATE questions SET order_index = $1 WHERE id = $2 AND task_id = $3',
+            [question.order_index, question.id, id]
+          );
+        }
+
+        await client.query('COMMIT');
+        res.json({ message: 'Question order updated successfully' });
+      } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+      } finally {
+        client.release();
+      }
+    } catch (error) {
+      console.error('Error reordering questions:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+);
+
+// PUT /api/tasks/:id/metadata - Update task metadata
+router.put('/tasks/:id/metadata',
+  authenticateToken,
+  requireStaffOrAdmin,
+  async (req, res) => {
+    try {
+      const db = pool;
+      const { id } = req.params;
+      const { metadata } = req.body;
+
+      if (!metadata || typeof metadata !== 'object') {
+        return res.status(400).json({ error: 'Valid metadata object is required' });
+      }
+
+      // Update task metadata
+      const result = await db.query(
+        'UPDATE tasks SET metadata = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *',
+        [JSON.stringify(metadata), id]
+      );
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: 'Task not found' });
+      }
+
+      res.json({ 
+        message: 'Task metadata updated successfully',
+        task: result.rows[0]
+      });
+    } catch (error) {
+      console.error('Error updating task metadata:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+);
+
+// PUT /api/questions/:id/metadata - Update question metadata
+router.put('/questions/:id/metadata',
+  authenticateToken,
+  requireStaffOrAdmin,
+  async (req, res) => {
+    try {
+      const db = pool;
+      const { id } = req.params;
+      const { metadata } = req.body;
+
+      if (!metadata || typeof metadata !== 'object') {
+        return res.status(400).json({ error: 'Valid metadata object is required' });
+      }
+
+      // Update question metadata
+      const result = await db.query(
+        'UPDATE questions SET metadata = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *',
+        [JSON.stringify(metadata), id]
+      );
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: 'Question not found' });
+      }
+
+      res.json({ 
+        message: 'Question metadata updated successfully',
+        question: result.rows[0]
+      });
+    } catch (error) {
+      console.error('Error updating question metadata:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+);
+
 // GET /api/labs/:id/sessions - Get lab sessions for a specific lab
 router.get('/:id/sessions', authenticateToken, async (req, res) => {
   try {
-    const db = req.app.locals.db;
+    const db = pool;
     const { id } = req.params;
     const { status } = req.query;
 
@@ -488,7 +643,7 @@ router.get('/:id/sessions', authenticateToken, async (req, res) => {
 // POST /api/labs/:id/start - Start a lab session
 router.post('/:id/start', authenticateToken, async (req, res) => {
   try {
-    const db = req.app.locals.db;
+    const db = pool;
     const { id } = req.params;
     const userId = req.user.userId;
 
@@ -553,7 +708,7 @@ router.post('/:id/start', authenticateToken, async (req, res) => {
 // POST /api/labs/:id/stop - Stop a lab session
 router.post('/:id/stop', authenticateToken, async (req, res) => {
   try {
-    const db = req.app.locals.db;
+    const db = pool;
     const { id } = req.params;
     const userId = req.user.userId;
 

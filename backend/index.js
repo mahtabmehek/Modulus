@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const path = require('path');
 const { body, validationResult } = require('express-validator');
 const { pool, testConnection } = require('./db');
 
@@ -15,6 +16,39 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
+
+// Import and use file routes
+const filesRouter = require('./routes/files');
+app.use('/api/files', filesRouter);
+
+// Import and use auth routes
+const authRouter = require('./routes/auth');
+app.use('/api/auth', authRouter);
+
+// Import and use admin routes
+const adminRouter = require('./routes/admin');
+app.use('/api/admin', adminRouter);
+
+// Import and use other routes
+const coursesRouter = require('./routes/courses');
+app.use('/api/courses', coursesRouter);
+
+const labsRouter = require('./routes/labs');
+app.use('/api/labs', labsRouter);
+
+const usersRouter = require('./routes/users');
+app.use('/api/users', usersRouter);
+
+const healthRouter = require('./routes/health');
+app.use('/api/health', healthRouter);
+
+// Static file serving with CORS headers
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
+    setHeaders: (res, path) => {
+        res.header('Access-Control-Allow-Origin', '*');
+        res.header('Cross-Origin-Resource-Policy', 'cross-origin');
+    }
+}));
 
 // Test database connection on startup
 testConnection().catch(console.error);
@@ -47,7 +81,7 @@ app.get('/api/courses', async (req, res) => {
                 id,
                 title,
                 description,
-                instructor,
+                instructor_id,
                 duration,
                 level,
                 price,
@@ -83,7 +117,7 @@ app.get('/api/courses/:id', async (req, res) => {
                 id,
                 title,
                 description,
-                instructor,
+                instructor_id,
                 duration,
                 level,
                 price,

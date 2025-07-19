@@ -14,7 +14,7 @@ describe('Modulus LMS - Backend API Tests', () => {
 
   it('should return appropriate response for health check', () => {
     cy.request({
-      method: 'GET', 
+      method: 'GET',
       url: `${API_BASE}/health`,
       failOnStatusCode: false
     }).then((response) => {
@@ -61,7 +61,7 @@ describe('Modulus LMS - Backend API Tests', () => {
       failOnStatusCode: false
     }).then((response) => {
       const responseText = JSON.stringify(response)
-      
+
       // Should not contain AWS references
       expect(responseText.toLowerCase()).to.not.include('aws')
       expect(responseText.toLowerCase()).to.not.include('cognito')

@@ -81,7 +81,7 @@ pool.connect()
   .catch(err => {
     console.error('❌ Database connection error:', err.message);
     console.log('🔄 Falling back to mock database for local development');
-    
+
     // Use mock database as fallback
     try {
       const MockDatabase = require('./mock-db');
@@ -103,10 +103,6 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/courses', coursesRoutes);
 app.use('/api/labs', labsRoutes);
 app.use('/api/files', filesRoutes);
-
-// Migration routes (temporary)
-const migrationRoutes = require('./routes/migration');
-app.use('/api/migration', migrationRoutes);
 
 // Only use desktop routes if available
 if (desktopRoutes) {

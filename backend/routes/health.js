@@ -1,4 +1,5 @@
 const express = require('express');
+const { pool } = require('../db');
 const router = express.Router();
 
 // GET /health
@@ -15,7 +16,7 @@ router.get('/', (req, res) => {
 // GET /health/db
 router.get('/db', async (req, res) => {
   try {
-    const db = req.app.locals.db;
+    const db = pool;
     const start = Date.now();
     
     // Test database connection with a simple query
@@ -47,7 +48,7 @@ router.get('/db', async (req, res) => {
 // Debug endpoint to check if users table exists
 router.get('/debug/tables', async (req, res) => {
   try {
-    const db = req.app.locals.db;
+    const db = pool;
     
     // Check if users table exists
     const tablesResult = await db.query(`
@@ -100,7 +101,7 @@ router.get('/debug/tables', async (req, res) => {
 // GET /health/db-indexes
 router.get('/db-indexes', async (req, res) => {
   try {
-    const db = req.app.locals.db;
+    const db = pool;
     
     // Get table structure
     const tables = await db.query(`
@@ -169,7 +170,7 @@ router.get('/db-indexes', async (req, res) => {
 // POST /health/optimize-indexes
 router.post('/optimize-indexes', async (req, res) => {
   try {
-    const db = req.app.locals.db;
+    const db = pool;
     const results = [];
     
     const indexes = [

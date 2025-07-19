@@ -15,7 +15,7 @@ export function Header() {
   const [currentTime, setCurrentTime] = useState<Date | null>(null)
   const [showCopiedNotification, setShowCopiedNotification] = useState(false)
   const [mounted, setMounted] = useState(false)
-  
+
   // Get current lab session
   const currentLabSession = getCurrentLabSession()
 
@@ -23,7 +23,7 @@ export function Header() {
   useEffect(() => {
     setMounted(true)
   }, [])
-  
+
   // Refs for dropdown menus
   const userMenuRef = useRef<HTMLDivElement>(null)
   const notificationsRef = useRef<HTMLDivElement>(null)
@@ -53,10 +53,10 @@ export function Header() {
   useEffect(() => {
     // Set initial time on client side only
     setCurrentTime(new Date())
-    
+
     // Initial cleanup
     cleanupExpiredSessions()
-    
+
     const timer = setInterval(() => {
       setCurrentTime(new Date())
       // Clean up expired sessions
@@ -73,19 +73,19 @@ export function Header() {
   // Calculate remaining time for lab session
   const getRemainingTime = () => {
     if (!currentLabSession || !currentLabSession.isActive || !currentTime) return null
-    
+
     try {
       const now = currentTime.getTime()
       // Ensure endTime is a Date object
-      const endTime = currentLabSession.endTime instanceof Date 
+      const endTime = currentLabSession.endTime instanceof Date
         ? currentLabSession.endTime.getTime()
         : new Date(currentLabSession.endTime).getTime()
-      
+
       const remaining = Math.max(0, endTime - now)
-      
+
       const hours = Math.floor(remaining / (1000 * 60 * 60))
       const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60))
-      
+
       if (hours > 0) {
         return { text: `${hours}h ${minutes}m`, isLow: remaining < 15 * 60 * 1000 } // Low if less than 15 min
       }
@@ -98,7 +98,7 @@ export function Header() {
 
   const handleLabVMClick = () => {
     if (currentLabSession) {
-      navigate('lab', { 
+      navigate('lab', {
         labId: currentLabSession.labId
       })
     }
@@ -144,14 +144,14 @@ export function Header() {
         <div className="flex items-center justify-between h-16">
           {/* Left Side: Logo + Lab VM */}
           <div className="flex items-center space-x-4">
-            <div 
+            <div
               className="flex items-center cursor-pointer"
               onClick={() => navigate('dashboard')}
             >
               <div className="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
-                <img 
-                  src="/logo.svg" 
-                  alt="Modulus Logo" 
+                <img
+                  src="/logo.svg"
+                  alt="Modulus Logo"
                   className="w-8 h-8"
                 />
               </div>
@@ -163,14 +163,14 @@ export function Header() {
             {/* Lab VM Button - show when user has active lab session */}
             {currentLabSession && currentLabSession.isActive && (
               <div className="flex items-center space-x-4 ml-6">
-                <div 
+                <div
                   onClick={handleLabVMClick}
                   className="flex items-center space-x-2 bg-red-500 hover:bg-red-400 px-3 py-1 rounded-full transition-colors cursor-pointer"
                 >
                   <Server className="w-3 h-3" />
                   <span className="font-medium">{currentLabSession.labName}</span>
                   {currentLabSession.vmIP && (
-                    <span 
+                    <span
                       onClick={(e) => handleCopyIP(e, currentLabSession.vmIP!)}
                       className="text-xs opacity-80 hover:opacity-100 px-1 py-0.5 rounded bg-red-600 hover:bg-red-700 transition-colors cursor-pointer"
                       title="Click to copy IP"
@@ -217,11 +217,10 @@ export function Header() {
                   </div>
                   <div className="max-h-64 overflow-y-auto">
                     {achievements.map((achievement) => (
-                      <div 
+                      <div
                         key={achievement.id}
-                        className={`p-3 border-b border-gray-100 dark:border-gray-600 last:border-b-0 ${
-                          achievement.earned ? 'bg-green-50 dark:bg-green-900/20' : 'opacity-50'
-                        }`}
+                        className={`p-3 border-b border-gray-100 dark:border-gray-600 last:border-b-0 ${achievement.earned ? 'bg-green-50 dark:bg-green-900/20' : 'opacity-50'
+                          }`}
                       >
                         <div className="flex items-start space-x-3">
                           <span className="text-2xl">{achievement.icon}</span>
@@ -250,7 +249,7 @@ export function Header() {
             </div>
 
             {/* Desktop Button - Always visible */}
-            <div 
+            <div
               onClick={handleDesktopClick}
               className="flex items-center space-x-2 bg-green-600 hover:bg-green-500 px-4 py-2 rounded-full transition-colors cursor-pointer"
             >
@@ -324,34 +323,31 @@ export function Header() {
                     <p className="font-medium text-gray-900 dark:text-white">{user?.name}</p>
                     <p className="text-sm text-gray-500 dark:text-gray-400">{user?.email}</p>
                   </div>
-                  
+
                   <div className="p-2">
                     <h4 className="px-2 py-1 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Theme
                     </h4>
                     <button
                       onClick={() => setTheme('light')}
-                      className={`w-full text-left px-2 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 rounded flex items-center ${
-                        theme === 'light' ? 'text-red-600 dark:text-red-400' : 'text-gray-700 dark:text-gray-300'
-                      }`}
+                      className={`w-full text-left px-2 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 rounded flex items-center ${theme === 'light' ? 'text-red-600 dark:text-red-400' : 'text-gray-700 dark:text-gray-300'
+                        }`}
                     >
                       <Sun className="w-4 h-4 mr-2" />
                       Light
                     </button>
                     <button
                       onClick={() => setTheme('dark')}
-                      className={`w-full text-left px-2 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 rounded flex items-center ${
-                        theme === 'dark' ? 'text-red-600 dark:text-red-400' : 'text-gray-700 dark:text-gray-300'
-                      }`}
+                      className={`w-full text-left px-2 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 rounded flex items-center ${theme === 'dark' ? 'text-red-600 dark:text-red-400' : 'text-gray-700 dark:text-gray-300'
+                        }`}
                     >
                       <Moon className="w-4 h-4 mr-2" />
                       Dark
                     </button>
                     <button
                       onClick={() => setTheme('system')}
-                      className={`w-full text-left px-2 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 rounded flex items-center ${
-                        theme === 'system' ? 'text-red-600 dark:text-red-400' : 'text-gray-700 dark:text-gray-300'
-                      }`}
+                      className={`w-full text-left px-2 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 rounded flex items-center ${theme === 'system' ? 'text-red-600 dark:text-red-400' : 'text-gray-700 dark:text-gray-300'
+                        }`}
                     >
                       <Monitor className="w-4 h-4 mr-2" />
                       <div className="flex flex-col">

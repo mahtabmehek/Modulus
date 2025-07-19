@@ -153,11 +153,11 @@ export function ModuleView() {
                       {lab.lab_type || 'Lab'}
                     </span>
                   </div>
-                  
+
                   {lab.description && (
                     <p className="text-muted-foreground mb-4">{lab.description}</p>
                   )}
-                  
+
                   <div className="flex items-center gap-4 text-sm text-muted-foreground">
                     <div className="flex items-center gap-1">
                       <Clock className="w-4 h-4" />

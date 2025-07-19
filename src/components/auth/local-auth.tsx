@@ -139,9 +139,9 @@ export default function LocalAuth() {
             <Card className="w-full max-w-md">
                 <CardHeader className="text-center">
                     <div className="mx-auto mb-4">
-                        <img 
-                            src="/logo.svg" 
-                            alt="Modulus Logo" 
+                        <img
+                            src="/logo.svg"
+                            alt="Modulus Logo"
                             className="h-16 w-16 mx-auto"
                         />
                     </div>

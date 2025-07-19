@@ -40,7 +40,7 @@ export function StaffDashboard() {
     courseCode: '',
     password: ''
   })
-  
+
   // Pending approvals state
   const [pendingApprovals, setPendingApprovals] = useState<any[]>([])
   const [approvalsPage, setApprovalsPage] = useState(1)
@@ -64,11 +64,11 @@ export function StaffDashboard() {
 
   const sortedUsers = sortConfig
     ? [...filteredUsersForManagement].sort((a, b) => {
-        const aValue = a[sortConfig.key] || ''
-        const bValue = b[sortConfig.key] || ''
-        const comparison = aValue.toString().localeCompare(bValue.toString())
-        return sortConfig.direction === 'asc' ? comparison : -comparison
-      })
+      const aValue = a[sortConfig.key] || ''
+      const bValue = b[sortConfig.key] || ''
+      const comparison = aValue.toString().localeCompare(bValue.toString())
+      return sortConfig.direction === 'asc' ? comparison : -comparison
+    })
     : filteredUsersForManagement
 
   const paginatedUsers = sortedUsers.slice(
@@ -98,7 +98,7 @@ export function StaffDashboard() {
         const pendingUsers = pendingResponse.users || []
 
         // Filter pending users - staff can only see students and instructors (not admin/staff)
-        const filteredPendingUsers = pendingUsers.filter(u => 
+        const filteredPendingUsers = pendingUsers.filter(u =>
           u.role === 'student' || u.role === 'instructor'
         )
 
@@ -106,7 +106,7 @@ export function StaffDashboard() {
         const students = users.filter(u => u.role === 'student')
 
         // Filter users for user management - staff can only see students and instructors
-        const filteredUsers = users.filter(u => 
+        const filteredUsers = users.filter(u =>
           u.role === 'student' || u.role === 'instructor'
         )
 
@@ -138,16 +138,16 @@ export function StaffDashboard() {
         apiClient.getCourses(),
         apiClient.getPendingApprovals()
       ])
-      
+
       const courses = coursesResponse.courses || []
       const pendingUsers = pendingResponse.users || []
-      const filteredPendingUsers = pendingUsers.filter(u => 
+      const filteredPendingUsers = pendingUsers.filter(u =>
         u.role === 'student' || u.role === 'instructor'
       )
-      
+
       setCourses(courses)
       setPendingApprovals(filteredPendingUsers)
-      
+
       // Update stats
       setStats(prev => ({
         ...prev,
@@ -213,9 +213,9 @@ export function StaffDashboard() {
         setLoading(false)
         return
       }
-      
+
       if (courseData.duration <= 0) {
-        toast.error('Duration must be a positive number')  
+        toast.error('Duration must be a positive number')
         setLoading(false)
         return
       }
@@ -321,15 +321,15 @@ export function StaffDashboard() {
     try {
       await apiClient.approveUser(Number(userId))
       toast.success('User approved successfully!')
-      
+
       // Refresh pending approvals
       const pendingResponse = await apiClient.getPendingApprovals()
       const pendingUsers = pendingResponse.users || []
-      const filteredPendingUsers = pendingUsers.filter(u => 
+      const filteredPendingUsers = pendingUsers.filter(u =>
         u.role === 'student' || u.role === 'instructor'
       )
       setPendingApprovals(filteredPendingUsers)
-      
+
       // Update stats
       setStats(prev => ({
         ...prev,
@@ -346,15 +346,15 @@ export function StaffDashboard() {
       try {
         await apiClient.rejectUser(Number(userId))
         toast.success('User rejected successfully!')
-        
+
         // Refresh pending approvals
         const pendingResponse = await apiClient.getPendingApprovals()
         const pendingUsers = pendingResponse.users || []
-        const filteredPendingUsers = pendingUsers.filter(u => 
+        const filteredPendingUsers = pendingUsers.filter(u =>
           u.role === 'student' || u.role === 'instructor'
         )
         setPendingApprovals(filteredPendingUsers)
-        
+
         // Update stats
         setStats(prev => ({
           ...prev,
@@ -373,12 +373,12 @@ export function StaffDashboard() {
     try {
       const response = await apiClient.getAllUsers()
       const users = response.users || []
-      
+
       // Filter out admin and staff users - staff can only see students and instructors
-      const filteredUsers = users.filter(u => 
+      const filteredUsers = users.filter(u =>
         u.role === 'student' || u.role === 'instructor'
       )
-      
+
       setAllUsers(filteredUsers)
     } catch (error) {
       console.error('Failed to load users:', error)
@@ -511,7 +511,7 @@ export function StaffDashboard() {
 
     try {
       setLoading(true)
-      
+
       const userData = {
         name: userFormData.name.trim(),
         email: userFormData.email.trim().toLowerCase(),
@@ -721,10 +721,10 @@ export function StaffDashboard() {
                         <td className="py-3 px-4 text-muted-foreground">{course.department}</td>
                         <td className="py-3 px-4">
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${course.academicLevel === 'bachelor'
-                              ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300'
-                              : course.academicLevel === 'master'
-                                ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300'
-                                : 'bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-300'
+                            ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300'
+                            : course.academicLevel === 'master'
+                              ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300'
+                              : 'bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-300'
                             }`}>
                             {course.academicLevel}
                           </span>
@@ -798,13 +798,12 @@ export function StaffDashboard() {
                         </h4>
                         <p className="text-sm text-muted-foreground">{user.email}</p>
                         <div className="flex items-center gap-2 mt-1">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            user.role === 'instructor'
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${user.role === 'instructor'
                               ? 'bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-300'
                               : user.role === 'student'
                                 ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300'
                                 : 'bg-gray-100 text-gray-600 dark:bg-gray-900 dark:text-gray-300'
-                          }`}>
+                            }`}>
                             {user.role}
                           </span>
                           <span className="text-xs text-muted-foreground">
@@ -933,7 +932,7 @@ export function StaffDashboard() {
                   <span className="ml-2 text-muted-foreground">Loading users...</span>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto overflow-y-visible">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-border">
@@ -984,10 +983,10 @@ export function StaffDashboard() {
                           <td className="py-3 px-4 text-muted-foreground">{user.email}</td>
                           <td className="py-3 px-4">
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${user.role === 'instructor'
-                                ? 'bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-300'
-                                : user.role === 'student'
-                                  ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300'
-                                  : 'bg-gray-100 text-gray-600 dark:bg-gray-900 dark:text-gray-300'
+                              ? 'bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-300'
+                              : user.role === 'student'
+                                ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300'
+                                : 'bg-gray-100 text-gray-600 dark:bg-gray-900 dark:text-gray-300'
                               }`}>
                               {user.role}
                             </span>
@@ -997,8 +996,8 @@ export function StaffDashboard() {
                           </td>
                           <td className="py-3 px-4">
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${user.is_approved === false
-                                ? 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300'
-                                : 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300'
+                              ? 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300'
+                              : 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300'
                               }`}>
                               {user.is_approved === false ? 'Disabled' : 'Active'}
                             </span>
@@ -1012,7 +1011,7 @@ export function StaffDashboard() {
                                 <Settings className="w-4 h-4" />
                               </button>
                               {showUserActions[user.id] && (
-                                <div className="absolute right-0 top-8 bg-card border border-border rounded-lg shadow-lg z-50 min-w-32">
+                                <div className="absolute right-0 top-10 bg-card border border-border rounded-lg shadow-xl z-[60] min-w-32 overflow-visible">
                                   <button
                                     onClick={() => handleEditUser(user)}
                                     className="flex items-center gap-2 w-full px-3 py-2 text-sm text-foreground hover:bg-muted first:rounded-t-lg"

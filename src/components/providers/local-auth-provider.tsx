@@ -56,13 +56,13 @@ export function LocalAuthProvider({ children }: { children: React.ReactNode }) {
 
                 if (token && userData) {
                     const parsedUser = JSON.parse(userData);
-                    
+
                     // Verify token is still valid
                     try {
                         const response = await axios.get(`${API_BASE_URL}/auth/profile`, {
                             headers: { Authorization: `Bearer ${token}` }
                         });
-                        
+
                         setUser(response.data.user);
                         setIsAuthenticated(true);
                     } catch (error) {
@@ -84,7 +84,7 @@ export function LocalAuthProvider({ children }: { children: React.ReactNode }) {
     const signIn = async (email: string, password: string): Promise<void> => {
         try {
             setIsLoading(true);
-            
+
             const response = await axios.post(`${API_BASE_URL}/auth/login`, {
                 email,
                 password
@@ -120,7 +120,7 @@ export function LocalAuthProvider({ children }: { children: React.ReactNode }) {
     const signUp = async (data: SignUpData): Promise<void> => {
         try {
             setIsLoading(true);
-            
+
             await axios.post(`${API_BASE_URL}/auth/register`, {
                 email: data.email,
                 password: data.password,
@@ -143,11 +143,11 @@ export function LocalAuthProvider({ children }: { children: React.ReactNode }) {
     const signOut = async (): Promise<void> => {
         try {
             setIsLoading(true);
-            
+
             // Clear local storage
             localStorage.removeItem(TOKEN_KEY);
             localStorage.removeItem(USER_KEY);
-            
+
             // Clear state
             setUser(null);
             setIsAuthenticated(false);
@@ -161,7 +161,7 @@ export function LocalAuthProvider({ children }: { children: React.ReactNode }) {
     const getCurrentUser = async (): Promise<LocalAuthUser | null> => {
         try {
             const token = localStorage.getItem(TOKEN_KEY);
-            
+
             if (!token) {
                 return null;
             }
@@ -186,7 +186,7 @@ export function LocalAuthProvider({ children }: { children: React.ReactNode }) {
             return formattedUser;
         } catch (error) {
             console.error('Get current user error:', error);
-            
+
             // Clear invalid token
             localStorage.removeItem(TOKEN_KEY);
             localStorage.removeItem(USER_KEY);

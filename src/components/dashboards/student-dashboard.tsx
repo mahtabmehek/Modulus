@@ -62,7 +62,7 @@ export function StudentDashboard() {
             {/* Your Learning Path */}
             <div>
               <h2 className="text-xl font-semibold mb-4 text-foreground">Your Learning Path</h2>
-              
+
               {loading ? (
                 <div className="bg-card rounded-lg p-6 border border-border">
                   <div className="animate-pulse">
@@ -104,45 +104,45 @@ export function StudentDashboard() {
                   {course.modules.length > 0 && (
                     <div className="space-y-4">
                       <h4 className="font-medium text-foreground">Modules in this course:</h4>
-                      
+
                       {course.modules.map((module, index) => {
                         const IconComponent = getModuleIcon(index)
                         const completionText = `${module.completedLabs}/${module.totalLabs} Completed`
-                        
+
                         return (
-                          <div 
+                          <div
                             key={module.id}
                             className="flex items-center justify-between p-4 bg-muted rounded-lg cursor-pointer hover:bg-muted/80 transition-colors"
                             onClick={() => navigate('module', { moduleId: module.id.toString(), courseId: course.id.toString() })}
                           >
                             <div className="flex items-center space-x-3">
                               <IconComponent className="w-5 h-5 text-red-400" />
-                                <div>
-                                  <p className="font-medium text-foreground">{module.title}</p>
-                                  <p className="text-sm text-muted-foreground">{completionText}</p>
-                                </div>
+                              <div>
+                                <p className="font-medium text-foreground">{module.title}</p>
+                                <p className="text-sm text-muted-foreground">{completionText}</p>
                               </div>
-                              <ArrowRight className="w-5 h-5 text-muted-foreground" />
                             </div>
-                          )
-                        })}
-                      </div>
-                    )}
+                            <ArrowRight className="w-5 h-5 text-muted-foreground" />
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
 
-                    {course.modules.length === 0 && (
-                      <div className="text-center py-4">
-                        <Clock className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                        <p className="text-muted-foreground">No modules available yet</p>
-                      </div>
-                    )}
-                  </div>
+                  {course.modules.length === 0 && (
+                    <div className="text-center py-4">
+                      <Clock className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                      <p className="text-muted-foreground">No modules available yet</p>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
 
             {/* Timeline Section */}
             <div>
               <h2 className="text-xl font-semibold mb-4 text-foreground">Timeline</h2>
-              
+
               <div className="bg-card rounded-lg p-6 border border-border">
                 {/* Timeline Controls */}
                 <div className="flex items-center justify-between mb-6">
@@ -159,8 +159,8 @@ export function StudentDashboard() {
                       <option>Sort by course</option>
                     </select>
                   </div>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     placeholder="Search by activity type or name"
                     className="px-4 py-2 bg-muted border border-border rounded-lg text-foreground placeholder-muted-foreground text-sm flex-1 max-w-sm ml-4"
                   />
@@ -242,7 +242,7 @@ export function StudentDashboard() {
           <div>
             <div className="bg-card rounded-lg p-6 border border-border">
               <h3 className="text-lg font-semibold mb-6 text-center text-foreground">Your Profile & Stats</h3>
-              
+
               {/* Profile Avatar */}
               <div className="flex flex-col items-center mb-6">
                 <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mb-3">
@@ -258,7 +258,7 @@ export function StudentDashboard() {
               <div className="text-center mb-6">
                 <div className="text-4xl font-bold mb-2 text-foreground">100%</div>
                 <p className="text-muted-foreground mb-4">Overall Completion</p>
-                
+
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">4/4 Mandatory Labs</span>

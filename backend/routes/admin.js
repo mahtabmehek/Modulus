@@ -1,5 +1,6 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
+const { pool } = require('../db');
 const router = express.Router();
 
 // Function to update PostgreSQL sequence after manual ID insertion
@@ -73,7 +74,7 @@ router.post('/create-test-users', async (req, res) => {
       return res.status(403).json({ error: 'Invalid access code' });
     }
 
-    const db = req.app.locals.db;
+    const db = pool;
     if (!db) {
       return res.status(500).json({ error: 'Database connection not available' });
     }
@@ -82,7 +83,7 @@ router.post('/create-test-users', async (req, res) => {
     const password = 'Mahtabmehek@1337';
     const saltRounds = 12;
     const passwordHash = await bcrypt.hash(password, saltRounds);
-    
+
     // Special password for staffuser@test.com
     const staffPassword = 'password123';
     const staffPasswordHash = await bcrypt.hash(staffPassword, saltRounds);
@@ -119,7 +120,7 @@ router.post('/create-test-users', async (req, res) => {
       try {
         // Use special password for staffuser@test.com
         const userPasswordHash = user.email === 'staffuser@test.com' ? staffPasswordHash : passwordHash;
-        
+
         const result = await db.query(insertQuery, [
           user.id,
           user.email,
@@ -168,16 +169,26 @@ router.post('/create-test-users', async (req, res) => {
 // Admin endpoint to verify test users
 router.get('/test-users', async (req, res) => {
   try {
-    const db = req.app.locals.db;
+    const db = pool;
     if (!db) {
       return res.status(500).json({ error: 'Database connection not available' });
     }
 
     const query = `
-      SELECT id, email, name, role, is_approved, created_at
-      FROM users 
-      WHERE email LIKE '%@test.com' OR email LIKE '%@modulus.com' 
-      ORDER BY role, email
+      SELECT 
+        u.id, 
+        u.email, 
+        u.name, 
+        u.role, 
+        u.is_approved, 
+        u.created_at,
+        u.course_id,
+        c.code as "courseCode",
+        c.title as "courseTitle"
+      FROM users u
+      LEFT JOIN courses c ON u.course_id = c.id
+      WHERE u.email LIKE '%@test.com' OR u.email LIKE '%@modulus.com' 
+      ORDER BY u.role, u.email
     `;
     const result = await db.query(query);
 
@@ -200,7 +211,7 @@ router.get('/test-users', async (req, res) => {
 // Simple seed endpoint for easier access
 router.get('/seed', async (req, res) => {
   try {
-    const db = req.app.locals.db;
+    const db = pool;
     if (!db) {
       return res.status(500).json({ error: 'Database connection not available' });
     }
@@ -293,7 +304,7 @@ router.post('/init-database', async (req, res) => {
       return res.status(403).json({ error: 'Invalid access code' });
     }
 
-    const db = req.app.locals.db;
+    const db = pool;
     if (!db) {
       return res.status(500).json({ error: 'Database connection not available' });
     }
@@ -356,7 +367,7 @@ router.post('/reset-password', async (req, res) => {
       return res.status(400).json({ error: 'Email and new password are required' });
     }
 
-    const db = req.app.locals.db;
+    const db = pool;
     if (!db) {
       return res.status(500).json({ error: 'Database connection not available' });
     }
@@ -388,12 +399,26 @@ router.post('/reset-password', async (req, res) => {
 // Admin endpoint to list all users
 router.get('/list-users', async (req, res) => {
   try {
-    const db = req.app.locals.db;
+    const db = pool;
     if (!db) {
       return res.status(500).json({ error: 'Database connection not available' });
     }
 
-    const query = 'SELECT id, email, name, role, is_approved, created_at FROM users ORDER BY id';
+    const query = `
+      SELECT 
+        u.id, 
+        u.email, 
+        u.name, 
+        u.role, 
+        u.is_approved, 
+        u.created_at,
+        u.course_id,
+        c.code as "courseCode",
+        c.title as "courseTitle"
+      FROM users u
+      LEFT JOIN courses c ON u.course_id = c.id
+      ORDER BY u.id
+    `;
     const result = await db.query(query);
 
     res.json({
@@ -431,7 +456,7 @@ router.post('/create-user', async (req, res) => {
       });
     }
 
-    const db = req.app.locals.db;
+    const db = pool;
     if (!db) {
       return res.status(500).json({ error: 'Database connection not available' });
     }
@@ -527,7 +552,7 @@ router.get('/id-ranges', async (req, res) => {
       return res.status(403).json({ error: 'Invalid access code' });
     }
 
-    const db = req.app.locals.db;
+    const db = pool;
     if (!db) {
       return res.status(500).json({ error: 'Database connection not available' });
     }
@@ -587,7 +612,7 @@ router.post('/migrate-user-ids', async (req, res) => {
       return res.status(403).json({ error: 'Invalid access code' });
     }
 
-    const db = req.app.locals.db;
+    const db = pool;
     if (!db) {
       return res.status(500).json({ error: 'Database connection not available' });
     }
@@ -741,7 +766,7 @@ router.get('/user-id-status', async (req, res) => {
       return res.status(403).json({ error: 'Invalid access code' });
     }
 
-    const db = req.app.locals.db;
+    const db = pool;
     if (!db) {
       return res.status(500).json({ error: 'Database connection not available' });
     }
@@ -832,7 +857,7 @@ router.post('/approve-user/:userId', async (req, res) => {
       return res.status(400).json({ error: 'User ID is required' });
     }
 
-    const db = req.app.locals.db;
+    const db = pool;
     if (!db) {
       return res.status(500).json({ error: 'Database connection not available' });
     }
@@ -876,7 +901,7 @@ router.delete('/reject-user/:userId', async (req, res) => {
       return res.status(400).json({ error: 'User ID is required' });
     }
 
-    const db = req.app.locals.db;
+    const db = pool;
     if (!db) {
       return res.status(500).json({ error: 'Database connection not available' });
     }
@@ -917,7 +942,7 @@ router.delete('/reject-user/:userId', async (req, res) => {
 // Admin endpoint to get pending users (unapproved)
 router.get('/pending-users', async (req, res) => {
   try {
-    const db = req.app.locals.db;
+    const db = pool;
     if (!db) {
       return res.status(500).json({ error: 'Database connection not available' });
     }

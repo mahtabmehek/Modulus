@@ -91,8 +91,8 @@ export default function DebugApiTest() {
                     <div
                         key={index}
                         className={`p-4 rounded-lg border ${result.success
-                                ? 'bg-green-50 border-green-200 text-green-800'
-                                : 'bg-red-50 border-red-200 text-red-800'
+                            ? 'bg-green-50 border-green-200 text-green-800'
+                            : 'bg-red-50 border-red-200 text-red-800'
                             }`}
                     >
                         <div className="flex justify-between items-center mb-2">

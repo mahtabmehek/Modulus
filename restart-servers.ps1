@@ -27,7 +27,8 @@ try {
         Stop-Process -Name "node" -Force -ErrorAction SilentlyContinue
         Start-Sleep -Seconds 2
         Write-Host "All Node.js processes terminated." -ForegroundColor Green
-    } else {
+    }
+    else {
         Write-Host "No Node.js processes found running." -ForegroundColor Green
     }
 }
@@ -74,14 +75,17 @@ if (Test-Path $backendPath) {
         # Check if backend started successfully
         if (Test-Port $backendPort) {
             Write-Host "✓ Backend server started successfully on http://localhost:$backendPort" -ForegroundColor Green
-        } else {
+        }
+        else {
             Write-Host "⚠ Backend server may not have started on expected port. Check the backend window." -ForegroundColor Yellow
         }
-    } else {
+    }
+    else {
         Write-Host "Error: server.js not found in backend directory!" -ForegroundColor Red
         exit 1
     }
-} else {
+}
+else {
     Write-Host "Error: Backend directory not found!" -ForegroundColor Red
     exit 1
 }
@@ -106,10 +110,12 @@ if (Test-Path "package.json") {
     # Check if frontend started successfully
     if (Test-Port $frontendPort) {
         Write-Host "✓ Frontend server started successfully on http://localhost:$frontendPort" -ForegroundColor Green
-    } else {
+    }
+    else {
         Write-Host "⚠ Frontend server may not have started on expected port. Check the frontend window." -ForegroundColor Yellow
     }
-} else {
+}
+else {
     Write-Host "Error: package.json not found in root directory!" -ForegroundColor Red
     exit 1
 }

@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { useApp } from '@/lib/hooks/use-app'
 import { labAPI } from '@/lib/api/labs'
+import { DragDropLabEditor } from '@/components/lab-creation/DragDropLabEditor'
+import { Task as LabTask } from '@/types/lab'
 import {
   ArrowLeft,
   Save,
@@ -98,8 +100,29 @@ export default function LabCreationView() {
     }
   ])
 
+  // New drag & drop tasks with metadata support
+  const [dragDropTasks, setDragDropTasks] = useState<LabTask[]>([
+    {
+      id: 'task-1',
+      lab_id: editLabId || '',
+      title: 'Initial Setup',
+      description: 'Set up your environment and explore the lab infrastructure.',
+      order_index: 1,
+      metadata: {
+        difficulty: 'easy',
+        estimatedTime: 15,
+        tags: ['setup', 'introduction'],
+        customFields: {
+          instructor_notes: 'Students should familiarize themselves with the environment',
+          learning_objectives: ['Navigate the lab interface', 'Understand basic commands']
+        }
+      }
+    }
+  ])
+
   const [isSaving, setIsSaving] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
+  // Enhanced mode is now the default and only interface
 
   // Load modules and lab data for editing
   useEffect(() => {
@@ -153,7 +176,7 @@ export default function LabCreationView() {
         setLabData({
           title: lab.title || '',
           description: lab.description || '',
-          icon: lab.icon_path || lab.icon_url || '',
+          icon: lab.icon_path || '',
           academicCategory: 'computing',
           course: '',
           module: '',
@@ -231,48 +254,96 @@ export default function LabCreationView() {
     ))
   }
 
-  const handleImageUpload = (taskId: string, questionId: string, files: FileList | null) => {
+  const handleImageUpload = async (taskId: string, questionId: string, files: FileList | null) => {
     if (!files) return
 
-    // Simulate file upload - in real app, upload to cloud storage
-    const imageUrls = Array.from(files).map(file => URL.createObjectURL(file))
+    console.log('handleImageUpload called:', { taskId, questionId, filesCount: files.length });
 
-    setTasks(tasks.map(task =>
-      task.id === taskId
-        ? {
-          ...task,
-          questions: task.questions.map(q =>
-            q.id === questionId
-              ? { ...q, images: [...(q.images || []), ...imageUrls] }
-              : q
-          )
+    try {
+      // Upload files to backend
+      const formData = new FormData();
+      Array.from(files).forEach(file => {
+        formData.append('images', file);
+      });
+      const labName = labData.title || 'unnamed-lab';
+      formData.append('labName', labName);
+      console.log('Uploading images with labName:', labName);
+
+      const response = await fetch('http://localhost:3001/api/files/upload-lab-files', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && result.data.images) {
+          console.log('Images uploaded successfully:', result.data.images);
+          
+          // Update state with backend URLs
+          setTasks(tasks.map(task =>
+            task.id === taskId
+              ? {
+                ...task,
+                questions: task.questions.map(q =>
+                  q.id === questionId
+                    ? { ...q, images: [...(q.images || []), ...result.data.images.map((url: string) => `http://localhost:3001${url}`)] }
+                    : q
+                )
+              }
+              : task
+          ));
         }
-        : task
-    ))
+      } else {
+        console.error('Failed to upload images:', response.statusText);
+      }
+    } catch (error) {
+      console.error('Error uploading images:', error);
+    }
   }
 
-  const handleAttachmentUpload = (taskId: string, questionId: string, files: FileList | null) => {
+  const handleAttachmentUpload = async (taskId: string, questionId: string, files: FileList | null) => {
     if (!files) return
 
-    // Simulate file upload - in real app, upload to cloud storage
-    const attachmentUrls = Array.from(files).map(file => ({
-      name: file.name,
-      url: URL.createObjectURL(file),
-      size: file.size
-    }))
+    console.log('handleAttachmentUpload called:', { taskId, questionId, filesCount: files.length });
 
-    setTasks(tasks.map(task =>
-      task.id === taskId
-        ? {
-          ...task,
-          questions: task.questions.map(q =>
-            q.id === questionId
-              ? { ...q, attachments: [...(q.attachments || []), ...attachmentUrls.map(a => a.url)] }
-              : q
-          )
+    try {
+      // Upload files to backend
+      const formData = new FormData();
+      Array.from(files).forEach(file => {
+        formData.append('attachments', file);
+      });
+      formData.append('labName', labData.title || 'unnamed-lab');
+
+      const response = await fetch('http://localhost:3001/api/files/upload-lab-files', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && result.data.attachments) {
+          console.log('Attachments uploaded successfully:', result.data.attachments);
+          
+          // Update state with backend URLs
+          setTasks(tasks.map(task =>
+            task.id === taskId
+              ? {
+                ...task,
+                questions: task.questions.map(q =>
+                  q.id === questionId
+                    ? { ...q, attachments: [...(q.attachments || []), ...result.data.attachments.map((url: string) => `http://localhost:3001${url}`)] }
+                    : q
+                )
+              }
+              : task
+          ));
         }
-        : task
-    ))
+      } else {
+        console.error('Failed to upload attachments:', response.statusText);
+      }
+    } catch (error) {
+      console.error('Error uploading attachments:', error);
+    }
   }
 
   const addMultipleChoiceOption = (taskId: string, questionId: string) => {
@@ -302,6 +373,31 @@ export default function LabCreationView() {
         ? { ...task, questions: task.questions.filter(q => q.id !== questionId) }
         : task
     ))
+  }
+
+  // New drag & drop task functions
+  const addDragDropTask = () => {
+    const newTask: LabTask = {
+      id: `task-${Date.now()}`,
+      lab_id: editLabId || '',
+      title: `Task ${dragDropTasks.length + 1}`,
+      description: '',
+      order_index: dragDropTasks.length + 1,
+      metadata: {
+        difficulty: 'easy',
+        estimatedTime: 15,
+        tags: [],
+        customFields: {
+          instructor_notes: '',
+          learning_objectives: []
+        }
+      }
+    }
+    setDragDropTasks([...dragDropTasks, newTask])
+  }
+
+  const updateDragDropTasks = (updatedTasks: LabTask[]) => {
+    setDragDropTasks(updatedTasks)
   }
 
   const handleSave = async () => {
@@ -382,6 +478,35 @@ export default function LabCreationView() {
       }
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  const handleDeleteLab = async () => {
+    if (!editLabId) {
+      toast.error('No lab to delete')
+      return
+    }
+
+    // Show confirmation dialog
+    const confirmed = window.confirm(
+      'Are you sure you want to delete this lab? This action cannot be undone.'
+    )
+
+    if (!confirmed) {
+      return
+    }
+
+    try {
+      await labAPI.deleteLab(editLabId)
+      toast.success('Lab deleted successfully!')
+      navigate('dashboard')
+    } catch (error: any) {
+      console.error('Failed to delete lab:', error)
+      if (error.message.includes('active sessions')) {
+        toast.error('Cannot delete lab with active sessions')
+      } else {
+        toast.error(error.message || 'Failed to delete lab')
+      }
     }
   }
 
@@ -585,6 +710,16 @@ export default function LabCreationView() {
                 {showPreview ? 'Hide Preview' : 'Preview'}
               </button>
 
+              {editLabId && (
+                <button
+                  onClick={handleDeleteLab}
+                  className="flex items-center px-4 py-2 text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-900/30 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete Lab
+                </button>
+              )}
+
               <button
                 onClick={handleSave}
                 disabled={isSaving || !labData.title.trim() || labData.tags.length === 0}
@@ -627,7 +762,7 @@ export default function LabCreationView() {
                     value={labData.title}
                     onChange={(e) => setLabData({ ...labData, title: e.target.value })}
                     placeholder="e.g., SQL Injection Fundamentals"
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                   />
                 </div>
 
@@ -640,7 +775,7 @@ export default function LabCreationView() {
                     onChange={(e) => setLabData({ ...labData, description: e.target.value })}
                     placeholder="Describe what students will learn in this lab..."
                     rows={4}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                   />
                 </div>
 
@@ -683,7 +818,9 @@ export default function LabCreationView() {
                                 if (response.ok) {
                                   const result = await response.json();
                                   if (result.success && result.data.icon) {
-                                    setLabData({ ...labData, icon: result.data.icon });
+                                    // Store the full URL for easier access
+                                    const fullIconUrl = `http://localhost:3001${result.data.icon}`;
+                                    setLabData({ ...labData, icon: fullIconUrl });
                                     toast.success('Icon uploaded successfully!', { id: 'icon-upload' });
                                   } else {
                                     console.error('Icon upload failed:', result);
@@ -711,6 +848,11 @@ export default function LabCreationView() {
                             src={labData.icon}
                             alt="Lab icon preview"
                             className="w-12 h-12 rounded-lg object-cover border border-gray-200 dark:border-gray-600"
+                            onError={(e) => {
+                              console.error('Failed to load icon:', labData.icon);
+                              // Fallback to a placeholder or remove the image
+                              e.currentTarget.style.display = 'none';
+                            }}
                           />
                         </div>
                         <div className="flex-1">
@@ -757,7 +899,7 @@ export default function LabCreationView() {
                       type="text"
                       id="tagInput"
                       placeholder="Enter a tag and press Enter"
-                      className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
                           e.preventDefault()
@@ -808,231 +950,33 @@ export default function LabCreationView() {
                     value={labData.vmImage}
                     onChange={(e) => setLabData({ ...labData, vmImage: e.target.value })}
                     placeholder="e.g., ubuntu-20.04-security or custom-vulnhub-image"
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                   />
                 </div>
               </div>
             </section>
 
-            {/* Tasks and Questions */}
+            {/* Tasks and Questions - Enhanced with Drag & Drop and Metadata */}
             <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Lab Tasks & Questions
-                </h2>
-                <button
-                  onClick={addTask}
-                  className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Task
-                </button>
+              <div className="mb-6">
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    Lab Tasks & Questions
+                  </h2>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    Create tasks and questions for your lab. Drag and drop to reorder them.
+                  </p>
+                </div>
               </div>
 
-              <div className="space-y-6">
-                {tasks.map((task, taskIndex) => (
-                  <div key={task.id} className="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="font-medium text-gray-900 dark:text-white">
-                        Task {taskIndex + 1}
-                      </h3>
-                      <button
-                        onClick={() => deleteTask(task.id)}
-                        className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                          Task Title
-                        </label>
-                        <input
-                          type="text"
-                          value={task.title}
-                          onChange={(e) => updateTask(task.id, { title: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                          Task Description
-                        </label>
-                        <textarea
-                          value={task.description}
-                          onChange={(e) => updateTask(task.id, { description: e.target.value })}
-                          rows={2}
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                        />
-                      </div>
-
-                      {/* Questions */}
-                      <div>
-                        <div className="flex items-center justify-between mb-3">
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                            Questions
-                          </label>
-                          <button
-                            onClick={() => addQuestion(task.id)}
-                            className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-sm flex items-center"
-                          >
-                            <Plus className="w-3 h-3 mr-1" />
-                            Add Question
-                          </button>
-                        </div>
-
-                        {task.questions.map((question, questionIndex) => (
-                          <div key={question.id} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 mb-3">
-                            <div className="flex items-center justify-between mb-3">
-                              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                Question {questionIndex + 1}
-                              </span>
-                              <div className="flex items-center space-x-2">
-                                <select
-                                  value={question.type}
-                                  onChange={(e) => updateQuestion(task.id, question.id, { type: e.target.value as any })}
-                                  className="text-xs px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
-                                >
-                                  <option value="flag">Flag</option>
-                                  <option value="text">Text Answer</option>
-                                  <option value="multiple-choice">Multiple Choice</option>
-                                  <option value="file-upload">File Upload</option>
-                                </select>
-                                <button
-                                  onClick={() => deleteQuestion(task.id, question.id)}
-                                  className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
-                                >
-                                  <Trash2 className="w-3 h-3" />
-                                </button>
-                              </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                              <div>
-                                <input
-                                  type="text"
-                                  value={question.title}
-                                  onChange={(e) => updateQuestion(task.id, question.id, { title: e.target.value })}
-                                  placeholder="Question title"
-                                  className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
-                                />
-                              </div>
-                            </div>
-
-                            <textarea
-                              value={question.description}
-                              onChange={(e) => updateQuestion(task.id, question.id, { description: e.target.value })}
-                              placeholder="Question description/instructions"
-                              rows={2}
-                              className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-600 text-gray-900 dark:text-white mb-3"
-                            />
-
-                            {/* Media and Attachments */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                              <div>
-                                <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
-                                  Images
-                                </label>
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  multiple
-                                  onChange={(e) => handleImageUpload(task.id, question.id, e.target.files)}
-                                  className="w-full text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
-                                />
-                                {question.images && question.images.length > 0 && (
-                                  <div className="flex flex-wrap gap-1 mt-1">
-                                    {question.images.map((img, idx) => (
-                                      <Image key={idx} src={img} alt="Question" width={48} height={48} className="w-12 h-12 object-cover rounded border" />
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-
-                              <div>
-                                <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
-                                  Attachments
-                                </label>
-                                <input
-                                  type="file"
-                                  multiple
-                                  onChange={(e) => handleAttachmentUpload(task.id, question.id, e.target.files)}
-                                  className="w-full text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
-                                />
-                                {question.attachments && question.attachments.length > 0 && (
-                                  <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                                    {question.attachments.length} file(s) attached
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-
-                            {question.type === 'flag' && (
-                              <div>
-                                <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
-                                  Expected Flag
-                                </label>
-                                <input
-                                  type="text"
-                                  value={question.flag || ''}
-                                  onChange={(e) => updateQuestion(task.id, question.id, { flag: e.target.value })}
-                                  placeholder="MODULUS{example_flag_here}"
-                                  className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
-                                />
-                              </div>
-                            )}
-
-                            {question.type === 'multiple-choice' && (
-                              <div>
-                                <div className="flex items-center justify-between mb-2">
-                                  <label className="block text-xs text-gray-600 dark:text-gray-400">
-                                    Answer Options
-                                  </label>
-                                  <button
-                                    type="button"
-                                    onClick={() => addMultipleChoiceOption(task.id, question.id)}
-                                    className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
-                                  >
-                                    + Add Option
-                                  </button>
-                                </div>
-                                {question.multipleChoiceOptions?.map((option, optionIdx) => (
-                                  <div key={optionIdx} className="flex items-center gap-2 mb-1">
-                                    <input
-                                      type="checkbox"
-                                      checked={option.isCorrect}
-                                      onChange={(e) => {
-                                        const newOptions = [...(question.multipleChoiceOptions || [])]
-                                        newOptions[optionIdx].isCorrect = e.target.checked
-                                        updateQuestion(task.id, question.id, { multipleChoiceOptions: newOptions })
-                                      }}
-                                      className="flex-shrink-0"
-                                    />
-                                    <input
-                                      type="text"
-                                      value={option.option}
-                                      onChange={(e) => {
-                                        const newOptions = [...(question.multipleChoiceOptions || [])]
-                                        newOptions[optionIdx].option = e.target.value
-                                        updateQuestion(task.id, question.id, { multipleChoiceOptions: newOptions })
-                                      }}
-                                      placeholder="Answer option"
-                                      className="flex-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
-                                    />
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <DragDropLabEditor
+                labId={editLabId || 'new-lab'}
+                tasks={dragDropTasks}
+                onTasksUpdate={updateDragDropTasks}
+                onAddTask={addDragDropTask}
+                onImageUpload={handleImageUpload}
+                onAttachmentUpload={handleAttachmentUpload}
+              />
             </section>
           </div>
 

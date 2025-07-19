@@ -19,16 +19,16 @@ async function checkLabsTable() {
             WHERE table_name = $1 
             ORDER BY ordinal_position
         `, ['labs']);
-        
+
         console.log('Labs table columns:');
         console.log('='.repeat(50));
         result.rows.forEach(col => {
             console.log(`${col.column_name.padEnd(20)} | ${col.data_type.padEnd(15)} | Nullable: ${col.is_nullable}`);
         });
         console.log('='.repeat(50));
-        
+
         await pool.end();
-        
+
     } catch (error) {
         console.error('Error:', error.message);
         await pool.end();

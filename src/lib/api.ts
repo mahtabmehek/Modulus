@@ -28,7 +28,7 @@ class ApiClient {
       newToken: token ? `${token.substring(0, 30)}...` : 'null',
       oldToken: this.token ? `${this.token.substring(0, 30)}...` : 'null'
     })
-    
+
     this.token = token
     if (typeof window !== 'undefined') {
       if (token) {
@@ -38,7 +38,7 @@ class ApiClient {
         localStorage.removeItem('modulus_token')
         console.log('🗑️ Token removed from localStorage')
       }
-      
+
       // Verify it was saved
       const savedToken = localStorage.getItem('modulus_token')
       console.log('🔍 Verification - Token in localStorage:', savedToken ? `${savedToken.substring(0, 30)}...` : 'null')
