@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, Trash2, Plus } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { 
   DndContext, 
   closestCenter,
@@ -19,7 +20,6 @@ import {
 } from '@dnd-kit/sortable';
 import { Task } from '../../types/lab';
 import { DraggableQuestion } from './DraggableQuestion';
-import { updateQuestionOrder } from '../../utils/dragDropAPI';
 
 interface Question {
   id: string;
@@ -47,8 +47,6 @@ interface DraggableTaskProps {
 }
 
 export function DraggableTask({ task, index, onUpdate, onDelete, onImageUpload, onAttachmentUpload }: DraggableTaskProps) {
-  const [isReorderingQuestions, setIsReorderingQuestions] = useState(false);
-  
   const {
     attributes,
     listeners,
@@ -75,47 +73,33 @@ export function DraggableTask({ task, index, onUpdate, onDelete, onImageUpload, 
     })
   );
 
-  const handleQuestionDragEnd = useCallback(async (event: DragEndEvent) => {
+  const handleQuestionDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
 
     if (!over || active.id === over.id || !task.questions) {
       return;
     }
-
-    setIsReorderingQuestions(true);
     
-    try {
-      const oldIndex = task.questions.findIndex((q) => q.id === active.id);
-      const newIndex = task.questions.findIndex((q) => q.id === over.id);
+    const oldIndex = task.questions.findIndex((q) => q.id === active.id);
+    const newIndex = task.questions.findIndex((q) => q.id === over.id);
 
-      // Optimistically update UI
+    if (oldIndex !== newIndex) {
+      // Reorder questions in frontend only
       const reorderedQuestions = arrayMove(task.questions, oldIndex, newIndex);
       
-      // Update order_index for each question
+      // Update order_index for each question based on new position
       const updatedQuestions = reorderedQuestions.map((question, idx) => ({
         ...question,
         order_index: idx + 1
       }));
 
-      onUpdate(task.id, { questions: updatedQuestions });
-
-      // Send update to backend
-      const questionOrderUpdates = updatedQuestions.map((question, idx) => ({
-        id: question.id,
-        order_index: question.order_index || idx + 1
-      }));
-
-      await updateQuestionOrder(task.id, questionOrderUpdates);
+      console.log('🔄 Frontend question reorder in task:', task.title);
       
-      console.log('✅ Question order updated successfully');
-    } catch (error) {
-      console.error('❌ Failed to update question order:', error);
-      // Revert optimistic update on error
-      onUpdate(task.id, { questions: task.questions });
-    } finally {
-      setIsReorderingQuestions(false);
+      // Update parent component's state
+      onUpdate(task.id, { questions: updatedQuestions });
+      toast.success('Question order updated! Remember to save the lab.');
     }
-  }, [task.id, task.questions, onUpdate]);
+  }, [task.id, task.questions, task.title, onUpdate]);
 
   const addQuestion = () => {
     const newQuestion: Question = {
@@ -216,9 +200,6 @@ export function DraggableTask({ task, index, onUpdate, onDelete, onImageUpload, 
           <div className="flex items-center justify-between mb-3">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Questions
-              {isReorderingQuestions && (
-                <span className="ml-2 text-xs text-blue-600">Updating order...</span>
-              )}
             </label>
             <button
               onClick={addQuestion}
@@ -236,11 +217,13 @@ export function DraggableTask({ task, index, onUpdate, onDelete, onImageUpload, 
               onDragEnd={handleQuestionDragEnd}
             >
               <SortableContext 
-                items={task.questions.map(question => question.id)}
+                items={task.questions.sort((a, b) => (a.order_index || 0) - (b.order_index || 0)).map(question => question.id)}
                 strategy={verticalListSortingStrategy}
               >
                 <div>
-                  {task.questions.map((question, questionIndex) => (
+                  {task.questions
+                    .sort((a, b) => (a.order_index || 0) - (b.order_index || 0))
+                    .map((question, questionIndex) => (
                     <DraggableQuestion
                       key={question.id}
                       question={question}

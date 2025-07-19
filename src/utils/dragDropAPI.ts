@@ -1,56 +1,21 @@
 import { Task, Question, TaskMetadata, QuestionMetadata } from '../types/lab';
+import { apiClient } from '../lib/api';
 
-// API function to update task order
+// DISABLED: Frontend-only mode - no backend calls during drag & drop
 export const updateTaskOrder = async (labId: string, reorderedTasks: { id: string; order_index: number }[]) => {
-  try {
-    const token = localStorage.getItem('authToken');
-    const response = await fetch(`/api/labs/${labId}/tasks/reorder`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({ tasks: reorderedTasks }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Failed to update task order');
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error('Error updating task order:', error);
-    throw error;
-  }
+  console.log('⚠️ updateTaskOrder DISABLED - frontend-only mode');
+  console.log('Data would have been sent:', { labId, reorderedTasks });
+  return { message: 'Frontend-only mode - no backend call made' };
 };
 
-// API function to update question order within a task
+// DISABLED: Frontend-only mode - no backend calls during drag & drop
 export const updateQuestionOrder = async (
   taskId: string, 
   reorderedQuestions: { id: string; order_index: number }[]
 ) => {
-  try {
-    const token = localStorage.getItem('authToken');
-    const response = await fetch(`/api/tasks/${taskId}/questions/reorder`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({ questions: reorderedQuestions }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Failed to update question order');
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error('Error updating question order:', error);
-    throw error;
-  }
+  console.log('⚠️ updateQuestionOrder DISABLED - frontend-only mode');
+  console.log('Data would have been sent:', { taskId, reorderedQuestions });
+  return { message: 'Frontend-only mode - no backend call made' };
 };
 
 // API function to update task metadata

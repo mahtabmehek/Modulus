@@ -56,6 +56,7 @@ export default function LabCreationView() {
 
   const [modules, setModules] = useState<Array<{ id: number, title: string, course_id: number }>>([])
   const [loadingModules, setLoadingModules] = useState(true)
+  const [isEditingTasks, setIsEditingTasks] = useState(false) // Flag to prevent reloads during editing
 
   const [labData, setLabData] = useState({
     title: '',
@@ -126,6 +127,7 @@ export default function LabCreationView() {
 
   // Load modules and lab data for editing
   useEffect(() => {
+    console.log('🔄 useEffect triggered - editLabId:', editLabId)
     loadModules()
     if (editLabId) {
       loadLabForEditing(editLabId)
@@ -170,6 +172,14 @@ export default function LabCreationView() {
   }
 
   const loadLabForEditing = async (labId: number) => {
+    console.log('� DATABASE LOAD TRIGGERED:')
+    console.log('  🔗 Lab ID:', labId)
+    console.log('  🏗️ isEditingTasks:', isEditingTasks)
+    console.log('  📍 Call stack:', new Error().stack?.split('\n')[1]?.trim())
+    
+    // Removed async protection - immediate loading
+    
+    console.log('✅ DATABASE LOAD PROCEEDING - loading lab data from server')
     try {
       const lab = await labAPI.getLab(labId)
       if (lab) {
@@ -195,6 +205,48 @@ export default function LabCreationView() {
           learningObjectives: [],
           tags: lab.tags || []
         })
+
+        // Load tasks and questions if they exist
+        const labWithTasks = lab as any; // Cast to any to access tasks property
+        if (labWithTasks.tasks && Array.isArray(labWithTasks.tasks)) {
+          console.log('� DATABASE LOAD - Lab Tasks & Questions:')
+          console.log('📋 Raw tasks from server:', labWithTasks.tasks.length, 'tasks')
+          labWithTasks.tasks.forEach((t: any, i: number) => {
+            console.log(`📝 Server Task ${i}: ID=${t.id}, Title="${t.title}", Order=${t.order_index}`);
+            if (t.questions && Array.isArray(t.questions)) {
+              t.questions.forEach((q: any, j: number) => {
+                console.log(`  ❓ Server Question ${j}: ID=${q.id}, Title="${q.title}", Order=${q.order_index}`)
+              })
+            }
+          });
+          
+          const formattedTasks = labWithTasks.tasks.map((task: any) => ({
+            id: task.id.toString(),
+            lab_id: labId.toString(),
+            title: task.title,
+            description: task.description,
+            order_index: task.order_index,
+            questions: task.questions || [],
+            metadata: {
+              difficulty: 'easy',
+              estimatedTime: 15,
+              tags: [],
+              customFields: {
+                instructor_notes: '',
+                learning_objectives: []
+              }
+            }
+          }))
+          
+          console.log('🔍 Formatted tasks before setState:');
+          formattedTasks.forEach((t: any, i: number) => {
+            console.log(`  Task ${i}: ID=${t.id}, Title="${t.title}", Order=${t.order_index}`);
+          });
+          setDragDropTasks(formattedTasks)
+          console.log('✅ Tasks loaded and state updated (from server)')
+        } else {
+          console.log('📋 No tasks found in lab data')
+        }
       }
     } catch (error) {
       console.error('Error loading lab for editing:', error)
@@ -397,7 +449,12 @@ export default function LabCreationView() {
   }
 
   const updateDragDropTasks = (updatedTasks: LabTask[]) => {
+    console.log('🔄 SYNCHRONOUS updateDragDropTasks called with:', updatedTasks.map(t => ({ id: t.id, title: t.title, order_index: t.order_index })))
+    console.log('🔄 Before setState - current dragDropTasks:', dragDropTasks.map(t => ({ id: t.id, title: t.title, order_index: t.order_index })))
+    
+    // NO ASYNC OPERATIONS - immediate state update only
     setDragDropTasks(updatedTasks)
+    console.log('🔄 SYNCHRONOUS setState complete')
   }
 
   const handleSave = async () => {
@@ -424,6 +481,27 @@ export default function LabCreationView() {
       // Ensure tags are properly formatted as an array of strings
       const cleanTags = labData.tags.filter(tag => tag && tag.trim()).map(tag => tag.trim())
 
+      // Ensure tasks and questions have proper order_index values
+      const tasksWithOrderIndex = dragDropTasks.map((task, taskIndex) => ({
+        ...task,
+        order_index: task.order_index || (taskIndex + 1),
+        questions: task.questions?.map((question, questionIndex) => ({
+          ...question,
+          order_index: question.order_index || (questionIndex + 1)
+        })) || []
+      }));
+
+      console.log('💾 DATABASE SAVE - Lab Tasks & Questions:')
+      console.log('📋 Total tasks to save:', tasksWithOrderIndex.length)
+      tasksWithOrderIndex.forEach((task, i) => {
+        console.log(`📝 Task ${i + 1}: ID=${task.id}, Title="${task.title}", Order=${task.order_index}`)
+        if (task.questions && task.questions.length > 0) {
+          task.questions.forEach((q, j) => {
+            console.log(`  ❓ Question ${j + 1}: ID=${q.id}, Title="${q.title}", Order=${q.order_index}`)
+          })
+        }
+      })
+
       const labPayload = {
         module_id: 1, // Always use module 1
         title: labData.title.trim(),
@@ -434,10 +512,11 @@ export default function LabCreationView() {
         tags: cleanTags,
         points_possible: 0, // Set to 0 since we removed points system
         estimated_minutes: 60, // Default estimated time
-        tasks: tasks // Include tasks and questions data
+        tasks: tasksWithOrderIndex // Use tasks with proper order_index
       }
 
       console.log('Sending lab payload:', labPayload);
+      console.log('Tasks being sent:', dragDropTasks);
       console.log('editLabId:', editLabId);
       console.log('Will use update path:', !!editLabId);
 
@@ -455,6 +534,7 @@ export default function LabCreationView() {
       }
 
       console.log('Lab saved:', response)
+      // No async state management
       navigate('dashboard')
     } catch (error: any) {
       console.error('Failed to save lab:', error)

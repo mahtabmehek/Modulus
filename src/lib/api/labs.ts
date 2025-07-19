@@ -73,6 +73,7 @@ class LabAPI {
   }
 
   async getLab(id: number): Promise<Lab> {
+    console.log('🌐 API CALL - Getting lab from database:', id)
     const response = await fetch(`${API_BASE_URL}/labs/${id}`, {
       headers: this.getAuthHeaders()
     })
@@ -82,10 +83,28 @@ class LabAPI {
     }
 
     const data = await response.json()
+    console.log('🌐 API RESPONSE - Lab data received from database:')
+    console.log('  📋 Lab ID:', data.data?.id)
+    console.log('  📝 Lab Title:', data.data?.title)
+    if (data.data?.tasks) {
+      console.log('  📋 Tasks from database:', data.data.tasks.length)
+      data.data.tasks.forEach((t: any, i: number) => {
+        console.log(`    📝 DB Task ${i}: ID=${t.id}, Title="${t.title}", Order=${t.order_index}`)
+      })
+    }
     return data.data
   }
 
   async createLab(lab: CreateLabData): Promise<Lab> {
+    console.log('🌐 API CALL - Creating lab in database:')
+    console.log('  📝 Title:', lab.title)
+    if (lab.tasks) {
+      console.log('  📋 Tasks to create:', lab.tasks.length)
+      lab.tasks.forEach((t: any, i: number) => {
+        console.log(`    📝 Create Task ${i}: ID=${t.id}, Title="${t.title}", Order=${t.order_index}`)
+      })
+    }
+    
     const response = await fetch(`${API_BASE_URL}/labs`, {
       method: 'POST',
       headers: this.getAuthHeaders(),
@@ -104,6 +123,16 @@ class LabAPI {
   }
 
   async updateLab(id: number, lab: Partial<CreateLabData>): Promise<Lab> {
+    console.log('🌐 API CALL - Updating lab in database:')
+    console.log('  🆔 Lab ID:', id)
+    console.log('  📝 Title:', lab.title)
+    if (lab.tasks) {
+      console.log('  📋 Tasks to update:', lab.tasks.length)
+      lab.tasks.forEach((t: any, i: number) => {
+        console.log(`    📝 Update Task ${i}: ID=${t.id}, Title="${t.title}", Order=${t.order_index}`)
+      })
+    }
+    
     const response = await fetch(`${API_BASE_URL}/labs/${id}`, {
       method: 'PUT',
       headers: this.getAuthHeaders(),
@@ -118,6 +147,7 @@ class LabAPI {
     }
 
     const data = await response.json()
+    console.log('🌐 API RESPONSE - Lab update successful')
     return data.data
   }
 

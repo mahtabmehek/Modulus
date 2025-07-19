@@ -2,6 +2,8 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
 const { pool } = require('../db');
+const fs = require('fs').promises;
+const path = require('path');
 const router = express.Router();
 
 const JWT_SECRET = process.env.JWT_SECRET || 'modulus-lms-secret-key-change-in-production';
@@ -67,13 +69,14 @@ router.get('/', authenticateToken, async (req, res) => {
   }
 });
 
-// GET /api/labs/:id - Get specific lab details
+// GET /api/labs/:id - Get specific lab details with tasks and questions
 router.get('/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const db = pool;
 
-    const query = `
+    // Get lab details
+    const labQuery = `
       SELECT l.*, m.title as module_title, m.course_id, c.title as course_title
       FROM labs l
       JOIN modules m ON l.module_id = m.id
@@ -81,15 +84,65 @@ router.get('/:id', authenticateToken, async (req, res) => {
       WHERE l.id = $1
     `;
 
-    const result = await db.query(query, [id]);
+    const labResult = await db.query(labQuery, [id]);
 
-    if (result.rows.length === 0) {
+    if (labResult.rows.length === 0) {
       return res.status(404).json({ error: 'Lab not found' });
     }
 
+    const lab = labResult.rows[0];
+
+    // Get tasks for this lab
+    const tasksQuery = `
+      SELECT id, title, description, order_index
+      FROM tasks
+      WHERE lab_id = $1
+      ORDER BY order_index ASC
+    `;
+
+    console.log('🔍 DATABASE QUERY - Getting tasks for lab:', id);
+    const tasksResult = await db.query(tasksQuery, [id]);
+    const tasks = tasksResult.rows;
+    console.log('🔍 DATABASE RESULT - Tasks retrieved from database:');
+    console.log('  📋 Total tasks found:', tasks.length);
+    tasks.forEach((t, i) => {
+      console.log(`  📝 DB Task ${i}: ID=${t.id}, Title="${t.title}", Order=${t.order_index}`);
+    });
+
+    // Get questions for each task
+    for (let task of tasks) {
+      const questionsQuery = `
+        SELECT id, type, title, description, expected_answer, points, order_index, 
+               images, attachments, multiple_choice_options, hints, is_required
+        FROM questions
+        WHERE task_id = $1
+        ORDER BY order_index ASC
+      `;
+
+      const questionsResult = await db.query(questionsQuery, [task.id]);
+      task.questions = questionsResult.rows.map(q => ({
+        id: q.id,
+        type: q.type,
+        title: q.title,
+        description: q.description,
+        flag: q.expected_answer,
+        points: q.points || 0,
+        images: q.images || [],
+        attachments: q.attachments || [],
+        multipleChoiceOptions: q.multiple_choice_options ? JSON.parse(q.multiple_choice_options) : undefined,
+        hints: q.hints || [],
+        isOptional: !q.is_required
+      }));
+    }
+
+    // Add tasks to lab object
+    lab.tasks = tasks;
+    
+    console.log('🔍 Final lab object tasks before sending to frontend:', lab.tasks.map(t => ({ id: t.id, title: t.title, order_index: t.order_index })));
+
     res.json({
       success: true,
-      data: result.rows[0]
+      data: lab
     });
   } catch (error) {
     console.error('Error fetching lab:', error);
@@ -208,6 +261,7 @@ router.post('/',
       const createdLab = result.rows[0];
 
       // Save tasks and questions if provided
+      console.log('DEBUG: Received tasks data:', JSON.stringify(tasks, null, 2));
       if (tasks && Array.isArray(tasks) && tasks.length > 0) {
         for (let i = 0; i < tasks.length; i++) {
           const task = tasks[i];
@@ -345,17 +399,27 @@ router.put('/:id',
 
       // Handle tasks update if provided
       if (tasks && Array.isArray(tasks)) {
+        console.log('💾 DATABASE UPDATE - Processing tasks:');
+        console.log('  📋 Total tasks received:', tasks.length);
+        tasks.forEach((t, i) => {
+          console.log(`  📝 Frontend Task ${i}: ID=${t.id}, Title="${t.title}", Order=${t.order_index}`);
+        });
+
         // Delete existing tasks and questions for this lab
         await db.query('DELETE FROM tasks WHERE lab_id = $1', [id]);
 
         // Insert new tasks and questions
         for (let i = 0; i < tasks.length; i++) {
           const task = tasks[i];
+          // Use the order_index from the frontend instead of array position
+          const taskOrderIndex = task.order_index || (i + 1);
+
+          console.log(`💾 DATABASE INSERT - Task ${i}: Using order_index ${taskOrderIndex} for "${task.title}"`);
 
           // Insert task
           const taskResult = await db.query(
             'INSERT INTO tasks (lab_id, title, description, order_index) VALUES ($1, $2, $3, $4) RETURNING id',
-            [id, task.title, task.description, i + 1]
+            [id, task.title, task.description, taskOrderIndex]
           );
           const taskId = taskResult.rows[0].id;
 
@@ -378,7 +442,7 @@ router.put('/:id',
                 question.flag || question.expectedAnswer || null,
                 !question.isOptional, // Convert isOptional to is_required (inverse)
                 question.points || 0,
-                j + 1,
+                question.order_index || (j + 1), // Use frontend order_index instead of array position
                 question.images || null,
                 question.attachments || null,
                 question.multipleChoiceOptions ? JSON.stringify(question.multipleChoiceOptions) : null,
@@ -388,6 +452,8 @@ router.put('/:id',
           }
         }
       }
+
+      console.log('✅ DATABASE UPDATE COMPLETE - Lab and tasks saved to database');
 
       res.json({
         success: true,
@@ -415,11 +481,13 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 
     const { id } = req.params;
 
-    // Check if lab exists
-    const labCheck = await db.query('SELECT id FROM labs WHERE id = $1', [id]);
+    // Check if lab exists and get lab details
+    const labCheck = await db.query('SELECT id, title, name FROM labs WHERE id = $1', [id]);
     if (labCheck.rows.length === 0) {
       return res.status(404).json({ error: 'Lab not found' });
     }
+
+    const lab = labCheck.rows[0];
 
     // Check for active lab sessions
     const activeSessions = await db.query(
@@ -434,11 +502,31 @@ router.delete('/:id', authenticateToken, async (req, res) => {
       });
     }
 
+    // Delete physical files for this lab
+    try {
+      const uploadsDir = path.join(__dirname, '..', 'uploads', 'labs', id.toString());
+      
+      // Check if the directory exists
+      try {
+        await fs.access(uploadsDir);
+        // Directory exists, delete it recursively
+        await fs.rm(uploadsDir, { recursive: true, force: true });
+        console.log(`Deleted lab files directory: ${uploadsDir}`);
+      } catch (error) {
+        // Directory doesn't exist or access error - this is okay, continue with database deletion
+        console.log(`Lab files directory not found or already deleted: ${uploadsDir}`);
+      }
+    } catch (error) {
+      console.error('Error deleting lab files:', error);
+      // Don't fail the entire operation if file deletion fails
+    }
+
+    // Delete from database
     await db.query('DELETE FROM labs WHERE id = $1', [id]);
 
     res.json({
       success: true,
-      message: 'Lab deleted successfully'
+      message: 'Lab and associated files deleted successfully'
     });
   } catch (error) {
     console.error('Error deleting lab:', error);
@@ -459,7 +547,11 @@ router.put('/:id/tasks/reorder',
       const { id } = req.params;
       const { tasks } = req.body;
 
+      console.log('🔄 Backend: Reordering tasks for lab:', id);
+      console.log('🔄 Backend: Received tasks:', JSON.stringify(tasks, null, 2));
+
       if (!Array.isArray(tasks)) {
+        console.error('❌ Backend: Tasks is not an array:', tasks);
         return res.status(400).json({ error: 'Tasks must be an array' });
       }
 
@@ -470,10 +562,12 @@ router.put('/:id/tasks/reorder',
 
         // Update each task's order_index
         for (const task of tasks) {
-          await client.query(
+          console.log(`🔄 Backend: Updating task ${task.id} to order_index ${task.order_index}`);
+          const result = await client.query(
             'UPDATE tasks SET order_index = $1 WHERE id = $2 AND lab_id = $3',
             [task.order_index, task.id, id]
           );
+          console.log(`🔄 Backend: Updated ${result.rowCount} rows for task ${task.id}`);
         }
 
         await client.query('COMMIT');
@@ -501,8 +595,22 @@ router.put('/tasks/:id/questions/reorder',
       const { id } = req.params;
       const { questions } = req.body;
 
+      console.log('🔄 Backend: Reordering questions for task:', id);
+      console.log('🔄 Backend: Task ID type:', typeof id);
+      console.log('🔄 Backend: Received questions:', JSON.stringify(questions, null, 2));
+
       if (!Array.isArray(questions)) {
+        console.error('❌ Backend: Questions is not an array:', questions);
         return res.status(400).json({ error: 'Questions must be an array' });
+      }
+
+      // Validate question data
+      for (const question of questions) {
+        console.log(`🔄 Backend: Validating question ${question.id} (type: ${typeof question.id}) with order_index ${question.order_index} (type: ${typeof question.order_index})`);
+        if (!question.id || !question.order_index) {
+          console.error('❌ Backend: Invalid question data:', question);
+          return res.status(400).json({ error: 'Each question must have id and order_index' });
+        }
       }
 
       // Start transaction
@@ -512,10 +620,12 @@ router.put('/tasks/:id/questions/reorder',
 
         // Update each question's order_index
         for (const question of questions) {
-          await client.query(
+          console.log(`🔄 Backend: Updating question ${question.id} to order_index ${question.order_index}`);
+          const result = await client.query(
             'UPDATE questions SET order_index = $1 WHERE id = $2 AND task_id = $3',
             [question.order_index, question.id, id]
           );
+          console.log(`🔄 Backend: Updated ${result.rowCount} rows for question ${question.id}`);
         }
 
         await client.query('COMMIT');

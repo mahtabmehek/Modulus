@@ -1,4 +1,5 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
+import toast from 'react-hot-toast';
 import { 
   DndContext, 
   closestCenter,
@@ -14,7 +15,6 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { updateTaskOrder } from '../../utils/dragDropAPI';
 import { DraggableTask } from './DraggableTask';
 import { Task } from '../../types/lab';
 import { Plus } from 'lucide-react';
@@ -50,9 +50,9 @@ export function DragDropLabEditor({
   onTasksUpdate, 
   onAddTask,
   onImageUpload,
-  onAttachmentUpload 
+  onAttachmentUpload
 }: DragDropLabEditorProps) {
-  const [isReordering, setIsReordering] = useState(false);
+  console.log('🔍 DragDropLabEditor render - tasks received:', tasks.map(t => ({ id: t.id, title: t.title, order_index: t.order_index })));
   
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -65,47 +65,49 @@ export function DragDropLabEditor({
     })
   );
 
-  const handleDragEnd = useCallback(async (event: DragEndEvent) => {
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
 
     if (!over || active.id === over.id) {
       return;
     }
 
-    setIsReordering(true);
+    console.log('🎯 DRAG END - Starting immediate synchronous reorder');
+
+    // Only handle task reordering - questions are handled by DraggableTask
+    const activeId = String(active.id);
+    const overId = String(over.id);
     
-    try {
-      const oldIndex = tasks.findIndex((task) => task.id === active.id);
-      const newIndex = tasks.findIndex((task) => task.id === over.id);
+    // Sort tasks for consistent order calculation
+    const currentTasks = [...tasks].sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
+    
+    // Check if we're dragging tasks (not questions)
+    const isTaskDrag = currentTasks.some(task => task.id === activeId) && 
+                      currentTasks.some(task => task.id === overId);
+    
+    if (isTaskDrag) {
+      const oldIndex = currentTasks.findIndex((task) => task.id === activeId);
+      const newIndex = currentTasks.findIndex((task) => task.id === overId);
 
-      // Optimistically update UI
-      const reorderedTasks = arrayMove(tasks, oldIndex, newIndex);
-      
-      // Update order_index for each task
-      const updatedTasks = reorderedTasks.map((task, index) => ({
-        ...task,
-        order_index: index + 1
-      }));
+      if (oldIndex !== newIndex) {
+        // Reorder tasks IMMEDIATELY - no async operations
+        const reorderedTasks = arrayMove(currentTasks, oldIndex, newIndex);
+        
+        // Update order_index for each task based on new position
+        const updatedTasks = reorderedTasks.map((task, index) => ({
+          ...task,
+          order_index: index + 1
+        }));
 
-      onTasksUpdate(updatedTasks);
-
-      // Send update to backend
-      const taskOrderUpdates = updatedTasks.map(task => ({
-        id: task.id,
-        order_index: task.order_index
-      }));
-
-      await updateTaskOrder(labId, taskOrderUpdates);
-      
-      console.log('✅ Task order updated successfully');
-    } catch (error) {
-      console.error('❌ Failed to update task order:', error);
-      // Revert optimistic update on error
-      onTasksUpdate(tasks);
-    } finally {
-      setIsReordering(false);
+        console.log('🎯 IMMEDIATE REORDER:', updatedTasks.map(t => `${t.title} (order: ${t.order_index})`));
+        
+        // Update parent component's state IMMEDIATELY
+        onTasksUpdate(updatedTasks);
+        console.log('🎯 DRAG END COMPLETE - state updated immediately');
+      }
     }
-  }, [labId, tasks, onTasksUpdate]);
+    // If it's not a task drag, ignore it - let DraggableTask handle questions
+  }, [tasks, onTasksUpdate]);
 
   const handleTaskUpdate = useCallback((taskId: string, updates: Partial<Task & { questions?: Question[] }>) => {
     const updatedTasks = tasks.map(task => 
@@ -127,14 +129,19 @@ export function DragDropLabEditor({
   }, [tasks, onTasksUpdate]);
 
   const getTotalQuestions = () => {
-    return tasks.reduce((total, task) => total + (task.questions?.length || 0), 0);
+    const sortedTasks = [...tasks].sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
+    return sortedTasks.reduce((total, task) => total + (task.questions?.length || 0), 0);
   };
 
   const getTotalPoints = () => {
-    return tasks.reduce((total, task) => {
+    const sortedTasks = [...tasks].sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
+    return sortedTasks.reduce((total, task) => {
       return total + (task.questions?.reduce((taskTotal, question) => taskTotal + (question.points || 0), 0) || 0);
     }, 0);
   };
+
+  // Define sortedTasks once for consistent rendering
+  const sortedTasks = [...tasks].sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
 
   return (
     <div className="space-y-6">
@@ -142,7 +149,7 @@ export function DragDropLabEditor({
         <div>
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Lab Tasks</h2>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            Drag and drop to reorder tasks and questions. Changes are saved automatically.
+            Drag and drop to reorder tasks and questions. Changes will be saved when you save the lab.
           </p>
         </div>
         
@@ -154,14 +161,6 @@ export function DragDropLabEditor({
           Add Task
         </button>
       </div>
-
-      {isReordering && (
-        <div className="flex items-center space-x-2 text-blue-600 bg-blue-50 dark:bg-blue-900/20 px-4 py-2 rounded-lg">
-          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-          <span className="text-sm">Updating task order...</span>
-        </div>
-      )}
-
       {tasks.length === 0 ? (
         <div className="text-center py-12 bg-gray-50 dark:bg-gray-800 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600">
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No tasks yet</h3>
@@ -183,15 +182,15 @@ export function DragDropLabEditor({
           onDragEnd={handleDragEnd}
         >
           <SortableContext 
-            items={tasks.map(task => task.id)}
+            items={sortedTasks.map(task => task.id)}
             strategy={verticalListSortingStrategy}
           >
             <div className="space-y-4">
-              {tasks.map((task, index) => (
+              {sortedTasks.map((task, sortedIndex) => (
                 <DraggableTask
                   key={task.id}
                   task={task}
-                  index={index}
+                  index={sortedIndex}
                   onUpdate={handleTaskUpdate}
                   onDelete={handleTaskDelete}
                   onImageUpload={onImageUpload}
