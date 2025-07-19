@@ -13,27 +13,27 @@ router.get('/test', (req, res) => {
 
 // Middleware to verify JWT token
 const authenticateToken = (req, res, next) => {
-  console.log('🔐 MODULE-LABS AUTH - Starting authentication check');
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+    console.log('🔐 MODULE-LABS AUTH - Starting authentication check');
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
 
-  console.log('🔐 MODULE-LABS AUTH - Auth header:', authHeader ? 'Present' : 'Missing');
-  console.log('🔐 MODULE-LABS AUTH - Token extracted:', token ? 'Present' : 'Missing');
+    console.log('🔐 MODULE-LABS AUTH - Auth header:', authHeader ? 'Present' : 'Missing');
+    console.log('🔐 MODULE-LABS AUTH - Token extracted:', token ? 'Present' : 'Missing');
 
-  if (!token) {
-    console.log('❌ MODULE-LABS AUTH - No token provided');
-    return res.status(401).json({ error: 'Access token required' });
-  }
-
-  jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) {
-      console.log('❌ MODULE-LABS AUTH - Token verification failed:', err.message);
-      return res.status(403).json({ error: 'Invalid or expired token' });
+    if (!token) {
+        console.log('❌ MODULE-LABS AUTH - No token provided');
+        return res.status(401).json({ error: 'Access token required' });
     }
-    console.log('✅ MODULE-LABS AUTH - Token verified successfully for user:', user.email);
-    req.user = user;
-    next();
-  });
+
+    jwt.verify(token, JWT_SECRET, (err, user) => {
+        if (err) {
+            console.log('❌ MODULE-LABS AUTH - Token verification failed:', err.message);
+            return res.status(403).json({ error: 'Invalid or expired token' });
+        }
+        console.log('✅ MODULE-LABS AUTH - Token verified successfully for user:', user.email);
+        req.user = user;
+        next();
+    });
 };
 
 // Add lab to module (Many-to-Many relationship)

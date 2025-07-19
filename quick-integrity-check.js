@@ -24,7 +24,7 @@ async function quickIntegrityCheck() {
 
         // Check for any constraint violations
         console.log('\n🔍 Checking for violations...');
-        
+
         // Check labs -> modules (old way)
         const labModuleViolations = await pool.query(`
             SELECT COUNT(*) as violations
@@ -51,9 +51,9 @@ async function quickIntegrityCheck() {
         console.log(`❌ Junction module violations: ${junctionModuleViolations.rows[0].violations}`);
         console.log(`❌ Junction lab violations: ${junctionLabViolations.rows[0].violations}`);
 
-        const totalViolations = parseInt(labModuleViolations.rows[0].violations) + 
-                               parseInt(junctionModuleViolations.rows[0].violations) + 
-                               parseInt(junctionLabViolations.rows[0].violations);
+        const totalViolations = parseInt(labModuleViolations.rows[0].violations) +
+            parseInt(junctionModuleViolations.rows[0].violations) +
+            parseInt(junctionLabViolations.rows[0].violations);
 
         if (totalViolations === 0) {
             console.log('\n✅ Database integrity is GOOD!');

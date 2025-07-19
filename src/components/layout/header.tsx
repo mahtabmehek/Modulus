@@ -281,25 +281,25 @@ export function Header() {
                           <p className="text-sm text-white font-medium">
                             New lab available: APT Simulation
                           </p>
-                      <p className="text-xs text-gray-400 mt-1">2 hours ago</p>
+                          <p className="text-xs text-gray-400 mt-1">2 hours ago</p>
+                        </div>
+                        <div className="p-4 hover:bg-gray-700 border-b border-gray-600">
+                          <p className="text-sm text-white font-medium">
+                            Congratulations! You earned ⚡12 🏆3 points and badges
+                          </p>
+                          <p className="text-xs text-gray-400 mt-1">1 day ago</p>
+                        </div>
+                        <div className="p-4 hover:bg-gray-700">
+                          <p className="text-sm text-white font-medium">
+                            Achievement unlocked: ⚡25 🏆1 earned from completing Web Security module
+                          </p>
+                          <p className="text-xs text-gray-400 mt-1">3 days ago</p>
+                        </div>
+                      </div>
                     </div>
-                    <div className="p-4 hover:bg-gray-700 border-b border-gray-600">
-                      <p className="text-sm text-white font-medium">
-                        Congratulations! You earned ⚡12 🏆3 points and badges
-                      </p>
-                      <p className="text-xs text-gray-400 mt-1">1 day ago</p>
-                    </div>
-                    <div className="p-4 hover:bg-gray-700">
-                      <p className="text-sm text-white font-medium">
-                        Achievement unlocked: ⚡25 🏆1 earned from completing Web Security module
-                      </p>
-                      <p className="text-xs text-gray-400 mt-1">3 days ago</p>
-                    </div>
-                  </div>
+                  )}
                 </div>
-              )}
-            </div>
-            </>
+              </>
             )}
 
             {/* User Menu */}

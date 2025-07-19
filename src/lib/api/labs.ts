@@ -25,6 +25,29 @@ export interface Lab {
   auto_grade?: boolean
   icon_path?: string
   tags?: string[]
+  tasks?: Task[]
+}
+
+export interface Task {
+  id: number
+  title: string
+  description?: string
+  order_index: number
+  questions?: Question[]
+}
+
+export interface Question {
+  id: number
+  type: string
+  title: string
+  description?: string
+  flag?: string
+  points: number
+  images?: string[]
+  attachments?: string[]
+  multipleChoiceOptions?: string[]
+  hints?: string[]
+  isOptional?: boolean
 }
 
 export interface CreateLabData {
@@ -44,6 +67,7 @@ export interface CreateLabData {
   network_requirements?: string
   icon_path?: string
   tags?: string[]
+  tasks?: Task[]
 }
 
 class LabAPI {

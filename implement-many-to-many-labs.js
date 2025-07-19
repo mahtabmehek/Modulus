@@ -32,14 +32,14 @@ async function implementManyToManyLabs() {
 
         if (existingLabs.rows.length > 0) {
             console.log(`📦 Found ${existingLabs.rows.length} existing lab-module relationships to migrate`);
-            
+
             for (const lab of existingLabs.rows) {
                 await pool.query(`
                     INSERT INTO module_labs (module_id, lab_id, order_index)
                     VALUES ($1, $2, $3)
                     ON CONFLICT (module_id, lab_id) DO NOTHING;
                 `, [lab.module_id, lab.id, lab.order_index || 0]);
-                
+
                 console.log(`   📝 Migrated Lab ${lab.id} → Module ${lab.module_id} (order: ${lab.order_index})`);
             }
         } else {
@@ -48,7 +48,7 @@ async function implementManyToManyLabs() {
 
         // Step 3: Update labs table - make module_id and order_index optional/deprecated
         console.log('\n3️⃣ Updating labs table structure...');
-        
+
         // Add a comment to indicate these fields are deprecated
         await pool.query(`
             COMMENT ON COLUMN labs.module_id IS 'DEPRECATED: Use module_labs junction table for module relationships';
@@ -56,7 +56,7 @@ async function implementManyToManyLabs() {
         await pool.query(`
             COMMENT ON COLUMN labs.order_index IS 'DEPRECATED: Use module_labs.order_index for ordering within modules';
         `);
-        
+
         console.log('✅ Added deprecation comments to old columns');
 
         // Step 4: Create indexes for performance

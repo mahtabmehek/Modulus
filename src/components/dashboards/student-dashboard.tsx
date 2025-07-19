@@ -133,9 +133,8 @@ export function StudentDashboard() {
                             >
                               <div className="flex items-start justify-between mb-4">
                                 <div className="flex items-center space-x-4">
-                                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                                    isCompleted ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'
-                                  }`}>
+                                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${isCompleted ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'
+                                    }`}>
                                     {isCompleted ? <CheckCircle className="w-6 h-6" /> : <IconComponent className="w-6 h-6" />}
                                   </div>
                                   <div>
@@ -155,10 +154,9 @@ export function StudentDashboard() {
                                   </span>
                                 </div>
                                 <div className="w-full bg-gray-200 rounded-full h-2">
-                                  <div 
-                                    className={`h-2 rounded-full transition-all duration-300 ${
-                                      isCompleted ? 'bg-green-500' : 'bg-blue-500'
-                                    }`}
+                                  <div
+                                    className={`h-2 rounded-full transition-all duration-300 ${isCompleted ? 'bg-green-500' : 'bg-blue-500'
+                                      }`}
                                     style={{ width: `${completionPercentage}%` }}
                                   ></div>
                                 </div>
@@ -166,13 +164,12 @@ export function StudentDashboard() {
 
                               {/* Status Badge */}
                               <div className="flex items-center justify-between">
-                                <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                                  isCompleted 
-                                    ? 'bg-green-100 text-green-800' 
-                                    : completionPercentage > 0 
-                                      ? 'bg-blue-100 text-blue-800' 
+                                <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${isCompleted
+                                    ? 'bg-green-100 text-green-800'
+                                    : completionPercentage > 0
+                                      ? 'bg-blue-100 text-blue-800'
                                       : 'bg-gray-100 text-gray-800'
-                                }`}>
+                                  }`}>
                                   {isCompleted ? '✓ Completed' : completionPercentage > 0 ? 'In Progress' : 'Not Started'}
                                 </span>
                                 <span className="text-xs text-muted-foreground">

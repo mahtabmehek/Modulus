@@ -332,7 +332,7 @@ export function StaffDashboard() {
         hasDependencies: error.response?.data?.hasDependencies,
         fullError: error
       })
-      
+
       // Check if it's a dependency error
       if (error.response?.status === 400 && error.response?.data?.hasDependencies) {
         console.log('✅ Dependency error detected, showing modal')
@@ -1502,12 +1502,12 @@ export function StaffDashboard() {
                   </p>
                 </div>
               </div>
-              
+
               <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-4">
                 <p className="text-sm text-red-700 dark:text-red-300 mb-3">
                   This course cannot be deleted because it has the following dependencies:
                 </p>
-                
+
                 <div className="space-y-2">
                   {dependencyError.dependencies.modules > 0 && (
                     <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
@@ -1523,11 +1523,11 @@ export function StaffDashboard() {
                   )}
                 </div>
               </div>
-              
+
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
                 Please remove all associated data before attempting to delete this course.
               </p>
-              
+
               <div className="flex justify-end">
                 <button
                   onClick={() => setShowDependencyModal(false)}

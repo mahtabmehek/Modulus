@@ -6,7 +6,7 @@ async function demonstrateOneLabManyModules() {
 
         // Step 1: Create standalone labs first (no module required)
         console.log('1️⃣ Creating standalone labs...');
-        
+
         const labs = [
             { title: 'Security Fundamentals', description: 'Learn basic cybersecurity principles' },
             { title: 'Database Basics', description: 'Introduction to databases and SQL' },
@@ -21,14 +21,14 @@ async function demonstrateOneLabManyModules() {
                 VALUES ($1, $2, true, 60, 100, $3)
                 RETURNING id, title;
             `, [lab.title, lab.description, i + 1]);
-            
+
             createdLabs.push(result.rows[0]);
             console.log(`   ✅ Created Lab: ${result.rows[0].title} (ID: ${result.rows[0].id})`);
         }
 
         // Step 2: Create simple modules (without course dependency for now)
         console.log('\n2️⃣ Creating test modules...');
-        
+
         // Create a simple course first
         let courseId;
         try {
@@ -54,7 +54,7 @@ async function demonstrateOneLabManyModules() {
         const moduleIds = [];
         if (courseId) {
             const modules = ['Web Development', 'Database Management', 'Cybersecurity', 'Full Stack Development'];
-            
+
             for (let i = 0; i < modules.length; i++) {
                 try {
                     const result = await pool.query(`
@@ -62,7 +62,7 @@ async function demonstrateOneLabManyModules() {
                         VALUES ($1, $2, $3, $4, true)
                         RETURNING id, title;
                     `, [courseId, modules[i], `Module for ${modules[i]}`, i + 1]);
-                    
+
                     moduleIds.push(result.rows[0].id);
                     console.log(`   ✅ Created Module: ${result.rows[0].title} (ID: ${result.rows[0].id})`);
                 } catch (error) {
@@ -78,10 +78,10 @@ async function demonstrateOneLabManyModules() {
 
         // Step 3: THE MAGIC - One Lab in Multiple Modules
         console.log('\n3️⃣ 🎯 DEMONSTRATING: One Lab ID → Multiple Modules');
-        
+
         const securityLab = createdLabs[0]; // Security Fundamentals lab
         const targetModules = moduleIds.slice(0, 3); // First 3 modules
-        
+
         console.log(`\n🧪 Taking Lab "${securityLab.title}" (ID: ${securityLab.id})`);
         console.log(`📚 Adding it to ${targetModules.length} different modules:\n`);
 
@@ -99,7 +99,7 @@ async function demonstrateOneLabManyModules() {
                     VALUES ($1, $2, $3)
                     ON CONFLICT (module_id, lab_id) DO UPDATE SET order_index = EXCLUDED.order_index;
                 `, [rel.moduleId, securityLab.id, rel.order]);
-                
+
                 console.log(`   🔗 Module ${rel.moduleId}: Position ${rel.order} (${rel.position})`);
             } catch (error) {
                 console.log(`   ⚠️ Could not add to module ${rel.moduleId}: ${error.message}`);
@@ -108,7 +108,7 @@ async function demonstrateOneLabManyModules() {
 
         // Step 4: Verify the Many-to-Many relationship
         console.log('\n4️⃣ 🔍 Verification - Where does this lab appear?');
-        
+
         const labLocations = await pool.query(`
             SELECT 
                 ml.module_id,
@@ -128,7 +128,7 @@ async function demonstrateOneLabManyModules() {
 
         // Step 5: Show all relationships in the junction table
         console.log('\n5️⃣ 📊 Complete Junction Table View:');
-        
+
         const allRelationships = await pool.query(`
             SELECT 
                 ml.id as junction_id,

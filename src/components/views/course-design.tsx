@@ -45,7 +45,7 @@ export default function CourseDesignView() {
     const [availableLabs, setAvailableLabs] = useState<Lab[]>([])
     const [availableCourses, setAvailableCourses] = useState<DatabaseCourse[]>([])
     const [selectedCourseId, setSelectedCourseId] = useState<number | null>(null)
-    const [moduleSearchTerms, setModuleSearchTerms] = useState<{[moduleId: string]: string}>({})
+    const [moduleSearchTerms, setModuleSearchTerms] = useState<{ [moduleId: string]: string }>({})
     const [filteredLabs, setFilteredLabs] = useState<Lab[]>([])
     const [loading, setLoading] = useState(false)
     const [isSaving, setIsSaving] = useState(false)
@@ -246,7 +246,7 @@ export default function CourseDesignView() {
 
     const addLabToModule = (moduleId: string, lab: Lab) => {
         // Check if the lab is already assigned to any module
-        const isLabAlreadyAssigned = courseData.modules.some(module => 
+        const isLabAlreadyAssigned = courseData.modules.some(module =>
             module.labs.some(moduleLab => moduleLab.id === lab.id)
         )
 
@@ -593,7 +593,7 @@ export default function CourseDesignView() {
                                                 {getFilteredLabsForModule(module.id)
                                                     .filter(lab => {
                                                         // Check if lab is already assigned to ANY module in the course
-                                                        return !courseData.modules.some(anyModule => 
+                                                        return !courseData.modules.some(anyModule =>
                                                             anyModule.labs.some(moduleLab => moduleLab.id === lab.id)
                                                         )
                                                     })
@@ -632,14 +632,14 @@ export default function CourseDesignView() {
 
                                         {/* No results message */}
                                         {getModuleSearchTerm(module.id) && getFilteredLabsForModule(module.id).filter(lab => {
-                                            return !courseData.modules.some(anyModule => 
+                                            return !courseData.modules.some(anyModule =>
                                                 anyModule.labs.some(moduleLab => moduleLab.id === lab.id)
                                             )
                                         }).length === 0 && (
-                                            <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
-                                                No available labs found matching "{getModuleSearchTerm(module.id)}"
-                                            </p>
-                                        )}
+                                                <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
+                                                    No available labs found matching "{getModuleSearchTerm(module.id)}"
+                                                </p>
+                                            )}
                                     </div>
                                 </div>
                             </div>

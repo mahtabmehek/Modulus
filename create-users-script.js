@@ -4,10 +4,10 @@ const fs = require('fs');
 async function createUsers() {
     try {
         const sql = fs.readFileSync('./create-users.sql', 'utf8');
-        
+
         // Split the SQL into individual statements
         const statements = sql.split(';').filter(stmt => stmt.trim().length > 0);
-        
+
         for (const statement of statements) {
             if (statement.trim()) {
                 const result = await pool.query(statement.trim());
@@ -16,7 +16,7 @@ async function createUsers() {
                 }
             }
         }
-        
+
         console.log('All users created successfully!');
         process.exit(0);
     } catch (error) {

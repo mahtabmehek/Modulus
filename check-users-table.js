@@ -8,7 +8,7 @@ async function checkUsersTable() {
             WHERE table_name = 'users' 
             ORDER BY ordinal_position;
         `);
-        
+
         console.log('Users table structure:');
         console.table(result.rows);
         process.exit(0);

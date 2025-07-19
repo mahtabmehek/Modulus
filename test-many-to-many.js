@@ -25,7 +25,7 @@ async function testManyToManyLabs() {
             ON CONFLICT DO NOTHING
             RETURNING id, title;
         `);
-        
+
         let courseId;
         if (courseResult.rows.length > 0) {
             courseId = courseResult.rows[0].id;
@@ -43,7 +43,7 @@ async function testManyToManyLabs() {
 
         // Step 1: Create test modules if they don't exist
         console.log('\n1️⃣ Creating test modules...');
-        
+
         const modules = [
             { title: 'Web Development Basics', description: 'HTML, CSS, JavaScript fundamentals' },
             { title: 'Database Design', description: 'SQL and database modeling' },
@@ -58,7 +58,7 @@ async function testManyToManyLabs() {
                 ON CONFLICT DO NOTHING
                 RETURNING id, title;
             `, [courseId, modules[i].title, modules[i].description, i + 1]);
-            
+
             if (result.rows.length > 0) {
                 createdModules.push(result.rows[0]);
                 console.log(`   ✅ Created: ${result.rows[0].title} (ID: ${result.rows[0].id})`);
@@ -72,7 +72,7 @@ async function testManyToManyLabs() {
 
         // Step 2: Create test labs
         console.log('\n2️⃣ Creating test labs...');
-        
+
         const labs = [
             { title: 'HTML Fundamentals', description: 'Learn basic HTML structure and tags' },
             { title: 'SQL Injection Prevention', description: 'Protect against SQL injection attacks' },
@@ -86,23 +86,23 @@ async function testManyToManyLabs() {
                 VALUES ($1, $2, true, 60, 100)
                 RETURNING id, title;
             `, [lab.title, lab.description]);
-            
+
             createdLabs.push(result.rows[0]);
             console.log(`   ✅ Created: ${result.rows[0].title} (ID: ${result.rows[0].id})`);
         }
 
         // Step 3: Test Many-to-Many relationships
         console.log('\n3️⃣ Testing Many-to-Many relationships...');
-        
+
         const relationships = [
             // HTML Fundamentals appears in Web Dev and Database modules
             { moduleId: allModules.rows[0].id, labId: createdLabs[0].id, order: 1 },
             { moduleId: allModules.rows[1].id, labId: createdLabs[0].id, order: 3 },
-            
+
             // SQL Injection appears in Database and Security modules
             { moduleId: allModules.rows[1].id, labId: createdLabs[1].id, order: 1 },
             { moduleId: allModules.rows[2].id, labId: createdLabs[1].id, order: 2 },
-            
+
             // Password Security appears in all three modules
             { moduleId: allModules.rows[0].id, labId: createdLabs[2].id, order: 2 },
             { moduleId: allModules.rows[1].id, labId: createdLabs[2].id, order: 2 },
@@ -115,13 +115,13 @@ async function testManyToManyLabs() {
                 VALUES ($1, $2, $3)
                 ON CONFLICT (module_id, lab_id) DO UPDATE SET order_index = EXCLUDED.order_index;
             `, [rel.moduleId, rel.labId, rel.order]);
-            
+
             console.log(`   🔗 Added Lab ${rel.labId} to Module ${rel.moduleId} (order: ${rel.order})`);
         }
 
         // Step 4: Query results
         console.log('\n4️⃣ Query results...');
-        
+
         // Show which labs are in each module
         console.log('\n📋 Labs per module:');
         for (const module of allModules.rows) {
@@ -133,7 +133,7 @@ async function testManyToManyLabs() {
                 WHERE ml.module_id = $1
                 ORDER BY ml.order_index;
             `, [module.id]);
-            
+
             console.log(`\n   📚 ${module.title} (ID: ${module.id}):`);
             moduleLabs.rows.forEach(lab => {
                 console.log(`      ${lab.order_index}. ${lab.title} (Lab ID: ${lab.id})`);
@@ -151,7 +151,7 @@ async function testManyToManyLabs() {
                 WHERE ml.lab_id = $1
                 ORDER BY m.title;
             `, [lab.id]);
-            
+
             console.log(`\n   🧪 ${lab.title} (ID: ${lab.id}) appears in:`);
             labModules.rows.forEach(module => {
                 console.log(`      - ${module.title} (position ${module.order_index})`);

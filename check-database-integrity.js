@@ -81,7 +81,7 @@ async function checkDatabaseIntegrity() {
 
         // 4. Check data integrity examples
         console.log('\n4️⃣ Data Integrity Examples:');
-        
+
         // Show course → modules → labs chain
         const courseChain = await pool.query(`
             SELECT 
@@ -97,24 +97,24 @@ async function checkDatabaseIntegrity() {
             ORDER BY c.id
             LIMIT 5;
         `);
-        
+
         console.log('\n📊 Course → Module → Lab Relationships:');
         console.table(courseChain.rows);
 
         // 5. Check if old and new systems coexist
         console.log('\n5️⃣ Migration Status:');
-        
+
         const oldSystemLabs = await pool.query(`
             SELECT COUNT(*) as count 
             FROM labs 
             WHERE module_id IS NOT NULL;
         `);
-        
+
         const newSystemLabs = await pool.query(`
             SELECT COUNT(DISTINCT lab_id) as count 
             FROM module_labs;
         `);
-        
+
         console.log(`   🗂️  Labs using old system (direct module_id): ${oldSystemLabs.rows[0].count}`);
         console.log(`   🆕 Labs using new system (junction table): ${newSystemLabs.rows[0].count}`);
 
@@ -128,15 +128,15 @@ async function checkDatabaseIntegrity() {
                 ROUND(COUNT(*)::numeric / COUNT(DISTINCT lab_id), 2) as avg_modules_per_lab
             FROM module_labs;
         `);
-        
+
         console.table(junctionStats.rows);
 
         console.log('\n✅ Schema Integrity Check Complete!');
-        
+
         // Summary
-        const issues = orphanedCourses.rows.length + orphanedModules.rows.length + 
-                      labsWithOldModuleId.rows.length + invalidModuleLabs.rows.length;
-        
+        const issues = orphanedCourses.rows.length + orphanedModules.rows.length +
+            labsWithOldModuleId.rows.length + invalidModuleLabs.rows.length;
+
         if (issues === 0) {
             console.log('🎉 No integrity issues found - schema is healthy!');
         } else {

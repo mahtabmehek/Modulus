@@ -1,8 +1,8 @@
 const { pool } = require('./db');
 
 async function checkConstraints() {
-  try {
-    const result = await pool.query(`
+    try {
+        const result = await pool.query(`
       SELECT 
         tc.table_name, 
         kcu.column_name, 
@@ -18,20 +18,20 @@ async function checkConstraints() {
           AND ccu.table_schema = tc.table_schema
       WHERE tc.constraint_type = 'FOREIGN KEY' AND ccu.table_name = 'courses'
     `);
-    
-    console.log('Tables that reference courses:');
-    console.log(result.rows);
-    
-    // Also check which courses exist
-    const courses = await pool.query('SELECT id, title FROM courses ORDER BY id');
-    console.log('\nExisting courses:');
-    console.log(courses.rows);
-    
-  } catch (error) {
-    console.error('Error:', error.message);
-  } finally {
-    process.exit(0);
-  }
+
+        console.log('Tables that reference courses:');
+        console.log(result.rows);
+
+        // Also check which courses exist
+        const courses = await pool.query('SELECT id, title FROM courses ORDER BY id');
+        console.log('\nExisting courses:');
+        console.log(courses.rows);
+
+    } catch (error) {
+        console.error('Error:', error.message);
+    } finally {
+        process.exit(0);
+    }
 }
 
 checkConstraints();

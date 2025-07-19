@@ -505,11 +505,11 @@ router.delete('/:id', authenticateToken, requireStaffOrAdmin, async (req, res) =
 
     // Check for dependencies
     const dependencies = {};
-    
+
     // Check modules
     const modules = await db.query('SELECT COUNT(*) FROM modules WHERE course_id = $1', [courseId]);
     dependencies.modules = parseInt(modules.rows[0].count);
-    
+
     // Check users assigned to this course (by course code)
     const courseCodeResult = await db.query('SELECT code FROM courses WHERE id = $1', [courseId]);
     const courseCode = courseCodeResult.rows[0]?.code;
@@ -526,7 +526,7 @@ router.delete('/:id', authenticateToken, requireStaffOrAdmin, async (req, res) =
       if (dependencies.modules > 0) dependencyList.push(`${dependencies.modules} module(s)`);
       if (dependencies.assignedUsers > 0) dependencyList.push(`${dependencies.assignedUsers} assigned user(s)`);
 
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'Cannot delete course with dependencies',
         message: `Course "${courseTitle}" cannot be deleted because it has dependencies: ${dependencyList.join(', ')}.`,
         dependencies: dependencies,
@@ -537,7 +537,7 @@ router.delete('/:id', authenticateToken, requireStaffOrAdmin, async (req, res) =
     // If no dependencies, proceed with deletion
     // First delete any announcements for this course
     await db.query('DELETE FROM announcements WHERE course_id = $1', [courseId]);
-    
+
     // Then delete the course
     const result = await db.query(
       'DELETE FROM courses WHERE id = $1 RETURNING id, title, code',
@@ -553,9 +553,9 @@ router.delete('/:id', authenticateToken, requireStaffOrAdmin, async (req, res) =
 
   } catch (error) {
     console.error('Delete course error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Internal server error',
-      details: error.message 
+      details: error.message
     });
   }
 });

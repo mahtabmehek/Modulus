@@ -9,10 +9,10 @@ async function quickCheck() {
             WHERE constraint_name LIKE '%_fkey' 
             ORDER BY table_name;
         `);
-        
+
         console.log('Foreign Keys:');
         console.table(fk.rows);
-        
+
         // Quick data check
         const counts = await pool.query(`
             SELECT 
@@ -21,10 +21,10 @@ async function quickCheck() {
                 (SELECT COUNT(*) FROM labs) as labs,
                 (SELECT COUNT(*) FROM module_labs) as module_labs;
         `);
-        
+
         console.log('\nTable Counts:');
         console.table(counts.rows);
-        
+
         process.exit(0);
     } catch (error) {
         console.error('Error:', error.message);

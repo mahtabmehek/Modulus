@@ -56,7 +56,7 @@ export function ModuleView() {
           console.log('🔍 Module ID type:', typeof moduleId)
           const moduleIdNumber = parseInt(moduleId)
           console.log('🔍 Parsed module ID:', moduleIdNumber)
-          
+
           // Use the dedicated module-labs endpoint instead of the general labs endpoint
           // This avoids potential duplication from both direct and junction table relationships
           const response = await fetch(`http://localhost:3001/api/module-labs/modules/${moduleIdNumber}/labs`, {
@@ -65,14 +65,14 @@ export function ModuleView() {
               'Content-Type': 'application/json'
             }
           })
-          
+
           if (!response.ok) {
             throw new Error(`Failed to fetch module labs: ${response.statusText}`)
           }
-          
+
           const result = await response.json()
           const labsData = result.data || []
-          
+
           console.log('✅ Labs loaded via module-labs endpoint:', labsData)
           console.log('✅ Number of labs:', labsData.length)
           setLabs(labsData)
@@ -121,7 +121,7 @@ export function ModuleView() {
       <div className="max-w-6xl mx-auto p-6">
         {/* Breadcrumb */}
         <div className="flex items-center text-sm text-muted-foreground mb-6">
-          <button 
+          <button
             onClick={() => navigate('dashboard')}
             className="hover:text-foreground transition-colors flex items-center gap-1"
           >
@@ -181,7 +181,7 @@ export function ModuleView() {
                 >
                   {/* Gradient accent */}
                   <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 to-purple-500"></div>
-                  
+
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-start gap-4">
                       <div className="bg-gradient-to-br from-indigo-100 to-purple-100 rounded-xl p-3 group-hover:from-indigo-200 group-hover:to-purple-200 transition-colors">
@@ -196,11 +196,11 @@ export function ModuleView() {
                             {lab.lab_type || 'Lab'}
                           </span>
                         </div>
-                        
+
                         {lab.description && (
                           <p className="text-gray-600 leading-relaxed mb-4">{lab.description}</p>
                         )}
-                        
+
                         <div className="flex items-center gap-6 text-sm text-gray-500">
                           <div className="flex items-center gap-2">
                             <Clock className="w-4 h-4" />
@@ -217,12 +217,12 @@ export function ModuleView() {
                         </div>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center gap-2">
                       <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-indigo-500 transition-colors" />
                     </div>
                   </div>
-                  
+
                   {/* Progress indicator (placeholder) */}
                   <div className="flex items-center gap-2 text-sm">
                     <div className="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
