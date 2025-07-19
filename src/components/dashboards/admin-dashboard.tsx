@@ -375,6 +375,22 @@ export function AdminDashboard() {
     }
   }
 
+  const deleteLab = async (labId: string, labName: string) => {
+    if (!confirm(`Are you sure you want to delete the lab "${labName}"? This action cannot be undone and will remove all associated files.`)) {
+      return
+    }
+
+    try {
+      const response = await apiClient.deleteLab(labId)
+      toast.success('Lab deleted successfully')
+      // Reload labs after deletion
+      loadLabs()
+    } catch (error) {
+      console.error('Failed to delete lab:', error)
+      toast.error('Failed to delete lab')
+    }
+  }
+
   const systemStats = {
     totalUsers: 1247,
     activeUsers: 89,
@@ -1104,14 +1120,6 @@ export function AdminDashboard() {
                   <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                   Refresh
                 </button>
-                <button className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors">
-                  <BookOpen className="w-4 h-4" />
-                  Create Lab
-                </button>
-                <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
-                  <Download className="w-4 h-4" />
-                  Export Reports
-                </button>
               </div>
             </div>
 
@@ -1123,48 +1131,30 @@ export function AdminDashboard() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {labs.map((lab) => (
-                  <div key={lab.id} className="bg-gray-50 dark:bg-gray-900 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center justify-between mb-4">
-                      <h4 className="font-semibold text-gray-900 dark:text-white">{lab.name}</h4>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${lab.status === 'active'
-                        ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300'
-                        : lab.status === 'draft'
-                          ? 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900 dark:text-yellow-300'
-                          : 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300'
-                        }`}>
-                        {lab.status}
-                      </span>
+                  <div key={lab.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 text-center">
+                    {/* Lab Icon */}
+                    <div className="w-16 h-16 bg-blue-600 rounded-xl flex items-center justify-center mx-auto mb-6">
+                      <BookOpen className="w-8 h-8 text-white" />
                     </div>
-
-                    <div className="space-y-2 mb-4">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600 dark:text-gray-400">Type:</span>
-                        <span className="text-gray-900 dark:text-white">{lab.type}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600 dark:text-gray-400">Students:</span>
-                        <span className="text-gray-900 dark:text-white">{lab.students}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600 dark:text-gray-400">Avg Duration:</span>
-                        <span className="text-gray-900 dark:text-white">{lab.avgDuration}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600 dark:text-gray-400">Success Rate:</span>
-                        <span className="text-gray-900 dark:text-white">{lab.successRate}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2">
-                      <button className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg transition-colors text-sm">
-                        <Eye className="w-4 h-4" />
-                        View
-                      </button>
-                      <button className="flex-1 flex items-center justify-center gap-2 bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg transition-colors text-sm">
-                        <Settings className="w-4 h-4" />
-                        Edit
-                      </button>
-                    </div>
+                    
+                    {/* Lab Name */}
+                    <h4 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                      {lab.title || lab.name || 'Untitled Lab'}
+                    </h4>
+                    
+                    {/* Lab Description/Type */}
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-8">
+                      {lab.description || lab.type || 'No description'}
+                    </p>
+                    
+                    {/* Delete Button */}
+                    <button 
+                      onClick={() => deleteLab(lab.id, lab.title || lab.name || 'Untitled Lab')}
+                      className="w-full flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-3 rounded-lg transition-colors font-medium"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Delete
+                    </button>
                   </div>
                 ))}
               </div>
@@ -1176,13 +1166,9 @@ export function AdminDashboard() {
                 <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
                   No labs found
                 </h4>
-                <p className="text-gray-600 dark:text-gray-400 mb-4">
-                  Create your first lab to get started.
+                <p className="text-gray-600 dark:text-gray-400">
+                  No labs have been created yet.
                 </p>
-                <button className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors mx-auto">
-                  <BookOpen className="w-4 h-4" />
-                  Create First Lab
-                </button>
               </div>
             )}
           </div>
