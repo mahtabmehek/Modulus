@@ -29,17 +29,17 @@ app.use(express.json());
 
 // Add general request logging
 app.use((req, res, next) => {
-  console.log('🌐 ALL REQUESTS:', {
-    method: req.method,
-    url: req.url,
-    originalUrl: req.originalUrl,
-    path: req.path,
-    headers: {
-      'content-type': req.headers['content-type'],
-      'authorization': req.headers['authorization'] ? 'Bearer ***' : 'None'
-    }
-  })
-  next()
+    console.log('🌐 ALL REQUESTS:', {
+        method: req.method,
+        url: req.url,
+        originalUrl: req.originalUrl,
+        path: req.path,
+        headers: {
+            'content-type': req.headers['content-type'],
+            'authorization': req.headers['authorization'] ? 'Bearer ***' : 'None'
+        }
+    })
+    next()
 })
 
 // Handle preflight OPTIONS requests globally
@@ -68,6 +68,9 @@ app.use('/api/courses', coursesRouter);
 
 const labsRouter = require('./routes/labs');
 app.use('/api/labs', labsRouter);
+
+const moduleLabsRouter = require('./routes/module-labs');
+app.use('/api', moduleLabsRouter);
 
 const usersRouter = require('./routes/users');
 app.use('/api/users', usersRouter);
@@ -361,24 +364,56 @@ app.get('/api/labs', authenticateToken, async (req, res) => {
     try {
         const { module_id } = req.query;
 
-        let query = `
-            SELECT 
-                l.id, l.module_id, l.title, l.description, l.instructions,
-                l.order_index, l.is_published, l.estimated_minutes,
-                l.points_possible, l.max_attempts, l.created_at, l.updated_at,
-                m.title as module_title, m.course_id 
-            FROM labs l
-            JOIN modules m ON l.module_id = m.id
-            WHERE l.is_published = true
-        `;
-        let params = [];
+        let query, params = [];
 
         if (module_id) {
-            query += ' AND l.module_id = $1';
+            // Get labs for a specific module using junction table
+            query = `
+                SELECT 
+                    l.id, l.title, l.description, l.instructions,
+                    l.is_published, l.estimated_minutes,
+                    l.points_possible, l.max_attempts, l.created_at, l.updated_at,
+                    l.lab_type, l.vm_image, l.icon_path, l.tags,
+                    ml.order_index as module_order,
+                    m.title as module_title, m.course_id,
+                    ml.added_at as added_to_module
+                FROM labs l
+                JOIN module_labs ml ON l.id = ml.lab_id
+                JOIN modules m ON ml.module_id = m.id
+                WHERE l.is_published = true AND ml.module_id = $1
+                ORDER BY ml.order_index
+            `;
             params = [module_id];
+        } else {
+            // Get all labs with their module associations
+            query = `
+                SELECT 
+                    l.id, l.title, l.description, l.instructions,
+                    l.is_published, l.estimated_minutes,
+                    l.points_possible, l.max_attempts, l.created_at, l.updated_at,
+                    l.lab_type, l.vm_image, l.icon_path, l.tags,
+                    COALESCE(
+                        json_agg(
+                            json_build_object(
+                                'module_id', ml.module_id,
+                                'module_title', m.title,
+                                'course_id', m.course_id,
+                                'order_index', ml.order_index
+                            )
+                        ) FILTER (WHERE ml.module_id IS NOT NULL), 
+                        '[]'::json
+                    ) as modules
+                FROM labs l
+                LEFT JOIN module_labs ml ON l.id = ml.lab_id
+                LEFT JOIN modules m ON ml.module_id = m.id
+                WHERE l.is_published = true
+                GROUP BY l.id, l.title, l.description, l.instructions,
+                         l.is_published, l.estimated_minutes, l.points_possible,
+                         l.max_attempts, l.created_at, l.updated_at,
+                         l.lab_type, l.vm_image, l.icon_path, l.tags
+                ORDER BY l.created_at DESC
+            `;
         }
-
-        query += ' ORDER BY l.order_index ASC, l.created_at DESC';
 
         const result = await pool.query(query, params);
 
@@ -436,7 +471,7 @@ app.post('/api/labs',
     authenticateToken,
     requireStaffOrAdmin,
     [
-        body('module_id').isInt().withMessage('Valid module ID is required'),
+        body('module_id').optional().isInt().withMessage('Module ID must be a valid integer'),
         body('title').trim().isLength({ min: 1, max: 255 }).withMessage('Title must be 1-255 characters'),
         body('description').optional().isLength({ max: 2000 }).withMessage('Description must be under 2000 characters'),
         body('instructions').optional().isLength({ max: 10000 }).withMessage('Instructions must be under 10000 characters'),
@@ -468,24 +503,35 @@ app.post('/api/labs',
                 is_published
             } = req.body;
 
-            // Verify module exists
-            const moduleCheck = await pool.query(
-                'SELECT id FROM modules WHERE id = $1',
-                [module_id]
-            );
+            // Verify module exists only if module_id is provided
+            if (module_id) {
+                const moduleCheck = await pool.query(
+                    'SELECT id FROM modules WHERE id = $1',
+                    [module_id]
+                );
 
-            if (moduleCheck.rows.length === 0) {
-                return res.status(404).json({ error: 'Module not found' });
+                if (moduleCheck.rows.length === 0) {
+                    return res.status(404).json({ error: 'Module not found' });
+                }
             }
 
             // Get next order index if not provided
             let finalOrderIndex = order_index;
             if (finalOrderIndex === undefined) {
-                const orderResult = await pool.query(
-                    'SELECT COALESCE(MAX(order_index), 0) + 1 as next_order FROM labs WHERE module_id = $1',
-                    [module_id]
-                );
-                finalOrderIndex = orderResult.rows[0].next_order;
+                if (module_id) {
+                    // If module_id is provided, get next order within that module
+                    const orderResult = await pool.query(
+                        'SELECT COALESCE(MAX(order_index), 0) + 1 as next_order FROM labs WHERE module_id = $1',
+                        [module_id]
+                    );
+                    finalOrderIndex = orderResult.rows[0].next_order;
+                } else {
+                    // If no module_id, get next order among standalone labs
+                    const orderResult = await pool.query(
+                        'SELECT COALESCE(MAX(order_index), 0) + 1 as next_order FROM labs WHERE module_id IS NULL'
+                    );
+                    finalOrderIndex = orderResult.rows[0].next_order;
+                }
             }
 
             const query = `

@@ -86,10 +86,14 @@ class ApiClient {
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
       console.error('❌ API Error Details:', errorData)
-      // Throw the entire error object so frontend can access errorType and message
-      const error = new Error(errorData.message || `HTTP ${response.status}`)
-      // Attach the error data to the error object
-      Object.assign(error, errorData)
+      
+      // Create a custom error that includes response data
+      const error = new Error(errorData.message || `HTTP ${response.status}`) as any
+      error.response = {
+        status: response.status,
+        statusText: response.statusText,
+        data: errorData
+      }
       throw error
     }
 

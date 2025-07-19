@@ -14,20 +14,20 @@ export function Footer() {
             </span>
           </div>
           <div className="flex space-x-6 mt-4 md:mt-0">
-            <a 
-              href="/privacy" 
+            <a
+              href="/privacy"
               className="text-sm text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
             >
               Privacy Policy
             </a>
-            <a 
-              href="/terms" 
+            <a
+              href="/terms"
               className="text-sm text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
             >
               Terms of Service
             </a>
-            <a 
-              href="/support" 
+            <a
+              href="/support"
               className="text-sm text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
             >
               Support

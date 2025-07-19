@@ -862,17 +862,17 @@ router.post('/:id/stop', authenticateToken, async (req, res) => {
 router.get('/tags', authenticateToken, async (req, res) => {
   try {
     const db = pool;
-    
+
     const query = `
       SELECT DISTINCT unnest(tags) as tag 
       FROM labs 
       WHERE tags IS NOT NULL AND tags != '{}' 
       ORDER BY tag ASC
     `;
-    
+
     const result = await db.query(query);
     const tags = result.rows.map(row => row.tag).filter(tag => tag && tag.trim());
-    
+
     res.json(tags);
   } catch (error) {
     console.error('Error fetching tags:', error);

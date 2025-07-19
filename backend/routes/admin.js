@@ -182,11 +182,8 @@ router.get('/test-users', async (req, res) => {
         u.role, 
         u.is_approved, 
         u.created_at,
-        u.course_id,
-        c.code as "courseCode",
-        c.title as "courseTitle"
+        u.course_code as "courseCode"
       FROM users u
-      LEFT JOIN courses c ON u.course_id = c.id
       WHERE u.email LIKE '%@test.com' OR u.email LIKE '%@modulus.com' 
       ORDER BY u.role, u.email
     `;

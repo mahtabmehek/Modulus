@@ -147,14 +147,12 @@ export function Header() {
               className="flex items-center cursor-pointer"
               onClick={() => navigate('dashboard')}
             >
-              <div className="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
-                <img
-                  src="/logo.svg"
-                  alt="Modulus Logo"
-                  className="w-8 h-8"
-                />
-              </div>
-              <span className="ml-3 text-xl font-bold text-white">
+              <img
+                src="/logo.svg"
+                alt="Modulus Logo"
+                className="w-24 h-24"
+              />
+              <span className="-ml-4 text-xl font-bold text-white">
                 Modulus
               </span>
             </div>
@@ -209,77 +207,80 @@ export function Header() {
                   <span className="font-medium">{earnedAchievements.length}</span>
                 </button>
 
-              {showAchievements && (
-                <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 text-gray-900 dark:text-gray-100">
-                  <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                    <h3 className="font-semibold">Achievements</h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {earnedAchievements.length} of {achievements.length} unlocked
-                    </p>
-                  </div>
-                  <div className="max-h-64 overflow-y-auto">
-                    {achievements.map((achievement) => (
-                      <div
-                        key={achievement.id}
-                        className={`p-3 border-b border-gray-100 dark:border-gray-600 last:border-b-0 ${achievement.earned ? 'bg-green-50 dark:bg-green-900/20' : 'opacity-50'
-                          }`}
-                      >
-                        <div className="flex items-start space-x-3">
-                          <span className="text-2xl">{achievement.icon}</span>
-                          <div className="flex-1">
-                            <h4 className="font-medium text-sm">{achievement.name}</h4>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                              {achievement.description}
-                            </p>
-                            <div className="flex items-center space-x-2 mt-1">
-                              <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-0.5 rounded">
-                                {achievement.points} XP
-                              </span>
-                              {achievement.earned && achievement.earnedDate && (
-                                <span className="text-xs text-gray-500 dark:text-gray-400">
-                                  {achievement.earnedDate.toLocaleDateString()}
+                {showAchievements && (
+                  <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 text-gray-900 dark:text-gray-100">
+                    <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                      <h3 className="font-semibold">Achievements</h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {earnedAchievements.length} of {achievements.length} unlocked
+                      </p>
+                    </div>
+                    <div className="max-h-64 overflow-y-auto">
+                      {achievements.map((achievement) => (
+                        <div
+                          key={achievement.id}
+                          className={`p-3 border-b border-gray-100 dark:border-gray-600 last:border-b-0 ${achievement.earned ? 'bg-green-50 dark:bg-green-900/20' : 'opacity-50'
+                            }`}
+                        >
+                          <div className="flex items-start space-x-3">
+                            <span className="text-2xl">{achievement.icon}</span>
+                            <div className="flex-1">
+                              <h4 className="font-medium text-sm">{achievement.name}</h4>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">
+                                {achievement.description}
+                              </p>
+                              <div className="flex items-center space-x-2 mt-1">
+                                <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-0.5 rounded">
+                                  {achievement.points} XP
                                 </span>
-                              )}
+                                {achievement.earned && achievement.earnedDate && (
+                                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                                    {achievement.earnedDate.toLocaleDateString()}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
             )}
 
-            {/* Desktop Button - Always visible */}
-            <div
-              onClick={handleDesktopClick}
-              className="flex items-center space-x-2 bg-green-600 hover:bg-green-500 px-4 py-2 rounded-full transition-colors cursor-pointer"
-            >
-              <Monitor className="w-4 h-4" />
-              <span className="font-medium">Desktop</span>
-            </div>
+            {/* Desktop Button and Notifications - Only visible for students */}
+            {user?.role === 'student' && (
+              <>
+                {/* Desktop Button */}
+                <div
+                  onClick={handleDesktopClick}
+                  className="flex items-center space-x-2 bg-green-600 hover:bg-green-500 px-4 py-2 rounded-full transition-colors cursor-pointer"
+                >
+                  <Monitor className="w-4 h-4" />
+                  <span className="font-medium">Desktop</span>
+                </div>
 
-            {/* Notifications */}
-            <div className="relative" ref={notificationsRef}>
-              <button
-                onClick={() => setShowNotifications(!showNotifications)}
-                className="p-2 text-white/80 hover:text-white transition-colors relative"
-              >
-                <Bell className="w-5 h-5" />
-                <span className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-500 rounded-full"></span>
-              </button>
+                {/* Notifications */}
+                <div className="relative" ref={notificationsRef}>
+                  <button
+                    onClick={() => setShowNotifications(!showNotifications)}
+                    className="p-2 text-white/80 hover:text-white transition-colors relative"
+                  >
+                    <Bell className="w-5 h-5" />
+                    <span className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-500 rounded-full"></span>
+                  </button>
 
-              {showNotifications && (
-                <div className="absolute right-0 mt-2 w-80 bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-50">
-                  <div className="p-4 border-b border-gray-600">
-                    <h3 className="font-semibold text-white">Notifications</h3>
-                  </div>
-                  <div className="max-h-64 overflow-y-auto">
-                    <div className="p-4 hover:bg-gray-700 border-b border-gray-600">
-                      <p className="text-sm text-white font-medium">
-                        New lab available: APT Simulation
-                      </p>
+                  {showNotifications && (
+                    <div className="absolute right-0 mt-2 w-80 bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-50">
+                      <div className="p-4 border-b border-gray-600">
+                        <h3 className="font-semibold text-white">Notifications</h3>
+                      </div>
+                      <div className="max-h-64 overflow-y-auto">
+                        <div className="p-4 hover:bg-gray-700 border-b border-gray-600">
+                          <p className="text-sm text-white font-medium">
+                            New lab available: APT Simulation
+                          </p>
                       <p className="text-xs text-gray-400 mt-1">2 hours ago</p>
                     </div>
                     <div className="p-4 hover:bg-gray-700 border-b border-gray-600">
@@ -298,6 +299,8 @@ export function Header() {
                 </div>
               )}
             </div>
+            </>
+            )}
 
             {/* User Menu */}
             <div className="relative" ref={userMenuRef}>

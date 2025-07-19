@@ -28,7 +28,7 @@ export interface Lab {
 }
 
 export interface CreateLabData {
-  module_id: number
+  module_id?: number  // Made optional to allow standalone labs
   title: string
   description?: string
   instructions?: string

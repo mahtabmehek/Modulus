@@ -223,7 +223,7 @@ export default function LabCreationView() {
           academicCategory: 'computing',
           course: '',
           module: '',
-          moduleId: lab.module_id || 1,
+          moduleId: lab.module_id || 0, // Use 0 to indicate no module
           labType: lab.lab_type === 'vm' ? 'mandatory' : 'challenge',
           difficulty: 'beginner',
           category: 'programming',
@@ -641,8 +641,8 @@ export default function LabCreationView() {
     }
 
     const filtered = allAvailableTags
-      .filter(tag => 
-        tag.toLowerCase().includes(input.toLowerCase()) && 
+      .filter(tag =>
+        tag.toLowerCase().includes(input.toLowerCase()) &&
         !labData.tags.includes(tag)
       )
       .slice(0, 5) // Limit to 5 suggestions
@@ -683,7 +683,7 @@ export default function LabCreationView() {
         const iconPayload = {
           icon_url: typeof labData.icon === 'string' && labData.icon && !labData.icon.startsWith('blob:') ? labData.icon : null
         }
-        
+
         await fetch(`/api/labs/${editLabId}`, {
           method: 'PUT',
           headers: {
@@ -692,7 +692,7 @@ export default function LabCreationView() {
           },
           body: JSON.stringify(iconPayload)
         })
-        
+
         toast.success('Lab icon URL updated successfully!')
         navigate('dashboard')
         return
@@ -759,7 +759,7 @@ export default function LabCreationView() {
       })
 
       const labPayload = {
-        module_id: 1, // Always use module 1
+        // Remove module_id requirement - labs can be standalone
         title: labData.title.trim(),
         description: labData.description?.trim() || '',
         icon_path: uploadedIconPath || (typeof labData.icon === 'string' && labData.icon && !labData.icon.startsWith('blob:') ? labData.icon : null),
@@ -1119,9 +1119,8 @@ export default function LabCreationView() {
                     onChange={(e) => setLabData({ ...labData, title: e.target.value })}
                     placeholder="e.g., SQL Injection Fundamentals"
                     readOnly={adminEditMode}
-                    className={`w-full px-4 py-3 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-background text-foreground placeholder-muted-foreground ${
-                      adminEditMode ? 'bg-gray-100 dark:bg-gray-800 cursor-not-allowed' : ''
-                    }`}
+                    className={`w-full px-4 py-3 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-background text-foreground placeholder-muted-foreground ${adminEditMode ? 'bg-gray-100 dark:bg-gray-800 cursor-not-allowed' : ''
+                      }`}
                   />
                 </div>
 
@@ -1135,9 +1134,8 @@ export default function LabCreationView() {
                     placeholder="Describe what students will learn in this lab..."
                     rows={4}
                     readOnly={adminEditMode}
-                    className={`w-full px-4 py-3 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-background text-foreground placeholder-muted-foreground ${
-                      adminEditMode ? 'bg-gray-100 dark:bg-gray-800 cursor-not-allowed' : ''
-                    }`}
+                    className={`w-full px-4 py-3 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-background text-foreground placeholder-muted-foreground ${adminEditMode ? 'bg-gray-100 dark:bg-gray-800 cursor-not-allowed' : ''
+                      }`}
                   />
                 </div>
 
@@ -1256,7 +1254,7 @@ export default function LabCreationView() {
                         placeholder="Enter a tag and press Enter or Space"
                         className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-background text-foreground placeholder-muted-foreground"
                       />
-                      
+
                       {/* Tag suggestions dropdown */}
                       {showSuggestions && suggestedTags.length > 0 && (
                         <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-lg z-10 max-h-40 overflow-y-auto">

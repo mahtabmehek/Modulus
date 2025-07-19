@@ -22,7 +22,7 @@ router.use((req, res, next) => {
 // Authentication middleware for local development
 const authenticateToken = (req, res, next) => {
   console.log('🔐 AUTH ROUTE - authenticateToken called for:', req.method, req.url)
-  
+
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
@@ -916,9 +916,9 @@ router.delete('/admin/delete-user', authenticateToken, requireAdmin, async (req,
 router.put('/admin/update-user/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, email, role, is_approved, courseId } = req.body;
+    const { name, email, role, is_approved, courseCode } = req.body;
 
-    console.log('UPDATE USER - Request:', { id, name, email, role, is_approved, courseId });
+    console.log('UPDATE USER - Request:', { id, name, email, role, is_approved, courseCode });
 
     if (!id) {
       return res.status(400).json({ error: 'User ID is required' });
@@ -974,9 +974,9 @@ router.put('/admin/update-user/:id', authenticateToken, requireAdmin, async (req
       paramCount++;
     }
 
-    if (courseId !== undefined && courseId !== currentUser.course_id) {
-      updateFields.push(`course_id = $${paramCount}`);
-      updateValues.push(courseId);
+    if (courseCode !== undefined && courseCode !== currentUser.course_code) {
+      updateFields.push(`course_code = $${paramCount}`);
+      updateValues.push(courseCode);
       paramCount++;
     }
 
@@ -990,7 +990,7 @@ router.put('/admin/update-user/:id', authenticateToken, requireAdmin, async (req
           email: currentUser.email,
           role: currentUser.role,
           isApproved: currentUser.is_approved,
-          courseId: currentUser.course_id,
+          courseCode: currentUser.course_code,
           createdAt: currentUser.created_at
         }
       });
@@ -1023,7 +1023,7 @@ router.put('/admin/update-user/:id', authenticateToken, requireAdmin, async (req
         email: updatedUser.email,
         role: updatedUser.role,
         isApproved: updatedUser.is_approved,
-        courseId: updatedUser.course_id,
+        courseCode: updatedUser.course_code,
         createdAt: updatedUser.created_at
       }
     });
@@ -1039,7 +1039,7 @@ router.post('/forgot-password', [
   body('email').isEmail().normalizeEmail().withMessage('Please provide a valid email address')
 ], async (req, res) => {
   console.log('🔑 FORGOT PASSWORD - Request received:', req.body);
-  
+
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -1056,8 +1056,8 @@ router.post('/forgot-password', [
     // Always return success to prevent email enumeration attacks
     if (userResult.rows.length === 0) {
       console.log('⚠️ FORGOT PASSWORD - User not found for email:', email);
-      return res.status(200).json({ 
-        message: 'If an account with that email exists, we have sent password reset instructions.' 
+      return res.status(200).json({
+        message: 'If an account with that email exists, we have sent password reset instructions.'
       });
     }
 
@@ -1066,8 +1066,8 @@ router.post('/forgot-password', [
 
     // Generate reset token
     const resetToken = jwt.sign(
-      { 
-        userId: user.id, 
+      {
+        userId: user.id,
         email: user.email,
         type: 'password-reset'
       },
@@ -1082,7 +1082,7 @@ router.post('/forgot-password', [
       ON CONFLICT (user_id) 
       DO UPDATE SET token = $2, expires_at = NOW() + INTERVAL '1 hour', created_at = NOW()
     `;
-    
+
     try {
       await pool.query(resetTokenQuery, [user.id, resetToken]);
       console.log('✅ FORGOT PASSWORD - Reset token stored for user:', user.email);
@@ -1095,11 +1095,11 @@ router.post('/forgot-password', [
     // For demo purposes, we'll log the reset link
     const resetLink = `${req.protocol}://${req.get('host')}/reset-password?token=${resetToken}`;
     console.log('📧 FORGOT PASSWORD - Reset link generated:', resetLink);
-    
+
     // TODO: Implement actual email sending
     // await sendPasswordResetEmail(user.email, user.name, resetLink);
 
-    res.status(200).json({ 
+    res.status(200).json({
       message: 'If an account with that email exists, we have sent password reset instructions.',
       // For development purposes, include the token (REMOVE IN PRODUCTION)
       ...(process.env.NODE_ENV === 'development' && { resetToken, resetLink })
@@ -1117,7 +1117,7 @@ router.post('/reset-password', [
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters long')
 ], async (req, res) => {
   console.log('🔑 RESET PASSWORD - Request received');
-  
+
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -1170,8 +1170,8 @@ router.post('/reset-password', [
 
     console.log('✅ RESET PASSWORD - Password updated successfully for:', decoded.email);
 
-    res.status(200).json({ 
-      message: 'Password has been reset successfully. You can now log in with your new password.' 
+    res.status(200).json({
+      message: 'Password has been reset successfully. You can now log in with your new password.'
     });
 
   } catch (error) {

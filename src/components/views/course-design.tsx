@@ -267,11 +267,6 @@ export default function CourseDesignView() {
             return
         }
 
-        if (courseData.modules.length === 0) {
-            toast.error('Please add at least one module')
-            return
-        }
-
         setIsSaving(true)
         try {
             console.log('Saving course with modules:', {

@@ -46,7 +46,7 @@ const validateCourse = [
   body('description').trim().isLength({ min: 10 }).withMessage('Description must be at least 10 characters'),
   body('department').trim().isLength({ min: 2 }).withMessage('Department must be at least 2 characters'),
   body('academicLevel').isIn(['bachelor', 'master', 'phd', 'certificate']).withMessage('Valid academic level required'),
-  body('duration').isInt({ min: 1, max: 10 }).withMessage('Duration must be between 1 and 10 years'),
+  body('duration').isInt({ min: 1 }).withMessage('Duration must be a positive number'),
   body('totalCredits').isInt({ min: 1 }).withMessage('Total credits must be a positive number')
 ];
 
@@ -484,15 +484,58 @@ router.delete('/:id', authenticateToken, requireStaffOrAdmin, async (req, res) =
   try {
     const { id } = req.params;
     const db = pool;
+    const courseId = parseInt(id, 10);
 
-    const result = await db.query(
-      'DELETE FROM courses WHERE id = $1 RETURNING id, title, code',
-      [parseInt(id, 10)]
-    );
+    console.log(`� DELETE COURSE - Checking dependencies for course ID: ${courseId}`);
 
-    if (result.rows.length === 0) {
+    // Check if course exists
+    const courseCheck = await db.query('SELECT id, title FROM courses WHERE id = $1', [courseId]);
+    if (courseCheck.rows.length === 0) {
       return res.status(404).json({ error: 'Course not found' });
     }
+
+    const courseTitle = courseCheck.rows[0].title;
+
+    // Check for dependencies
+    const dependencies = {};
+    
+    // Check modules
+    const modules = await db.query('SELECT COUNT(*) FROM modules WHERE course_id = $1', [courseId]);
+    dependencies.modules = parseInt(modules.rows[0].count);
+    
+    // Check users assigned to this course
+    const users = await db.query('SELECT COUNT(*) FROM users WHERE course_id = $1', [courseId]);
+    dependencies.assignedUsers = parseInt(users.rows[0].count);
+
+    const totalDependencies = dependencies.modules + dependencies.assignedUsers;
+
+    console.log(`� DELETE COURSE - Dependencies found:`, dependencies);
+
+    // If course has dependencies, return error with details
+    if (totalDependencies > 0) {
+      const dependencyList = [];
+      if (dependencies.modules > 0) dependencyList.push(`${dependencies.modules} module(s)`);
+      if (dependencies.assignedUsers > 0) dependencyList.push(`${dependencies.assignedUsers} assigned user(s)`);
+
+      return res.status(400).json({ 
+        error: 'Cannot delete course with dependencies',
+        message: `Course "${courseTitle}" cannot be deleted because it has dependencies: ${dependencyList.join(', ')}.`,
+        dependencies: dependencies,
+        hasDependencies: true
+      });
+    }
+
+    // If no dependencies, proceed with deletion
+    // First delete any announcements for this course
+    await db.query('DELETE FROM announcements WHERE course_id = $1', [courseId]);
+    
+    // Then delete the course
+    const result = await db.query(
+      'DELETE FROM courses WHERE id = $1 RETURNING id, title, code',
+      [courseId]
+    );
+
+    console.log(`✅ DELETE COURSE - Successfully deleted course: "${courseTitle}"`);
 
     res.json({
       message: 'Course deleted successfully',
@@ -501,7 +544,10 @@ router.delete('/:id', authenticateToken, requireStaffOrAdmin, async (req, res) =
 
   } catch (error) {
     console.error('Delete course error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ 
+      error: 'Internal server error',
+      details: error.message 
+    });
   }
 });
 

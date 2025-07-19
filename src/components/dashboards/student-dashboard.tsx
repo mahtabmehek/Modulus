@@ -46,13 +46,13 @@ export function StudentDashboard() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="max-w-6xl mx-auto p-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - Main Content */}
-          <div className="lg:col-span-2 space-y-6">
+        <div className="space-y-6">
+          {/* Main Content */}
+          <div className="space-y-6">
             {/* Welcome Section */}
             <div>
               <h1 className="text-3xl font-bold mb-2 text-foreground">
-                Welcome back, Mahtab!
+                Welcome back, {user?.name?.split(' ')[0] || 'Student'}!
               </h1>
               <p className="text-muted-foreground">
                 Ready to continue your learning journey?
@@ -232,39 +232,6 @@ export function StudentDashboard() {
                         </button>
                       </div>
                     </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Column - Profile & Stats */}
-          <div>
-            <div className="bg-card rounded-lg p-6 border border-border">
-              <h3 className="text-lg font-semibold mb-6 text-center text-foreground">Your Profile & Stats</h3>
-
-              {/* Profile Avatar */}
-              <div className="flex flex-col items-center mb-6">
-                <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mb-3">
-                  <User className="w-10 h-10 text-muted-foreground" />
-                </div>
-                <h4 className="font-semibold text-foreground">Mahtab Mehek</h4>
-                <p className="text-sm text-yellow-600 dark:text-yellow-400 flex items-center justify-center">
-                  Level 7: Elite Hacker <span className="ml-1">⭐</span>
-                </p>
-              </div>
-
-              {/* Completion Stats */}
-              <div className="text-center mb-6">
-                <div className="text-4xl font-bold mb-2 text-foreground">100%</div>
-                <p className="text-muted-foreground mb-4">Overall Completion</p>
-
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">4/4 Mandatory Labs</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">3 Badges Earned</span>
                   </div>
                 </div>
               </div>

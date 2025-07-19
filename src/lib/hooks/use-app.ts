@@ -69,7 +69,7 @@ export const useAppStore = create<AppStore>()(
       logout: () => {
         // Clear token from API client
         apiClient.setToken(null)
-        
+
         set({ user: null, isAuthenticated: false, currentView: { type: 'login' } })
         if (typeof window !== 'undefined') {
           const url = new URL(window.location.href)

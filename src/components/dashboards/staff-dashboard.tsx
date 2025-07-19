@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useApp } from '@/lib/hooks/use-app'
 import { apiClient } from '@/lib/api'
-import { Users, BookOpen, GraduationCap, UserCheck, UserPlus, BarChart3, Settings, Plus, RefreshCw, Eye, AlertTriangle, Search, X, Edit, CheckCircle, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Download, UserX, Trash2 } from 'lucide-react'
+import { Users, BookOpen, GraduationCap, UserCheck, BarChart3, Settings, Plus, RefreshCw, Eye, AlertTriangle, Search, X, Edit, CheckCircle, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Download, UserX, Trash2, Bell, TrendingUp } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 export function StaffDashboard() {
@@ -31,7 +31,17 @@ export function StaffDashboard() {
   })
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
+  const [showDependencyModal, setShowDependencyModal] = useState(false)
+  const [dependencyError, setDependencyError] = useState<{
+    courseName: string
+    message: string
+    dependencies: {
+      modules: number
+      assignedUsers: number
+    }
+  } | null>(null)
   const [showUserModal, setShowUserModal] = useState(false)
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false)
   const [editingUser, setEditingUser] = useState<any>(null)
   const [userFormData, setUserFormData] = useState({
     name: '',
@@ -50,9 +60,8 @@ export function StaffDashboard() {
   const [allUsers, setAllUsers] = useState<any[]>([])
   const [isUserTableCollapsed, setIsUserTableCollapsed] = useState(false)
   const [userSearchTerm, setUserSearchTerm] = useState('')
-  const [usersPage, setUsersPage] = useState(1)
+  const [visibleUsersCount, setVisibleUsersCount] = useState(10)
   const usersPerPage = 10
-  const [showUserActions, setShowUserActions] = useState<{ [key: string]: boolean }>({})
   const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null)
 
   // User management filtering and pagination
@@ -71,11 +80,12 @@ export function StaffDashboard() {
     })
     : filteredUsersForManagement
 
-  const paginatedUsers = sortedUsers.slice(
-    (usersPage - 1) * usersPerPage,
-    usersPage * usersPerPage
-  )
-  const totalUsersPages = Math.ceil(sortedUsers.length / usersPerPage)
+  const visibleUsers = sortedUsers.slice(0, visibleUsersCount)
+  const hasMoreUsers = sortedUsers.length > visibleUsersCount
+
+  const handleShowMoreUsers = () => {
+    setVisibleUsersCount(prev => prev + usersPerPage)
+  }
 
   // Pagination for approvals
   const paginatedApprovals = pendingApprovals.slice(
@@ -131,6 +141,11 @@ export function StaffDashboard() {
     loadStats()
   }, [])
 
+  // Reset visible count when search term changes
+  useEffect(() => {
+    setVisibleUsersCount(usersPerPage)
+  }, [userSearchTerm, usersPerPage])
+
   const loadCourses = async () => {
     setLoading(true)
     try {
@@ -182,8 +197,8 @@ export function StaffDashboard() {
       toast.error('Credits must be a positive number')
       return
     }
-    if (!courseFormData.duration || parseInt(courseFormData.duration) < 1 || parseInt(courseFormData.duration) > 52) {
-      toast.error('Duration must be between 1 and 52 weeks')
+    if (!courseFormData.duration || parseInt(courseFormData.duration) < 1) {
+      toast.error('Duration must be a positive number')
       return
     }
     // Enhanced description validation
@@ -310,7 +325,30 @@ export function StaffDashboard() {
       })
     } catch (error: any) {
       console.error('Delete course error:', error)
-      toast.error('Failed to delete course. Please try again.')
+      console.log('🔍 Error structure debug:', {
+        hasResponse: !!error.response,
+        responseStatus: error.response?.status,
+        responseData: error.response?.data,
+        hasDependencies: error.response?.data?.hasDependencies,
+        fullError: error
+      })
+      
+      // Check if it's a dependency error
+      if (error.response?.status === 400 && error.response?.data?.hasDependencies) {
+        console.log('✅ Dependency error detected, showing modal')
+        setDependencyError({
+          courseName: editingCourse.title,
+          message: error.response.data.message,
+          dependencies: error.response.data.dependencies
+        })
+        setShowDependencyModal(true)
+        // Close the delete confirmation modal
+        setShowDeleteConfirm(false)
+        setDeleteConfirmText('')
+      } else {
+        console.log('❌ Not a dependency error, showing toast')
+        toast.error('Failed to delete course. Please try again.')
+      }
     } finally {
       setLoading(false)
     }
@@ -388,13 +426,6 @@ export function StaffDashboard() {
     }
   }
 
-  const toggleUserActions = (userId: string) => {
-    setShowUserActions(prev => ({
-      ...prev,
-      [userId]: !prev[userId]
-    }))
-  }
-
   const handleSort = (key: string) => {
     setSortConfig(prev => ({
       key,
@@ -470,7 +501,6 @@ export function StaffDashboard() {
       password: '' // Password not needed for editing
     })
     setShowUserModal(true)
-    setShowUserActions({}) // Close dropdown
   }
 
   const handleCreateOrUpdateUser = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -557,23 +587,6 @@ export function StaffDashboard() {
       setLoading(false)
     }
   }
-
-  // Close dropdowns when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Element
-      if (!target.closest('.actions-dropdown') && Object.keys(showUserActions).length > 0) {
-        setShowUserActions({})
-      }
-    }
-
-    if (Object.values(showUserActions).some(isOpen => isOpen)) {
-      document.addEventListener('click', handleClickOutside, true)
-      return () => {
-        document.removeEventListener('click', handleClickOutside, true)
-      }
-    }
-  }, [showUserActions])
 
   const filteredCourses = courses.filter(course =>
     course.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -895,13 +908,6 @@ export function StaffDashboard() {
                   Refresh
                 </button>
                 <button
-                  onClick={() => setShowUserModal(true)}
-                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
-                >
-                  <UserPlus className="w-4 h-4" />
-                  Add User
-                </button>
-                <button
                   onClick={exportToCSV}
                   className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
                 >
@@ -975,7 +981,7 @@ export function StaffDashboard() {
                       </tr>
                     </thead>
                     <tbody>
-                      {paginatedUsers.length > 0 ? paginatedUsers.map((user) => (
+                      {visibleUsers.length > 0 ? visibleUsers.map((user) => (
                         <tr key={user.id} className="border-b border-border">
                           <td className="py-3 px-4 text-foreground">
                             {user.name || 'Unknown User'}
@@ -1003,49 +1009,12 @@ export function StaffDashboard() {
                             </span>
                           </td>
                           <td className="py-3 px-4">
-                            <div className="relative actions-dropdown">
-                              <button
-                                onClick={() => toggleUserActions(user.id)}
-                                className="text-muted-foreground hover:text-foreground p-2 rounded-full hover:bg-muted transition-colors"
-                              >
-                                <Settings className="w-4 h-4" />
-                              </button>
-                              {showUserActions[user.id] && (
-                                <div className="absolute right-0 top-10 bg-card border border-border rounded-lg shadow-xl z-[60] min-w-32 overflow-visible">
-                                  <button
-                                    onClick={() => handleEditUser(user)}
-                                    className="flex items-center gap-2 w-full px-3 py-2 text-sm text-foreground hover:bg-muted first:rounded-t-lg"
-                                  >
-                                    <Edit className="w-4 h-4" />
-                                    Edit
-                                  </button>
-                                  {user.is_approved === false ? (
-                                    <button
-                                      onClick={() => handleEnableUser(user.id)}
-                                      className="flex items-center gap-2 w-full px-3 py-2 text-sm text-green-700 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/20"
-                                    >
-                                      <UserCheck className="w-4 h-4" />
-                                      Enable
-                                    </button>
-                                  ) : (
-                                    <button
-                                      onClick={() => handleDisableUser(user.id)}
-                                      className="flex items-center gap-2 w-full px-3 py-2 text-sm text-yellow-700 hover:bg-yellow-50 dark:text-yellow-400 dark:hover:bg-yellow-900/20"
-                                    >
-                                      <UserX className="w-4 h-4" />
-                                      Disable
-                                    </button>
-                                  )}
-                                  <button
-                                    onClick={() => handleDeleteUser(user.id)}
-                                    className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 last:rounded-b-lg"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                    Delete
-                                  </button>
-                                </div>
-                              )}
-                            </div>
+                            <button
+                              onClick={() => handleEditUser(user)}
+                              className="text-muted-foreground hover:text-foreground p-2 rounded-full hover:bg-muted transition-colors"
+                            >
+                              <Settings className="w-4 h-4" />
+                            </button>
                           </td>
                         </tr>
                       )) : (
@@ -1059,27 +1028,18 @@ export function StaffDashboard() {
                   </table>
 
                   {/* Users Pagination */}
-                  {totalUsersPages > 1 && (
-                    <div className="flex justify-center items-center space-x-2 mt-6 pt-4 border-t border-border">
+                  {hasMoreUsers && (
+                    <div className="flex justify-center items-center mt-6 pt-4 border-t border-border">
                       <button
-                        onClick={() => setUsersPage(prev => Math.max(1, prev - 1))}
-                        disabled={usersPage === 1}
-                        className="flex items-center gap-1 px-3 py-2 bg-muted hover:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed text-foreground rounded-lg transition-colors"
+                        onClick={handleShowMoreUsers}
+                        className="flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-colors font-medium"
                       >
-                        <ChevronLeft className="h-4 w-4" />
-                        Previous
+                        Show More Users
+                        <ChevronDown className="h-4 w-4" />
                       </button>
-                      <span className="text-muted-foreground px-4">
-                        Page {usersPage} of {totalUsersPages} ({sortedUsers.length} total)
+                      <span className="text-muted-foreground ml-4 text-sm">
+                        Showing {visibleUsers.length} of {sortedUsers.length} users
                       </span>
-                      <button
-                        onClick={() => setUsersPage(prev => Math.min(totalUsersPages, prev + 1))}
-                        disabled={usersPage === totalUsersPages}
-                        className="flex items-center gap-1 px-3 py-2 bg-muted hover:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed text-foreground rounded-lg transition-colors"
-                      >
-                        Next
-                        <ChevronRight className="h-4 w-4" />
-                      </button>
                     </div>
                   )}
                 </div>
@@ -1192,12 +1152,12 @@ export function StaffDashboard() {
                       value={courseFormData.duration}
                       onChange={(e) => {
                         const value = e.target.value.replace(/[^0-9]/g, '')
-                        if (value === '' || (parseInt(value) >= 1 && parseInt(value) <= 52)) {
+                        if (value === '' || parseInt(value) >= 1) {
                           setCourseFormData(prev => ({ ...prev, duration: value }))
                         }
                       }}
                       className="w-full px-3 py-2 bg-muted border border-border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-foreground"
-                      placeholder="1-52"
+                      placeholder="Enter weeks"
                     />
                   </div>
                 </div>
@@ -1445,7 +1405,137 @@ export function StaffDashboard() {
                     {loading ? 'Saving...' : (editingUser ? 'Update User' : 'Create User')}
                   </button>
                 </div>
+
+                {/* Action Buttons - Only show when editing */}
+                {editingUser && (
+                  <div className="pt-3 border-t border-border mt-4 space-y-2">
+                    {editingUser.is_approved === false && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleEnableUser(editingUser.id)
+                          setShowUserModal(false)
+                          setEditingUser(null)
+                        }}
+                        className="w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center justify-center gap-2"
+                      >
+                        <UserCheck className="w-4 h-4" />
+                        Enable User
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setShowDeleteConfirmation(true)}
+                      className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center justify-center gap-2"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Delete User
+                    </button>
+                  </div>
+                )}
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {showDeleteConfirmation && editingUser && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
+            <div className="bg-card rounded-lg p-6 max-w-md w-full mx-4 border border-border">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center">
+                  <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground">Delete User</h3>
+                  <p className="text-sm text-muted-foreground">This action cannot be undone</p>
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <p className="text-foreground">
+                  Are you sure you want to delete <span className="font-semibold">{editingUser.name}</span>?
+                </p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  This will permanently remove the user account and all associated data.
+                </p>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowDeleteConfirmation(false)}
+                  className="flex-1 px-4 py-2 bg-muted hover:bg-muted/80 text-foreground rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    handleDeleteUser(editingUser.id)
+                    setShowDeleteConfirmation(false)
+                    setShowUserModal(false)
+                    setEditingUser(null)
+                  }}
+                  className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                >
+                  Delete User
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Dependency Error Modal */}
+        {showDependencyModal && dependencyError && (
+          <div className="fixed inset-0 flex items-center justify-center z-50">
+            <div className="bg-black/50 absolute inset-0" onClick={() => setShowDependencyModal(false)}></div>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg max-w-lg w-full p-6 z-10">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
+                  <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    Cannot Delete Course
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    {dependencyError.courseName}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-4">
+                <p className="text-sm text-red-700 dark:text-red-300 mb-3">
+                  This course cannot be deleted because it has the following dependencies:
+                </p>
+                
+                <div className="space-y-2">
+                  {dependencyError.dependencies.modules > 0 && (
+                    <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
+                      <BookOpen className="w-4 h-4" />
+                      <span>{dependencyError.dependencies.modules} module(s)</span>
+                    </div>
+                  )}
+                  {dependencyError.dependencies.assignedUsers > 0 && (
+                    <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
+                      <UserCheck className="w-4 h-4" />
+                      <span>{dependencyError.dependencies.assignedUsers} assigned user(s)</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+                Please remove all associated data before attempting to delete this course.
+              </p>
+              
+              <div className="flex justify-end">
+                <button
+                  onClick={() => setShowDependencyModal(false)}
+                  className="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         )}

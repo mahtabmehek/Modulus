@@ -244,19 +244,19 @@ router.post('/optimize-indexes', async (req, res) => {
 router.get('/stats', async (req, res) => {
   try {
     const db = pool;
-    
+
     // Get student count
     const studentResult = await db.query(
       'SELECT COUNT(*) as count FROM users WHERE role = $1',
       ['student']
     );
-    
+
     // Get total labs count
     const labsResult = await db.query('SELECT COUNT(*) as count FROM labs');
-    
+
     // Get total courses count
     const coursesResult = await db.query('SELECT COUNT(*) as count FROM courses');
-    
+
     res.json({
       studentCount: parseInt(studentResult.rows[0].count),
       labsCount: parseInt(labsResult.rows[0].count),
@@ -266,7 +266,7 @@ router.get('/stats', async (req, res) => {
 
   } catch (error) {
     console.error('Get stats error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Internal server error',
       studentCount: 0,
       labsCount: 0,

@@ -40,7 +40,7 @@ router.get('/', authenticateToken, requireAdmin, async (req, res) => {
 
     let query = `
       SELECT id, email, name, role, is_approved, created_at, last_active,
-             level, level_name, badges, streak_days, total_points
+             level, level_name, badges, streak_days, total_points, course_code
       FROM users 
       WHERE 1=1
     `;
@@ -304,17 +304,17 @@ router.get('/pending/instructors', authenticateToken, requireAdmin, async (req, 
 router.get('/student-count', authenticateToken, async (req, res) => {
   try {
     const db = pool;
-    
+
     const result = await db.query(
       'SELECT COUNT(*) as count FROM users WHERE role = $1',
       ['student']
     );
-    
+
     const studentCount = parseInt(result.rows[0].count);
-    
-    res.json({ 
+
+    res.json({
       studentCount,
-      success: true 
+      success: true
     });
 
   } catch (error) {

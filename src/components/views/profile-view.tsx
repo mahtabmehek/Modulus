@@ -55,7 +55,7 @@ export function ProfileView() {
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="text-white text-center">
           <p className="text-lg mb-4">Please log in to view your profile</p>
-          <button 
+          <button
             onClick={() => navigate('login')}
             className="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg transition-colors"
           >
@@ -210,7 +210,7 @@ export function ProfileView() {
                 <div className="w-24 h-24 mx-auto bg-red-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
                   {profileUser.name ? profileUser.name.split(' ').map(n => n[0]).join('') : '?'}
                 </div>
-                {canEdit && isEditing && (
+                {canEdit && isEditing && profileUser.role !== 'admin' && (
                   <button className="absolute bottom-0 right-1/2 transform translate-x-1/2 translate-y-1/2 bg-red-600 hover:bg-red-700 text-white p-2 rounded-full transition-colors">
                     <Camera className="w-4 h-4" />
                   </button>
@@ -222,7 +222,7 @@ export function ProfileView() {
                 <span className="capitalize">{profileUser.role}</span>
               </div>
               <p className="text-muted-foreground mt-2">User ID: {profileUser.id}</p>
-              
+
               {/* Stats - Only show for students */}
               {profileUser.role === 'student' && (
                 <div className="grid grid-cols-2 gap-4 mt-6 pt-6 border-t border-border">
@@ -245,21 +245,6 @@ export function ProfileView() {
                 </div>
               )}
             </div>
-
-            {/* Quick Info */}
-            <div className="bg-card rounded-lg border border-border p-6 mt-6">
-              <h3 className="text-lg font-semibold text-foreground mb-4">Quick Info</h3>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Joined</span>
-                  <span className="text-foreground">{formatDate(profileUser.joinedAt)}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Last Active</span>
-                  <span className="text-foreground">{formatDate(profileUser.lastActive)}</span>
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* Main Content */}
@@ -275,7 +260,7 @@ export function ProfileView() {
                   </div>
                 )}
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">
@@ -332,15 +317,6 @@ export function ProfileView() {
                     )}
                   </div>
                 )}
-
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Role
-                  </label>
-                  <div className="w-full px-4 py-3 bg-muted border border-border rounded-lg text-foreground capitalize">
-                    {profileUser.role}
-                  </div>
-                </div>
               </div>
             </div>
 

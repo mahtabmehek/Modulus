@@ -33,7 +33,8 @@ import {
   Trash2,
   MoreHorizontal,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Bell
 } from 'lucide-react'
 
 export function AdminDashboard() {
@@ -47,6 +48,12 @@ export function AdminDashboard() {
   const [showUserModal, setShowUserModal] = useState(false)
   const [showEditUserModal, setShowEditUserModal] = useState(false)
   const [showCourseModal, setShowCourseModal] = useState(false)
+  const [showDependencyModal, setShowDependencyModal] = useState(false)
+  const [dependencyError, setDependencyError] = useState<{
+    courseName: string;
+    message: string;
+    dependencies: any;
+  } | null>(null)
   const [isUserTableCollapsed, setIsUserTableCollapsed] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [labSearchTerm, setLabSearchTerm] = useState('')
@@ -88,9 +95,9 @@ export function AdminDashboard() {
       // Load all users for the user management section
       const usersResponse = await apiClient.getAllUsers()
       console.log('Admin users response:', usersResponse)
-      
+
       // Filter to only show admin and staff users
-      const filteredUsers = (usersResponse.users || []).filter((user: any) => 
+      const filteredUsers = (usersResponse.users || []).filter((user: any) =>
         user.role === 'admin' || user.role === 'staff'
       )
       setRealUsers(filteredUsers)
@@ -101,7 +108,7 @@ export function AdminDashboard() {
       setPendingApprovals(pendingResponse.users || [])
     } catch (error: any) {
       console.error('Failed to load users:', error)
-      
+
       // Handle authentication errors
       if (error.message?.includes('Invalid or expired token') || error.message?.includes('401')) {
         toast.error('Session expired. Please log in again.')
@@ -110,7 +117,7 @@ export function AdminDashboard() {
         navigate('login')
         return
       }
-      
+
       toast.error('Failed to load users. Please try again.')
       setRealUsers([])
       setPendingApprovals([])
@@ -290,7 +297,7 @@ export function AdminDashboard() {
       setCourses(response.courses)
     } catch (error: any) {
       console.error('Failed to load courses:', error)
-      
+
       // Handle authentication errors
       if (error.message?.includes('Invalid or expired token') || error.message?.includes('401')) {
         toast.error('Session expired. Please log in again.')
@@ -299,7 +306,7 @@ export function AdminDashboard() {
         navigate('login')
         return
       }
-      
+
       toast.error('Failed to load courses. Please try again.')
       setCourses([])
     } finally {
@@ -319,7 +326,7 @@ export function AdminDashboard() {
       }
     } catch (error: any) {
       console.error('Failed to load labs:', error)
-      
+
       // Handle authentication errors
       if (error.message?.includes('Invalid or expired token') || error.message?.includes('401')) {
         toast.error('Session expired. Please log in again.')
@@ -328,7 +335,7 @@ export function AdminDashboard() {
         navigate('login')
         return
       }
-      
+
       toast.error('Failed to load labs. Please try again.')
       setLabs([])
     } finally {
@@ -353,7 +360,7 @@ export function AdminDashboard() {
   }
 
   const deleteCourse = async (courseId: string, courseName: string) => {
-    if (!confirm(`Are you sure you want to delete the course "${courseName}"? This action cannot be undone and will remove all associated data.`)) {
+    if (!confirm(`Are you sure you want to delete the course "${courseName}"?`)) {
       return
     }
 
@@ -362,9 +369,29 @@ export function AdminDashboard() {
       toast.success('Course deleted successfully')
       // Reload courses after deletion
       loadCourses()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to delete course:', error)
-      toast.error('Failed to delete course')
+      console.log('🔍 Error structure debug:', {
+        hasResponse: !!error.response,
+        responseStatus: error.response?.status,
+        responseData: error.response?.data,
+        hasDependencies: error.response?.data?.hasDependencies,
+        fullError: error
+      })
+      
+      // Check if it's a dependency error
+      if (error.response?.status === 400 && error.response?.data?.hasDependencies) {
+        console.log('✅ Dependency error detected, showing modal')
+        setDependencyError({
+          courseName,
+          message: error.response.data.message,
+          dependencies: error.response.data.dependencies
+        })
+        setShowDependencyModal(true)
+      } else {
+        console.log('❌ Not a dependency error, showing toast')
+        toast.error('Failed to delete course')
+      }
     }
   }
 
@@ -932,7 +959,7 @@ export function AdminDashboard() {
                           {course.enrolledStudents || 0}
                         </td>
                         <td className="py-3 px-4">
-                          <button 
+                          <button
                             onClick={() => deleteCourse(course.id, course.title)}
                             className="text-red-600 hover:text-red-700 dark:text-red-400 hover:dark:text-red-300 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                             title="Delete Course"
@@ -1106,6 +1133,62 @@ export function AdminDashboard() {
                   Create Course
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Dependency Error Modal */}
+      {showDependencyModal && dependencyError && (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div className="bg-black/50 absolute inset-0" onClick={() => setShowDependencyModal(false)}></div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg max-w-lg w-full p-6 z-10">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
+                <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Cannot Delete Course
+                </h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {dependencyError.courseName}
+                </p>
+              </div>
+            </div>
+            
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-4">
+              <p className="text-sm text-red-700 dark:text-red-300 mb-3">
+                This course cannot be deleted because it has the following dependencies:
+              </p>
+              
+              <div className="space-y-2">
+                {dependencyError.dependencies.modules > 0 && (
+                  <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
+                    <BookOpen className="w-4 h-4" />
+                    <span>{dependencyError.dependencies.modules} module(s)</span>
+                  </div>
+                )}
+                {dependencyError.dependencies.assignedUsers > 0 && (
+                  <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
+                    <UserCheck className="w-4 h-4" />
+                    <span>{dependencyError.dependencies.assignedUsers} assigned user(s)</span>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+              Please remove all associated data before attempting to delete this course.
+            </p>
+            
+            <div className="flex justify-end">
+              <button
+                onClick={() => setShowDependencyModal(false)}
+                className="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>
