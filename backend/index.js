@@ -81,6 +81,10 @@ app.use('/api/health', healthRouter);
 const systemRouter = require('./routes/system');
 app.use('/api/system', systemRouter);
 
+// Import and use submissions routes
+const submissionsRouter = require('./routes/submissions');
+app.use('/api/submissions', submissionsRouter);
+
 // Static file serving with enhanced CORS headers
 app.use('/uploads', (req, res, next) => {
     // Set CORS headers for static files

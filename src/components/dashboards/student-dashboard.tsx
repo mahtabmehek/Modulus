@@ -113,9 +113,8 @@ export function StudentDashboard() {
 
                   {/* Modules Section */}
                   {course.modules.length > 0 && (
-                    <div>
-                      <h4 className="text-xl font-semibold text-foreground mb-4 flex items-center gap-2">
-                        <Trophy className="w-5 h-5 text-yellow-500" />
+                    <div className="bg-card border border-border rounded-xl p-6">
+                      <h4 className="text-xl font-semibold text-foreground mb-6">
                         Your Learning Modules
                       </h4>
 
@@ -128,10 +127,10 @@ export function StudentDashboard() {
                           return (
                             <div
                               key={module.id}
-                              className="bg-card border border-border rounded-xl p-6 cursor-pointer hover:shadow-lg hover:border-blue-300 transition-all duration-300 transform hover:-translate-y-1"
+                              className="border border-border rounded-xl p-6 cursor-pointer hover:shadow-lg hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-300 transform hover:-translate-y-1"
                               onClick={() => navigate('module', { moduleId: module.id.toString(), courseId: course.id.toString() })}
                             >
-                              <div className="flex items-start justify-between mb-4">
+                              <div className="flex items-center justify-between">
                                 <div className="flex items-center space-x-4">
                                   <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${isCompleted ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'
                                     }`}>
@@ -142,39 +141,9 @@ export function StudentDashboard() {
                                     <p className="text-muted-foreground text-sm mt-1">{module.description || "Ready to start learning"}</p>
                                   </div>
                                 </div>
-                                <ArrowRight className="w-5 h-5 text-muted-foreground flex-shrink-0" />
-                              </div>
-
-                              {/* Progress Bar */}
-                              <div className="mb-3">
-                                <div className="flex justify-between items-center mb-2">
-                                  <span className="text-sm font-medium text-foreground">Progress</span>
-                                  <span className="text-sm text-muted-foreground">
-                                    {module.completedLabs}/{module.totalLabs} labs completed
-                                  </span>
+                                <div className="flex items-center justify-center">
+                                  <ArrowRight className="w-8 h-8 text-muted-foreground flex-shrink-0" />
                                 </div>
-                                <div className="w-full bg-gray-200 rounded-full h-2">
-                                  <div
-                                    className={`h-2 rounded-full transition-all duration-300 ${isCompleted ? 'bg-green-500' : 'bg-blue-500'
-                                      }`}
-                                    style={{ width: `${completionPercentage}%` }}
-                                  ></div>
-                                </div>
-                              </div>
-
-                              {/* Status Badge */}
-                              <div className="flex items-center justify-between">
-                                <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${isCompleted
-                                    ? 'bg-green-100 text-green-800'
-                                    : completionPercentage > 0
-                                      ? 'bg-blue-100 text-blue-800'
-                                      : 'bg-gray-100 text-gray-800'
-                                  }`}>
-                                  {isCompleted ? '✓ Completed' : completionPercentage > 0 ? 'In Progress' : 'Not Started'}
-                                </span>
-                                <span className="text-xs text-muted-foreground">
-                                  {completionPercentage}% complete
-                                </span>
                               </div>
                             </div>
                           )

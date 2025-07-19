@@ -120,18 +120,15 @@ export function ModuleView() {
     <div className="min-h-screen bg-background text-foreground">
       <div className="max-w-6xl mx-auto p-6">
         {/* Breadcrumb */}
-        <div className="flex items-center text-sm text-muted-foreground mb-6">
+        <div className="flex items-center text-base text-muted-foreground mb-6">
           <button
             onClick={() => navigate('dashboard')}
-            className="hover:text-foreground transition-colors flex items-center gap-1"
+            className="hover:text-foreground transition-colors"
           >
-            <ArrowLeft className="w-4 h-4" />
             Dashboard
           </button>
           <ChevronRight className="w-4 h-4 mx-2" />
-          <span className="text-blue-600 font-medium">Learning Path</span>
-          <ChevronRight className="w-4 h-4 mx-2" />
-          <span className="text-foreground font-medium">{currentModule.title}</span>
+          <span className="text-foreground font-medium text-base">Modules</span>
         </div>
 
         {/* Module Header */}
@@ -167,16 +164,16 @@ export function ModuleView() {
           </div>
 
           {labsLoading ? (
-            <div className="bg-white rounded-xl p-8 border border-gray-200 text-center shadow-sm">
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-8 border border-gray-200 dark:border-gray-700 text-center shadow-sm">
               <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-              <p className="text-gray-600 text-lg">Loading labs...</p>
+              <p className="text-gray-600 dark:text-gray-300 text-lg">Loading labs...</p>
             </div>
           ) : labs.length > 0 ? (
             <div className="grid gap-6">
               {labs.map((lab, index) => (
                 <div
                   key={lab.id}
-                  className="group bg-white rounded-xl p-6 border border-gray-200 hover:border-indigo-300 hover:shadow-lg transition-all duration-300 cursor-pointer relative overflow-hidden"
+                  className="group bg-white dark:bg-gray-800 rounded-xl px-8 py-6 border border-gray-200 dark:border-gray-700 hover:border-indigo-300 dark:hover:border-indigo-600 hover:shadow-lg transition-all duration-300 cursor-pointer relative overflow-hidden"
                   onClick={() => navigate('lab', { labId: lab.id.toString() })}
                 >
                   {/* Gradient accent */}
@@ -184,63 +181,59 @@ export function ModuleView() {
 
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-start gap-4">
-                      <div className="bg-gradient-to-br from-indigo-100 to-purple-100 rounded-xl p-3 group-hover:from-indigo-200 group-hover:to-purple-200 transition-colors">
-                        <Play className="w-6 h-6 text-indigo-600" />
+                      <div className="bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900/30 dark:to-purple-900/30 rounded-xl p-3 group-hover:from-indigo-200 group-hover:to-purple-200 dark:group-hover:from-indigo-800/50 dark:group-hover:to-purple-800/50 transition-colors">
+                        <Play className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-xl font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">
+                          <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                             {lab.title}
                           </h3>
-                          <span className="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-sm font-medium">
-                            {lab.lab_type || 'Lab'}
-                          </span>
+                          {lab.tags && lab.tags.length > 0 && (
+                            <div className="flex gap-2">
+                              {lab.tags.slice(0, 3).map((tag: string, index: number) => (
+                                <span key={index} className="bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 px-3 py-1 rounded-full text-sm font-medium">
+                                  {tag}
+                                </span>
+                              ))}
+                              {lab.tags.length > 3 && (
+                                <span className="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 px-3 py-1 rounded-full text-sm font-medium">
+                                  +{lab.tags.length - 3}
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </div>
 
                         {lab.description && (
-                          <p className="text-gray-600 leading-relaxed mb-4">{lab.description}</p>
+                          <p className="text-gray-600 dark:text-gray-300 leading-relaxed mb-4">{lab.description}</p>
                         )}
-
-                        <div className="flex items-center gap-6 text-sm text-gray-500">
-                          <div className="flex items-center gap-2">
-                            <Clock className="w-4 h-4" />
-                            <span className="font-medium">{lab.estimated_minutes || 30} minutes</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Award className="w-4 h-4" />
-                            <span className="font-medium">{lab.points_possible || 0} points</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <BookOpen className="w-4 h-4" />
-                            <span className="font-medium">Exercise {lab.order_index}</span>
-                          </div>
-                        </div>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-indigo-500 transition-colors" />
+                      <ChevronRight className="w-5 h-5 text-gray-400 dark:text-gray-500 group-hover:text-indigo-500 dark:group-hover:text-indigo-400 transition-colors" />
                     </div>
                   </div>
 
                   {/* Progress indicator (placeholder) */}
                   <div className="flex items-center gap-2 text-sm">
-                    <div className="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
+                    <div className="flex-1 bg-gray-100 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
                       <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full w-0 transition-all duration-300"></div>
                     </div>
-                    <span className="text-gray-500 text-xs min-w-fit">Not Started</span>
+                    <span className="text-gray-500 dark:text-gray-400 text-xs min-w-fit">Not Started</span>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="bg-white rounded-xl p-12 border border-gray-200 text-center shadow-sm">
-              <div className="bg-gray-100 rounded-full p-6 w-fit mx-auto mb-6">
-                <BookOpen className="w-12 h-12 text-gray-400" />
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-12 border border-gray-200 dark:border-gray-700 text-center shadow-sm">
+              <div className="bg-gray-100 dark:bg-gray-700 rounded-full p-6 w-fit mx-auto mb-6">
+                <BookOpen className="w-12 h-12 text-gray-400 dark:text-gray-500" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">No Labs Available</h3>
-              <p className="text-gray-600 mb-4">There are no lab exercises for this module yet.</p>
-              <p className="text-sm text-gray-400">Module ID: {moduleId}</p>
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">No Labs Available</h3>
+              <p className="text-gray-600 dark:text-gray-300 mb-4">There are no lab exercises for this module yet.</p>
+              <p className="text-sm text-gray-400 dark:text-gray-500">Module ID: {moduleId}</p>
             </div>
           )}
         </div>
