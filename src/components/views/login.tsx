@@ -110,6 +110,16 @@ export function LoginView() {
                 required
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-900 placeholder-gray-500"
               />
+              {/* Forgot Password Link */}
+              <div className="text-right">
+                <button
+                  type="button"
+                  onClick={() => navigate('forgot-password')}
+                  className="text-sm text-red-600 hover:text-red-700 font-medium"
+                >
+                  Forgot your password?
+                </button>
+              </div>
             </div>
 
             {error && (

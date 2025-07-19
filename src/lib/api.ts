@@ -60,11 +60,14 @@ class ApiClient {
       endpoint,
       method: options.method || 'GET',
       hasToken: !!this.token,
-      tokenPreview: this.token ? `${this.token.substring(0, 20)}...` : 'No token'
+      tokenPreview: this.token ? `${this.token.substring(0, 20)}...` : 'No token',
+      url,
+      bodyPreview: options.body ? JSON.stringify(JSON.parse(options.body as string), null, 2).substring(0, 100) + '...' : 'No body'
     })
 
     if (this.token) {
       (headers as Record<string, string>).Authorization = `Bearer ${this.token}`
+      console.log('🔑 Authorization header set:', `Bearer ${this.token.substring(0, 30)}...`)
     }
 
     const response = await fetch(url, {
@@ -75,7 +78,9 @@ class ApiClient {
     console.log('📡 API Response Debug:', {
       url,
       status: response.status,
-      ok: response.ok
+      statusText: response.statusText,
+      ok: response.ok,
+      headers: Object.fromEntries(response.headers.entries())
     })
 
     if (!response.ok) {
@@ -119,6 +124,30 @@ class ApiClient {
     return this.request('/auth/login', {
       method: 'POST',
       body: JSON.stringify(credentials),
+    })
+  }
+
+  async changePassword(passwordData: {
+    currentPassword: string
+    newPassword: string
+  }): Promise<{ message: string }> {
+    return this.request('/auth/change-password', {
+      method: 'PUT',
+      body: JSON.stringify(passwordData),
+    })
+  }
+
+  async forgotPassword(email: string): Promise<{ message: string; resetToken?: string; resetLink?: string }> {
+    return this.request('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    })
+  }
+
+  async resetPassword(token: string, password: string): Promise<{ message: string }> {
+    return this.request('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, password }),
     })
   }
 

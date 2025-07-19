@@ -2,27 +2,22 @@
 
 import { useState, useEffect } from 'react'
 import { useApp } from '@/lib/hooks/use-app'
-import { ArrowLeft, Save, User, Mail, Shield, Settings, Calendar, Award, Camera, Eye, EyeOff, Lock } from 'lucide-react'
+import { ArrowLeft, Save, User, Mail, Shield, Settings, Calendar, Award, Camera, Eye, EyeOff } from 'lucide-react'
 import { User as UserType, UserRole } from '@/types'
 import { getUserPermissions, canEditUserData } from '@/lib/permissions'
+import { apiClient } from '@/lib/api'
 import toast from 'react-hot-toast'
 
 export function ProfileView() {
-  const { user: currentUser, navigate } = useApp()
+  const { user: currentUser, navigate, logout } = useApp()
   const [isEditing, setIsEditing] = useState(false)
-  const [showPasswordForm, setShowPasswordForm] = useState(false)
-  const [passwordData, setPasswordData] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: ''
-  })
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     studentId: '',
     department: '',
     preferences: {
-      theme: 'system' as 'light' | 'dark' | 'system',
+      theme: 'dark' as 'light' | 'dark',
       language: 'en',
       notifications: {
         email: true,
@@ -40,10 +35,10 @@ export function ProfileView() {
         email: currentUser.email || '',
         studentId: currentUser.id?.toString() || '',
         department: currentUser.role === 'student' ? 'Computer Science' : 'Faculty',
-        preferences: currentUser.preferences || {
-          theme: 'system' as 'light' | 'dark' | 'system',
-          language: 'en',
-          notifications: {
+        preferences: {
+          theme: (currentUser.preferences?.theme as any) === 'system' ? 'dark' : (currentUser.preferences?.theme || 'dark') as 'light' | 'dark',
+          language: currentUser.preferences?.language || 'en',
+          notifications: currentUser.preferences?.notifications || {
             email: true,
             push: true,
             announcements: true,
@@ -110,7 +105,6 @@ export function ProfileView() {
 
   const permissions = getUserPermissions(currentUser?.role)
   const canEdit = isOwnProfile ? permissions?.canEditOwnProfile : canEditUserData(currentUser?.role, profileUser?.role)
-  const canResetPassword = isOwnProfile ? permissions?.canResetOwnPassword : canEditUserData(currentUser?.role, profileUser?.role)
 
   const handleInputChange = (field: string, value: any) => {
     if (field.includes('.')) {
@@ -134,18 +128,6 @@ export function ProfileView() {
     // Here you would typically make an API call to save the changes
     console.log('Saving profile changes:', formData)
     setIsEditing(false)
-    // Show success message
-  }
-
-  const handlePasswordReset = () => {
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
-      toast.error('Passwords do not match')
-      return
-    }
-    // Here you would typically make an API call to change the password
-    console.log('Changing password for user:', profileUser.id)
-    setShowPasswordForm(false)
-    setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' })
     // Show success message
   }
 
@@ -191,23 +173,14 @@ export function ProfileView() {
             </button>
             <div>
               <h1 className="text-3xl font-bold text-foreground">
-                {isOwnProfile ? 'My Profile' : `${profileUser.name || 'Unknown User'}'s Profile`}
+                {isOwnProfile ? (profileUser.role === 'student' ? 'My Profile and Badges' : 'My Profile') : `${profileUser.name || 'Unknown User'}'s Profile`}
               </h1>
               <p className="text-muted-foreground">
-                {isOwnProfile ? 'Manage your account settings' : 'View user information'}
+                {isOwnProfile ? (profileUser.role === 'student' ? 'Manage your account settings and view achievements' : 'Manage your account settings') : 'View user information'}
               </p>
             </div>
           </div>
           <div className="flex space-x-3">
-            {canResetPassword && (
-              <button
-                onClick={() => setShowPasswordForm(true)}
-                className="flex items-center space-x-2 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors"
-              >
-                <Lock className="w-4 h-4" />
-                <span>Reset Password</span>
-              </button>
-            )}
             {canEdit && (
               <button
                 onClick={() => isEditing ? handleSave() : setIsEditing(true)}
@@ -250,25 +223,27 @@ export function ProfileView() {
               </div>
               <p className="text-muted-foreground mt-2">User ID: {profileUser.id}</p>
               
-              {/* Stats */}
-              <div className="grid grid-cols-2 gap-4 mt-6 pt-6 border-t border-border">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-red-600">{profileUser.level || 1}</div>
-                  <div className="text-sm text-muted-foreground">Level</div>
+              {/* Stats - Only show for students */}
+              {profileUser.role === 'student' && (
+                <div className="grid grid-cols-2 gap-4 mt-6 pt-6 border-t border-border">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-red-600">{profileUser.level || 1}</div>
+                    <div className="text-sm text-muted-foreground">Level</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-red-600">{profileUser.badges?.length || 0}</div>
+                    <div className="text-sm text-muted-foreground">Badges</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-red-600">{profileUser.streakDays || 0}</div>
+                    <div className="text-sm text-muted-foreground">Day Streak</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-red-600">{(profileUser.totalPoints || 0).toLocaleString()}</div>
+                    <div className="text-sm text-muted-foreground">Points</div>
+                  </div>
                 </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-red-600">{profileUser.badges?.length || 0}</div>
-                  <div className="text-sm text-muted-foreground">Badges</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-red-600">{profileUser.streakDays || 0}</div>
-                  <div className="text-sm text-muted-foreground">Day Streak</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-red-600">{(profileUser.totalPoints || 0).toLocaleString()}</div>
-                  <div className="text-sm text-muted-foreground">Points</div>
-                </div>
-              </div>
+              )}
             </div>
 
             {/* Quick Info */}
@@ -282,10 +257,6 @@ export function ProfileView() {
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Last Active</span>
                   <span className="text-foreground">{formatDate(profileUser.lastActive)}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Level Name</span>
-                  <span className="text-foreground">{profileUser.levelName || 'Beginner'}</span>
                 </div>
               </div>
             </div>
@@ -373,148 +344,26 @@ export function ProfileView() {
               </div>
             </div>
 
-            {/* Preferences (only for own profile) */}
-            {isOwnProfile && (
+            {/* Badges - Only show for students */}
+            {profileUser.role === 'student' && (
               <div className="bg-card rounded-lg border border-border p-6">
-                <h3 className="text-lg font-semibold text-foreground mb-6">Preferences</h3>
-                
-                <div className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      Theme
-                    </label>
-                    <select
-                      value={formData.preferences.theme}
-                      onChange={(e) => handleInputChange('preferences.theme', e.target.value)}
-                      disabled={!isEditing}
-                      className="w-full px-4 py-3 bg-background border border-border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-foreground disabled:bg-muted"
-                    >
-                      <option value="system">System</option>
-                      <option value="light">Light</option>
-                      <option value="dark">Dark</option>
-                    </select>
+                <h3 className="text-lg font-semibold text-foreground mb-6">Badges & Achievements</h3>
+                {profileUser.badges && profileUser.badges.length > 0 ? (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {profileUser.badges.map((badge, index) => (
+                      <div key={index} className="bg-muted rounded-lg p-4 text-center">
+                        <div className="text-2xl mb-2">🏆</div>
+                        <div className="text-sm font-medium text-foreground">{badge}</div>
+                      </div>
+                    ))}
                   </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-4">
-                      Notifications
-                    </label>
-                    <div className="space-y-3">
-                      {Object.entries(formData.preferences.notifications).map(([key, value]) => (
-                        <div key={key} className="flex items-center justify-between">
-                          <span className="text-foreground capitalize">
-                            {key.replace(/([A-Z])/g, ' $1').trim()}
-                          </span>
-                          <label className="relative inline-flex items-center cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={value}
-                              onChange={(e) => handleInputChange(`preferences.notifications.${key}`, e.target.checked)}
-                              disabled={!isEditing}
-                              className="sr-only peer"
-                            />
-                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-300 dark:peer-focus:ring-red-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-red-600"></div>
-                          </label>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+                ) : (
+                  <p className="text-muted-foreground text-center py-8">No badges earned yet</p>
+                )}
               </div>
             )}
-
-            {/* Badges */}
-            <div className="bg-card rounded-lg border border-border p-6">
-              <h3 className="text-lg font-semibold text-foreground mb-6">Badges & Achievements</h3>
-              {profileUser.badges.length > 0 ? (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {profileUser.badges.map((badge, index) => (
-                    <div key={index} className="bg-muted rounded-lg p-4 text-center">
-                      <div className="text-2xl mb-2">🏆</div>
-                      <div className="text-sm font-medium text-foreground">{badge}</div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-muted-foreground text-center py-8">No badges earned yet</p>
-              )}
-            </div>
           </div>
         </div>
-
-        {/* Password Reset Modal */}
-        {showPasswordForm && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-card rounded-lg border border-border p-6 w-full max-w-md">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-foreground">
-                  {isOwnProfile ? 'Change Password' : `Reset Password for ${profileUser.name}`}
-                </h3>
-                <button
-                  onClick={() => setShowPasswordForm(false)}
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  ×
-                </button>
-              </div>
-              
-              <div className="space-y-4">
-                {isOwnProfile && (
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      Current Password
-                    </label>
-                    <input
-                      type="password"
-                      value={passwordData.currentPassword}
-                      onChange={(e) => setPasswordData(prev => ({ ...prev, currentPassword: e.target.value }))}
-                      className="w-full px-4 py-3 bg-background border border-border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-foreground"
-                    />
-                  </div>
-                )}
-                
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    New Password
-                  </label>
-                  <input
-                    type="password"
-                    value={passwordData.newPassword}
-                    onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
-                    className="w-full px-4 py-3 bg-background border border-border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-foreground"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Confirm New Password
-                  </label>
-                  <input
-                    type="password"
-                    value={passwordData.confirmPassword}
-                    onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                    className="w-full px-4 py-3 bg-background border border-border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-foreground"
-                  />
-                </div>
-              </div>
-              
-              <div className="flex space-x-3 mt-6">
-                <button
-                  onClick={() => setShowPasswordForm(false)}
-                  className="flex-1 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handlePasswordReset}
-                  className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
-                >
-                  Reset Password
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   )

@@ -10,24 +10,24 @@ export function Footer() {
               <span className="text-white font-bold text-sm">M</span>
             </div>
             <span className="text-gray-600 dark:text-gray-400">
-              © 2024 Modulus. All rights reserved.
+              © 2025 Modulus. All rights reserved.
             </span>
           </div>
           <div className="flex space-x-6 mt-4 md:mt-0">
             <a 
-              href="#" 
+              href="/privacy" 
               className="text-sm text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
             >
               Privacy Policy
             </a>
             <a 
-              href="#" 
+              href="/terms" 
               className="text-sm text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
             >
               Terms of Service
             </a>
             <a 
-              href="#" 
+              href="/support" 
               className="text-sm text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
             >
               Support

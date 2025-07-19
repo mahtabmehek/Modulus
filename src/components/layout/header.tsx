@@ -124,12 +124,11 @@ export function Header() {
   const themeIcons = {
     light: Sun,
     dark: Moon,
-    system: Monitor,
   }
 
-  // Use resolvedTheme for icon display when system is selected, otherwise use theme
-  const currentThemeForIcon = theme === 'system' ? 'system' : (resolvedTheme || theme)
-  const ThemeIcon = themeIcons[currentThemeForIcon as keyof typeof themeIcons] || Monitor
+  // Use the current theme for icon display
+  const currentThemeForIcon = resolvedTheme || theme
+  const ThemeIcon = themeIcons[currentThemeForIcon as keyof typeof themeIcons] || Moon
   const levelInfo = getLevelInfo(userProgress.level)
   const earnedAchievements = achievements.filter(a => a.earned)
 
@@ -191,21 +190,24 @@ export function Header() {
 
           {/* Right Side: Streaks, Achievements, Your Desktop, and User Menu */}
           <div className="flex items-center space-x-4">
-            {/* Current Streak */}
-            <div className="flex items-center space-x-1">
-              <span className="text-lg">{getStreakEmoji(userProgress.currentStreak)}</span>
-              <span className="font-medium">{userProgress.currentStreak}</span>
-            </div>
+            {/* Current Streak - Only show for students */}
+            {user?.role === 'student' && (
+              <div className="flex items-center space-x-1">
+                <span className="text-lg">{getStreakEmoji(userProgress.currentStreak)}</span>
+                <span className="font-medium">{userProgress.currentStreak}</span>
+              </div>
+            )}
 
-            {/* Achievements Dropdown */}
-            <div className="relative" ref={achievementsRef}>
-              <button
-                onClick={() => setShowAchievements(!showAchievements)}
-                className="flex items-center space-x-1 hover:bg-red-500 px-2 py-1 rounded transition-colors"
-              >
-                <Award className="w-4 h-4" />
-                <span className="font-medium">{earnedAchievements.length}</span>
-              </button>
+            {/* Achievements Dropdown - Only show for students */}
+            {user?.role === 'student' && (
+              <div className="relative" ref={achievementsRef}>
+                <button
+                  onClick={() => setShowAchievements(!showAchievements)}
+                  className="flex items-center space-x-1 hover:bg-red-500 px-2 py-1 rounded transition-colors"
+                >
+                  <Award className="w-4 h-4" />
+                  <span className="font-medium">{earnedAchievements.length}</span>
+                </button>
 
               {showAchievements && (
                 <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 text-gray-900 dark:text-gray-100">
@@ -247,6 +249,7 @@ export function Header() {
                 </div>
               )}
             </div>
+            )}
 
             {/* Desktop Button - Always visible */}
             <div
@@ -344,21 +347,6 @@ export function Header() {
                       <Moon className="w-4 h-4 mr-2" />
                       Dark
                     </button>
-                    <button
-                      onClick={() => setTheme('system')}
-                      className={`w-full text-left px-2 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 rounded flex items-center ${theme === 'system' ? 'text-red-600 dark:text-red-400' : 'text-gray-700 dark:text-gray-300'
-                        }`}
-                    >
-                      <Monitor className="w-4 h-4 mr-2" />
-                      <div className="flex flex-col">
-                        <span>System</span>
-                        {mounted && theme === 'system' && (
-                          <span className="text-xs opacity-75">
-                            {resolvedTheme === 'dark' ? '(Dark)' : '(Light)'}
-                          </span>
-                        )}
-                      </div>
-                    </button>
                   </div>
 
                   <div className="p-2 border-t border-gray-200 dark:border-gray-700">
@@ -367,7 +355,7 @@ export function Header() {
                       className="w-full text-left px-2 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded flex items-center"
                     >
                       <User className="w-4 h-4 mr-2" />
-                      Profile Settings
+                      {user?.role === 'student' ? 'Profile and Badges' : 'Profile'}
                     </button>
                     <button
                       onClick={() => {

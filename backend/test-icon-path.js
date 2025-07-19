@@ -17,14 +17,14 @@ async function checkIconPath() {
             ORDER BY updated_at DESC 
             LIMIT 5
         `);
-        
+
         console.log('📋 Recent labs with icon data:');
         console.table(result.rows);
-        
+
         // Check if files exist for these paths
         const fs = require('fs');
         const path = require('path');
-        
+
         for (const lab of result.rows) {
             if (lab.icon_path) {
                 const fullPath = path.join(__dirname, '..', lab.icon_path);
@@ -32,7 +32,7 @@ async function checkIconPath() {
                 console.log(`🔍 Lab "${lab.title}": icon_path="${lab.icon_path}" - File exists: ${exists}`);
             }
         }
-        
+
     } catch (error) {
         console.error('❌ Error:', error.message);
     } finally {

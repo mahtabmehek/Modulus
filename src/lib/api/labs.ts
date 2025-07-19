@@ -104,7 +104,7 @@ class LabAPI {
         console.log(`    📝 Create Task ${i}: ID=${t.id}, Title="${t.title}", Order=${t.order_index}`)
       })
     }
-    
+
     const response = await fetch(`${API_BASE_URL}/labs`, {
       method: 'POST',
       headers: this.getAuthHeaders(),
@@ -132,7 +132,7 @@ class LabAPI {
         console.log(`    📝 Update Task ${i}: ID=${t.id}, Title="${t.title}", Order=${t.order_index}`)
       })
     }
-    
+
     const response = await fetch(`${API_BASE_URL}/labs/${id}`, {
       method: 'PUT',
       headers: this.getAuthHeaders(),

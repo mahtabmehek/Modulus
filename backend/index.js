@@ -11,9 +11,9 @@ const app = express();
 
 // Rate limiting for development
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 1000, // limit each IP to 1000 requests per windowMs
-  message: 'Too many requests from this IP, please try again later.'
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 1000, // limit each IP to 1000 requests per windowMs
+    message: 'Too many requests from this IP, please try again later.'
 });
 
 // Middleware
@@ -26,6 +26,21 @@ app.use(cors({
     optionsSuccessStatus: 200
 }));
 app.use(express.json());
+
+// Add general request logging
+app.use((req, res, next) => {
+  console.log('🌐 ALL REQUESTS:', {
+    method: req.method,
+    url: req.url,
+    originalUrl: req.originalUrl,
+    path: req.path,
+    headers: {
+      'content-type': req.headers['content-type'],
+      'authorization': req.headers['authorization'] ? 'Bearer ***' : 'None'
+    }
+  })
+  next()
+})
 
 // Handle preflight OPTIONS requests globally
 app.options('*', (req, res) => {
@@ -60,6 +75,9 @@ app.use('/api/users', usersRouter);
 const healthRouter = require('./routes/health');
 app.use('/api/health', healthRouter);
 
+const systemRouter = require('./routes/system');
+app.use('/api/system', systemRouter);
+
 // Static file serving with enhanced CORS headers
 app.use('/uploads', (req, res, next) => {
     // Set CORS headers for static files
@@ -69,13 +87,13 @@ app.use('/uploads', (req, res, next) => {
     res.header('Cross-Origin-Resource-Policy', 'cross-origin');
     res.header('Cross-Origin-Embedder-Policy', 'unsafe-none');
     res.header('Cache-Control', 'public, max-age=31536000');
-    
+
     // Handle preflight OPTIONS requests
     if (req.method === 'OPTIONS') {
         res.status(200).end();
         return;
     }
-    
+
     next();
 }, express.static(path.join(__dirname, 'uploads')));
 
@@ -86,14 +104,14 @@ testConnection().catch(console.error);
 app.get('/health', async (req, res) => {
     try {
         await testConnection();
-        res.json({ 
-            status: 'healthy', 
+        res.json({
+            status: 'healthy',
             database: 'connected',
             timestamp: new Date().toISOString()
         });
     } catch (error) {
-        res.status(500).json({ 
-            status: 'unhealthy', 
+        res.status(500).json({
+            status: 'unhealthy',
             database: 'disconnected',
             error: error.message,
             timestamp: new Date().toISOString()
@@ -123,14 +141,14 @@ app.get('/api/courses', async (req, res) => {
             FROM courses 
             ORDER BY created_at DESC
         `);
-        
+
         console.log(`Found ${result.rows.length} courses`);
         res.json(result.rows);
     } catch (error) {
         console.error('Error fetching courses:', error);
-        res.status(500).json({ 
+        res.status(500).json({
             error: 'Failed to fetch courses',
-            details: error.message 
+            details: error.message
         });
     }
 });
@@ -140,7 +158,7 @@ app.get('/api/courses/:id', async (req, res) => {
     try {
         const { id } = req.params;
         console.log(`Fetching course with ID: ${id}`);
-        
+
         const result = await pool.query(`
             SELECT 
                 id,
@@ -159,17 +177,17 @@ app.get('/api/courses/:id', async (req, res) => {
             FROM courses 
             WHERE id = $1
         `, [id]);
-        
+
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Course not found' });
         }
-        
+
         res.json(result.rows[0]);
     } catch (error) {
         console.error('Error fetching course:', error);
-        res.status(500).json({ 
+        res.status(500).json({
             error: 'Failed to fetch course',
-            details: error.message 
+            details: error.message
         });
     }
 });
@@ -210,7 +228,7 @@ app.post('/api/register', async (req, res) => {
         // Generate JWT token
         const token = jwt.sign(
             { userId: user.id, email: user.email },
-            process.env.JWT_SECRET || 'your-secret-key',
+            process.env.JWT_SECRET || 'modulus-lms-secret-key-change-in-production',
             { expiresIn: '24h' }
         );
 
@@ -226,9 +244,9 @@ app.post('/api/register', async (req, res) => {
         });
     } catch (error) {
         console.error('Registration error:', error);
-        res.status(500).json({ 
+        res.status(500).json({
             error: 'Failed to create user',
-            details: error.message 
+            details: error.message
         });
     }
 });
@@ -266,7 +284,7 @@ app.post('/api/login', async (req, res) => {
         // Generate JWT token
         const token = jwt.sign(
             { userId: user.id, email: user.email },
-            process.env.JWT_SECRET || 'your-secret-key',
+            process.env.JWT_SECRET || 'modulus-lms-secret-key-change-in-production',
             { expiresIn: '24h' }
         );
 
@@ -281,9 +299,9 @@ app.post('/api/login', async (req, res) => {
         });
     } catch (error) {
         console.error('Login error:', error);
-        res.status(500).json({ 
+        res.status(500).json({
             error: 'Login failed',
-            details: error.message 
+            details: error.message
         });
     }
 });
@@ -297,7 +315,7 @@ const authenticateToken = (req, res, next) => {
         return res.status(401).json({ error: 'Access token required' });
     }
 
-    jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key', (err, user) => {
+    jwt.verify(token, process.env.JWT_SECRET || 'modulus-lms-secret-key-change-in-production', (err, user) => {
         if (err) {
             return res.status(403).json({ error: 'Invalid or expired token' });
         }
@@ -321,9 +339,9 @@ app.get('/api/profile', authenticateToken, async (req, res) => {
         res.json(result.rows[0]);
     } catch (error) {
         console.error('Profile fetch error:', error);
-        res.status(500).json({ 
+        res.status(500).json({
             error: 'Failed to fetch profile',
-            details: error.message 
+            details: error.message
         });
     }
 });
@@ -342,7 +360,7 @@ const requireStaffOrAdmin = (req, res, next) => {
 app.get('/api/labs', authenticateToken, async (req, res) => {
     try {
         const { module_id } = req.query;
-        
+
         let query = `
             SELECT 
                 l.id, l.module_id, l.title, l.description, l.instructions,
@@ -354,23 +372,23 @@ app.get('/api/labs', authenticateToken, async (req, res) => {
             WHERE l.is_published = true
         `;
         let params = [];
-        
+
         if (module_id) {
             query += ' AND l.module_id = $1';
             params = [module_id];
         }
-        
+
         query += ' ORDER BY l.order_index ASC, l.created_at DESC';
-        
+
         const result = await pool.query(query, params);
-        
+
         res.json({
             success: true,
             data: result.rows
         });
     } catch (error) {
         console.error('Error fetching labs:', error);
-        res.status(500).json({ 
+        res.status(500).json({
             error: 'Failed to fetch labs',
             details: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
@@ -381,7 +399,7 @@ app.get('/api/labs', authenticateToken, async (req, res) => {
 app.get('/api/labs/:id', authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
-        
+
         const query = `
             SELECT 
                 l.id, l.module_id, l.title, l.description, l.instructions,
@@ -393,20 +411,20 @@ app.get('/api/labs/:id', authenticateToken, async (req, res) => {
             JOIN courses c ON m.course_id = c.id
             WHERE l.id = $1 AND l.is_published = true
         `;
-        
+
         const result = await pool.query(query, [id]);
-        
+
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Lab not found or not published' });
         }
-        
+
         res.json({
             success: true,
             data: result.rows[0]
         });
     } catch (error) {
         console.error('Error fetching lab:', error);
-        res.status(500).json({ 
+        res.status(500).json({
             error: 'Failed to fetch lab details',
             details: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
@@ -414,8 +432,8 @@ app.get('/api/labs/:id', authenticateToken, async (req, res) => {
 });
 
 // POST /api/labs - Create new lab content (Admin/Instructor only)
-app.post('/api/labs', 
-    authenticateToken, 
+app.post('/api/labs',
+    authenticateToken,
     requireStaffOrAdmin,
     [
         body('module_id').isInt().withMessage('Valid module ID is required'),
@@ -432,7 +450,7 @@ app.post('/api/labs',
         try {
             const errors = validationResult(req);
             if (!errors.isEmpty()) {
-                return res.status(400).json({ 
+                return res.status(400).json({
                     error: 'Validation failed',
                     details: errors.array()
                 });
@@ -455,7 +473,7 @@ app.post('/api/labs',
                 'SELECT id FROM modules WHERE id = $1',
                 [module_id]
             );
-            
+
             if (moduleCheck.rows.length === 0) {
                 return res.status(404).json({ error: 'Module not found' });
             }
@@ -499,7 +517,7 @@ app.post('/api/labs',
             });
         } catch (error) {
             console.error('Error creating lab:', error);
-            res.status(500).json({ 
+            res.status(500).json({
                 error: 'Failed to create lab',
                 details: process.env.NODE_ENV === 'development' ? error.message : undefined
             });
@@ -510,9 +528,9 @@ app.post('/api/labs',
 // Error handling middleware
 app.use((error, req, res, next) => {
     console.error('Unhandled error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
         error: 'Internal server error',
-        details: error.message 
+        details: error.message
     });
 });
 
@@ -524,7 +542,7 @@ app.use((req, res) => {
 // Lambda handler for AWS
 exports.handler = async (event, context) => {
     console.log('Lambda event:', JSON.stringify(event, null, 2));
-    
+
     try {
         // Test database connection
         await testConnection();
@@ -539,9 +557,9 @@ exports.handler = async (event, context) => {
                 'Access-Control-Allow-Headers': 'Content-Type,Authorization',
                 'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS'
             },
-            body: JSON.stringify({ 
+            body: JSON.stringify({
                 error: 'Database connection failed',
-                details: error.message 
+                details: error.message
             })
         };
     }
@@ -560,9 +578,9 @@ exports.handler = async (event, context) => {
                         'Access-Control-Allow-Headers': 'Content-Type,Authorization',
                         'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS'
                     },
-                    body: JSON.stringify({ 
+                    body: JSON.stringify({
                         error: 'Internal server error',
-                        details: error.message 
+                        details: error.message
                     })
                 });
             } else {

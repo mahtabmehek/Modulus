@@ -13,7 +13,8 @@ if (Test-Path $backendPath) {
     $backendCmd = "cd '$backendPath'; node server.js"
     Start-Process powershell -ArgumentList "-NoExit", "-Command", $backendCmd
     Write-Host "Backend started in new window" -ForegroundColor Green
-} else {
+}
+else {
     Write-Host "Backend directory not found!" -ForegroundColor Red
 }
 

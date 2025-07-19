@@ -49,9 +49,11 @@ export default function LabCreationView() {
   const { navigate, currentView } = useApp()
   // Get editLabId from navigation parameters to enable edit mode
   const editLabId = currentView?.params?.editLabId
+  const adminEditMode = currentView?.params?.adminEditMode
 
   // Debug logging
   console.log('Lab Creation View - editLabId:', editLabId)
+  console.log('Lab Creation View - adminEditMode:', adminEditMode)
   console.log('Lab Creation View - currentView:', currentView)
 
   const [modules, setModules] = useState<Array<{ id: number, title: string, course_id: number }>>([])
@@ -125,10 +127,17 @@ export default function LabCreationView() {
   const [showPreview, setShowPreview] = useState(false)
   // Enhanced mode is now the default and only interface
 
+  // Tag management state
+  const [tagInput, setTagInput] = useState('')
+  const [suggestedTags, setSuggestedTags] = useState<string[]>([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [allAvailableTags, setAllAvailableTags] = useState<string[]>([])
+
   // Load modules and lab data for editing
   useEffect(() => {
     console.log('🔄 useEffect triggered - editLabId:', editLabId)
     loadModules()
+    loadTags()
     if (editLabId) {
       loadLabForEditing(editLabId)
     }
@@ -171,14 +180,34 @@ export default function LabCreationView() {
     }
   }
 
+  const loadTags = async () => {
+    try {
+      const token = localStorage.getItem('modulus_token')
+      const response = await fetch('http://localhost:3001/api/labs/tags', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (response.ok) {
+        const tags = await response.json()
+        setAllAvailableTags(tags)
+      }
+    } catch (error) {
+      console.error('Error loading tags:', error)
+      // Don't show error toast for tags as it's not critical
+    }
+  }
+
   const loadLabForEditing = async (labId: number) => {
     console.log('� DATABASE LOAD TRIGGERED:')
     console.log('  🔗 Lab ID:', labId)
     console.log('  🏗️ isEditingTasks:', isEditingTasks)
     console.log('  📍 Call stack:', new Error().stack?.split('\n')[1]?.trim())
-    
+
     // Removed async protection - immediate loading
-    
+
     console.log('✅ DATABASE LOAD PROCEEDING - loading lab data from server')
     try {
       const lab = await labAPI.getLab(labId)
@@ -187,8 +216,8 @@ export default function LabCreationView() {
           title: lab.title || '',
           description: lab.description || '',
           icon: lab.icon_path ? (
-            lab.icon_path.startsWith('http://') || lab.icon_path.startsWith('https://') 
-              ? lab.icon_path 
+            lab.icon_path.startsWith('http://') || lab.icon_path.startsWith('https://')
+              ? lab.icon_path
               : lab.icon_path // Keep as relative path, will be converted in display logic
           ) : '',
           academicCategory: 'computing',
@@ -223,7 +252,7 @@ export default function LabCreationView() {
               })
             }
           });
-          
+
           const formattedTasks = labWithTasks.tasks.map((task: any) => ({
             id: task.id.toString(),
             lab_id: labId.toString(),
@@ -241,7 +270,7 @@ export default function LabCreationView() {
               }
             }
           }))
-          
+
           console.log('🔍 Formatted tasks before setState:');
           formattedTasks.forEach((t: any, i: number) => {
             console.log(`  Task ${i}: ID=${t.id}, Title="${t.title}", Order=${t.order_index}`);
@@ -334,7 +363,7 @@ export default function LabCreationView() {
         const result = await response.json();
         if (result.success && result.data.images) {
           console.log('Images uploaded successfully:', result.data.images);
-          
+
           // Update state with backend URLs
           setTasks(tasks.map(task =>
             task.id === taskId
@@ -380,7 +409,7 @@ export default function LabCreationView() {
         const result = await response.json();
         if (result.success && result.data.attachments) {
           console.log('Attachments uploaded successfully:', result.data.attachments);
-          
+
           // Update state with backend URLs
           setTasks(tasks.map(task =>
             task.id === taskId
@@ -456,7 +485,7 @@ export default function LabCreationView() {
   const updateDragDropTasks = (updatedTasks: LabTask[]) => {
     console.log('🔄 SYNCHRONOUS updateDragDropTasks called with:', updatedTasks.map(t => ({ id: t.id, title: t.title, order_index: t.order_index })))
     console.log('🔄 Before setState - current dragDropTasks:', dragDropTasks.map(t => ({ id: t.id, title: t.title, order_index: t.order_index })))
-    
+
     // NO ASYNC OPERATIONS - immediate state update only
     setDragDropTasks(updatedTasks)
     console.log('🔄 SYNCHRONOUS setState complete')
@@ -464,30 +493,30 @@ export default function LabCreationView() {
 
   const uploadAllPendingFiles = async (tasks: LabTask[]) => {
     console.log('📤 UPLOADING ALL PENDING FILES: Processing browser-stored files');
-    
+
     // Create consistent safe lab name for all uploads
     const safeLabelName = (labData.title || 'unnamed-lab').replace(/[^a-zA-Z0-9\-_]/g, '_').toLowerCase();
     console.log('📤 Safe label name for ALL uploads:', safeLabelName);
-    
+
     let uploadedIconPath = null; // Track uploaded icon path
-    
+
     // First, handle lab icon if it's a File object
     let updatedLabData = { ...labData };
     if (labData.icon instanceof File) {
       console.log('🖼️ UPLOADING: Lab icon -', labData.icon.name);
       console.log('🖼️ Current lab title:', labData.title);
-      
+
       try {
         const formData = new FormData();
         formData.append('icon', labData.icon);
         formData.append('labName', safeLabelName);
-        
+
         console.log('🖼️ Starting upload request...');
         const response = await fetch('http://localhost:3001/api/files/upload-lab-files', {
           method: 'POST',
           body: formData,
         });
-        
+
         console.log('🖼️ Upload response status:', response.status);
         if (response.ok) {
           const result = await response.json();
@@ -511,34 +540,34 @@ export default function LabCreationView() {
         console.error('🖼️ ERROR: Lab icon upload failed:', error);
       }
     }
-    
+
     const processedTasks = await Promise.all(tasks.map(async (task) => {
       if (!(task as any).questions) return task;
-      
+
       const processedQuestions = await Promise.all((task as any).questions.map(async (question: any) => {
         let updatedImages = [...(question.images || [])];
         let updatedAttachments = [...(question.attachments || [])];
-        
+
         // Process images - upload File objects to server
         const imageFiles = question.images?.filter((img: any) => img instanceof File) as File[];
         if (imageFiles && imageFiles.length > 0) {
           console.log(`📷 UPLOADING: ${imageFiles.length} images for question "${question.title}"`);
-          
+
           try {
             const formData = new FormData();
             imageFiles.forEach(file => formData.append('images', file));
             formData.append('labName', safeLabelName);
-            
+
             const response = await fetch('http://localhost:3001/api/files/upload-lab-files', {
               method: 'POST',
               body: formData,
             });
-            
+
             if (response.ok) {
               const result = await response.json();
               if (result.success && result.data.images) {
                 console.log(`📷 SUCCESS: ${result.data.images.length} images uploaded`);
-                
+
                 // Replace File objects with server URLs
                 const existingUrls = question.images?.filter((img: any) => typeof img === 'string') as string[] || [];
                 const newUrls = result.data.images.map((url: string) => `http://localhost:3001${url}`);
@@ -551,27 +580,27 @@ export default function LabCreationView() {
             console.error('📷 ERROR: Image upload failed:', error);
           }
         }
-        
+
         // Process attachments - upload File objects to server
         const attachmentFiles = question.attachments?.filter((att: any) => att instanceof File) as File[];
         if (attachmentFiles && attachmentFiles.length > 0) {
           console.log(`📎 UPLOADING: ${attachmentFiles.length} attachments for question "${question.title}"`);
-          
+
           try {
             const formData = new FormData();
             attachmentFiles.forEach(file => formData.append('attachments', file));
             formData.append('labName', safeLabelName);
-            
+
             const response = await fetch('http://localhost:3001/api/files/upload-lab-files', {
               method: 'POST',
               body: formData,
             });
-            
+
             if (response.ok) {
               const result = await response.json();
               if (result.success && result.data.attachments) {
                 console.log(`📎 SUCCESS: ${result.data.attachments.length} attachments uploaded`);
-                
+
                 // Replace File objects with server URLs
                 const existingUrls = question.attachments?.filter((att: any) => typeof att === 'string') as string[] || [];
                 const newUrls = result.data.attachments.map((url: string) => `http://localhost:3001${url}`);
@@ -584,26 +613,99 @@ export default function LabCreationView() {
             console.error('📎 ERROR: Attachment upload failed:', error);
           }
         }
-        
+
         return {
           ...question,
           images: updatedImages,
           attachments: updatedAttachments
         };
       }));
-      
+
       return {
         ...task,
         questions: processedQuestions
       };
     }));
-    
+
     console.log('📤 ALL FILE UPLOADS COMPLETE');
     console.log('📤 Returning uploaded icon path:', uploadedIconPath);
     return { tasks: processedTasks, iconPath: uploadedIconPath };
   };
 
+  // Tag management functions
+  const filterSuggestions = (input: string) => {
+    if (!input.trim()) {
+      setSuggestedTags([])
+      setShowSuggestions(false)
+      return
+    }
+
+    const filtered = allAvailableTags
+      .filter(tag => 
+        tag.toLowerCase().includes(input.toLowerCase()) && 
+        !labData.tags.includes(tag)
+      )
+      .slice(0, 5) // Limit to 5 suggestions
+
+    setSuggestedTags(filtered)
+    setShowSuggestions(filtered.length > 0)
+  }
+
+  const addTag = (tag: string) => {
+    const trimmedTag = tag.trim()
+    if (trimmedTag && !labData.tags.includes(trimmedTag)) {
+      setLabData({ ...labData, tags: [...labData.tags, trimmedTag] })
+      setTagInput('')
+      setShowSuggestions(false)
+    }
+  }
+
+  const handleTagInput = (value: string) => {
+    setTagInput(value)
+    filterSuggestions(value)
+  }
+
+  const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      addTag(tagInput)
+    } else if (e.key === 'Escape') {
+      setShowSuggestions(false)
+    }
+  }
+
   const handleSave = async () => {
+    // Special handling for admin edit mode - only update icon URL
+    if (adminEditMode) {
+      setIsSaving(true)
+      try {
+        // Only update the icon_url field
+        const iconPayload = {
+          icon_url: typeof labData.icon === 'string' && labData.icon && !labData.icon.startsWith('blob:') ? labData.icon : null
+        }
+        
+        await fetch(`/api/labs/${editLabId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify(iconPayload)
+        })
+        
+        toast.success('Lab icon URL updated successfully!')
+        navigate('dashboard')
+        return
+      } catch (error: any) {
+        console.error('Failed to update lab icon:', error)
+        toast.error('Failed to update lab icon URL')
+        return
+      } finally {
+        setIsSaving(false)
+      }
+    }
+
+    // Regular save logic for non-admin mode
     // Validate required fields before saving
     if (!labData.title.trim()) {
       toast.error('Lab title is required');
@@ -632,9 +734,9 @@ export default function LabCreationView() {
       const uploadResult = await uploadAllPendingFiles(dragDropTasks);
       const tasksWithUploadedFiles = uploadResult.tasks;
       const uploadedIconPath = uploadResult.iconPath;
-      
+
       console.log('🖼️ Received uploaded icon path:', uploadedIconPath);
-      
+
       // Ensure tasks and questions have proper order_index values
       const tasksWithOrderIndex = tasksWithUploadedFiles.map((task, taskIndex) => ({
         ...task,
@@ -697,7 +799,7 @@ export default function LabCreationView() {
       // More detailed error message
       if (error.response?.data?.details) {
         console.error('Validation errors:', error.response.data.details);
-        
+
         // Handle both array and string details
         if (Array.isArray(error.response.data.details)) {
           toast.error(`Validation failed: ${error.response.data.details.map((d: any) => d.msg || d.message || d).join(', ')}`);
@@ -917,38 +1019,38 @@ export default function LabCreationView() {
   const categories = getSubcategories(labData.academicCategory)
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white sticky top-0 z-10">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <button
                 onClick={() => navigate('dashboard')}
-                className="flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+                className="flex items-center text-blue-100 hover:text-white transition-colors"
               >
                 <ArrowLeft className="w-5 h-5 mr-2" />
                 Back to Dashboard
               </button>
-              <div className="h-6 border-l border-gray-300 dark:border-gray-600"></div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                {editLabId ? 'Edit Lab' : 'Create New Lab'}
+              <div className="h-6 border-l border-blue-300"></div>
+              <h1 className="text-2xl font-bold text-white">
+                {adminEditMode ? 'View Lab Details (Admin)' : editLabId ? 'Edit Lab' : 'Create New Lab'}
               </h1>
             </div>
 
             <div className="flex items-center space-x-3">
               <button
                 onClick={() => setShowPreview(!showPreview)}
-                className="flex items-center px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                className="flex items-center px-4 py-2 text-white bg-white/20 rounded-lg hover:bg-white/30 transition-colors"
               >
                 {showPreview ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
                 {showPreview ? 'Hide Preview' : 'Preview'}
               </button>
 
-              {editLabId && (
+              {editLabId && !adminEditMode && (
                 <button
                   onClick={handleDeleteLab}
-                  className="flex items-center px-4 py-2 text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-900/30 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
+                  className="flex items-center px-4 py-2 text-white bg-red-500/80 rounded-lg hover:bg-red-500 transition-colors"
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
                   Delete Lab
@@ -957,18 +1059,18 @@ export default function LabCreationView() {
 
               <button
                 onClick={handleSave}
-                disabled={isSaving || !labData.title.trim() || labData.tags.length === 0}
-                className="flex items-center px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+                disabled={isSaving || (!adminEditMode && (!labData.title.trim() || labData.tags.length === 0))}
+                className="flex items-center px-6 py-2 bg-white text-blue-600 hover:bg-blue-50 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed rounded-lg transition-colors font-medium"
               >
                 {isSaving ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    {editLabId ? 'Updating...' : 'Saving...'}
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                    {adminEditMode ? 'Updating...' : editLabId ? 'Updating...' : 'Saving...'}
                   </>
                 ) : (
                   <>
                     <Save className="w-4 h-4 mr-2" />
-                    {editLabId ? 'Update Lab' : 'Save Lab'}
+                    {adminEditMode ? 'Update Icon URL' : editLabId ? 'Update Lab' : 'Save Lab'}
                   </>
                 )}
               </button>
@@ -977,19 +1079,38 @@ export default function LabCreationView() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      {/* Admin Edit Mode Banner */}
+      {adminEditMode && (
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-400 p-4">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center">
+              <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 mr-2" />
+              <div>
+                <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+                  Admin View Mode - Most fields are read-only
+                </p>
+                <p className="text-xs text-yellow-700 dark:text-yellow-300">
+                  Only the lab icon/image can be edited in this mode
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="space-y-8">
           {/* Main Form */}
-          <div className="lg:col-span-2 space-y-8">
+          <div className="space-y-8">
             {/* Lab Basic Information */}
-            <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
+            <section className="bg-card dark:bg-card rounded-xl border border-border p-6 shadow-sm">
+              <h2 className="text-xl font-bold text-foreground mb-6">
                 Basic Information
               </h2>
 
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     Lab Title *
                   </label>
                   <input
@@ -997,12 +1118,15 @@ export default function LabCreationView() {
                     value={labData.title}
                     onChange={(e) => setLabData({ ...labData, title: e.target.value })}
                     placeholder="e.g., SQL Injection Fundamentals"
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                    readOnly={adminEditMode}
+                    className={`w-full px-4 py-3 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-background text-foreground placeholder-muted-foreground ${
+                      adminEditMode ? 'bg-gray-100 dark:bg-gray-800 cursor-not-allowed' : ''
+                    }`}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     Description
                   </label>
                   <textarea
@@ -1010,12 +1134,15 @@ export default function LabCreationView() {
                     onChange={(e) => setLabData({ ...labData, description: e.target.value })}
                     placeholder="Describe what students will learn in this lab..."
                     rows={4}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                    readOnly={adminEditMode}
+                    className={`w-full px-4 py-3 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-background text-foreground placeholder-muted-foreground ${
+                      adminEditMode ? 'bg-gray-100 dark:bg-gray-800 cursor-not-allowed' : ''
+                    }`}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     Lab Icon/Image
                   </label>
                   <div className="space-y-3">
@@ -1039,8 +1166,8 @@ export default function LabCreationView() {
                               // Store File object in browser for immediate preview
                               console.log('🖼️ Lab icon selected:', file.name, 'Size:', file.size, 'bytes');
                               setLabData({ ...labData, icon: file });
-                              toast.success('Icon ready for upload! Will be saved when you create/save the lab.', { 
-                                duration: 3000 
+                              toast.success('Icon ready for upload! Will be saved when you create/save the lab.', {
+                                duration: 3000
                               });
                             }
                           }}
@@ -1053,10 +1180,10 @@ export default function LabCreationView() {
                       <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                         <div className="flex-shrink-0">
                           <img
-                            src={labData.icon instanceof File ? 
-                              URL.createObjectURL(labData.icon) : 
-                              (labData.icon.startsWith('http://') || labData.icon.startsWith('https://') ? 
-                                labData.icon : 
+                            src={labData.icon instanceof File ?
+                              URL.createObjectURL(labData.icon) :
+                              (labData.icon.startsWith('http://') || labData.icon.startsWith('https://') ?
+                                labData.icon :
                                 `http://localhost:3001${labData.icon.startsWith('/') ? labData.icon : '/' + labData.icon}`
                               )
                             }
@@ -1094,7 +1221,7 @@ export default function LabCreationView() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     Tags & Keywords *
                   </label>
                   <div className="flex flex-wrap gap-2 mb-3">
@@ -1116,55 +1243,64 @@ export default function LabCreationView() {
                       </span>
                     ))}
                   </div>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      id="tagInput"
-                      placeholder="Enter a tag and press Enter"
-                      className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault()
-                          const input = e.target as HTMLInputElement
-                          const tag = input.value.trim()
-                          if (tag && !labData.tags.includes(tag)) {
-                            setLabData({ ...labData, tags: [...labData.tags, tag] })
-                            input.value = ''
-                          }
-                        }
-                      }}
-                    />
+                  <div className="flex gap-2 relative">
+                    <div className="flex-1 relative">
+                      <input
+                        type="text"
+                        id="tagInput"
+                        value={tagInput}
+                        onChange={(e) => handleTagInput(e.target.value)}
+                        onKeyDown={handleTagKeyDown}
+                        onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                        onFocus={() => filterSuggestions(tagInput)}
+                        placeholder="Enter a tag and press Enter or Space"
+                        className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-background text-foreground placeholder-muted-foreground"
+                      />
+                      
+                      {/* Tag suggestions dropdown */}
+                      {showSuggestions && suggestedTags.length > 0 && (
+                        <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-lg z-10 max-h-40 overflow-y-auto">
+                          {suggestedTags.map((tag, index) => (
+                            <button
+                              key={index}
+                              type="button"
+                              onMouseDown={(e) => {
+                                e.preventDefault()
+                                addTag(tag)
+                              }}
+                              className="w-full text-left px-4 py-2 hover:bg-muted text-foreground transition-colors first:rounded-t-lg last:rounded-b-lg"
+                            >
+                              {tag}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                     <button
-                      onClick={() => {
-                        const input = document.getElementById('tagInput') as HTMLInputElement
-                        const tag = input.value.trim()
-                        if (tag && !labData.tags.includes(tag)) {
-                          setLabData({ ...labData, tags: [...labData.tags, tag] })
-                          input.value = ''
-                        }
-                      }}
+                      type="button"
+                      onClick={() => addTag(tagInput)}
                       className="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
                     >
                       <Plus className="w-4 h-4" />
                     </button>
                   </div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                    Add relevant tags to help categorize and search for this lab
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Add relevant tags to help categorize and search for this lab. Press Enter or Space to add tags.
                   </p>
                 </div>
               </div>
             </section>
 
             {/* VM Configuration */}
-            <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6 flex items-center">
-                <Monitor className="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400" />
+            <section className="bg-card dark:bg-card rounded-xl border border-border p-6 shadow-sm">
+              <h2 className="text-xl font-bold text-foreground mb-6 flex items-center">
+                <Monitor className="w-5 h-5 mr-2 text-blue-600" />
                 Virtual Machine Configuration
               </h2>
 
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     Public Image URL
                   </label>
                   <input
@@ -1172,20 +1308,20 @@ export default function LabCreationView() {
                     value={labData.vmImage}
                     onChange={(e) => setLabData({ ...labData, vmImage: e.target.value })}
                     placeholder="e.g., ubuntu-20.04-security or custom-vulnhub-image"
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                    className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-background text-foreground placeholder-muted-foreground"
                   />
                 </div>
               </div>
             </section>
 
             {/* Tasks and Questions - Enhanced with Drag & Drop and Metadata */}
-            <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <section className="bg-card dark:bg-card rounded-xl border border-border p-6 shadow-sm">
               <div className="mb-6">
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  <h2 className="text-xl font-bold text-foreground">
                     Lab Tasks & Questions
                   </h2>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  <p className="text-sm text-muted-foreground mt-1">
                     Create tasks and questions for your lab. Drag and drop to reorder them.
                   </p>
                 </div>

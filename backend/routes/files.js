@@ -64,7 +64,7 @@ router.post('/upload-lab-files', upload.fields([
         const files = req.files;
         const labName = req.body.labName || 'unnamed-lab';
         const safeName = labName.replace(/[^a-zA-Z0-9\-_]/g, '_').toLowerCase();
-        
+
         const result = {
             icon: null,
             images: [],
@@ -109,7 +109,7 @@ router.get('/labs/:labName/:filename', async (req, res) => {
         res.header('Access-Control-Allow-Methods', 'GET');
         res.header('Access-Control-Allow-Headers', 'Content-Type');
         res.header('Cross-Origin-Resource-Policy', 'cross-origin');
-        
+
         const { labName, filename } = req.params;
         const safeName = labName.replace(/[^a-zA-Z0-9\-_]/g, '_').toLowerCase();
         const filePath = path.join(__dirname, '../uploads/labs', safeName, filename);

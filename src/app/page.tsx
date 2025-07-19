@@ -18,6 +18,8 @@ import { DesktopView } from '@/components/views/desktop-view'
 import { ProfileView } from '@/components/views/profile-view'
 import { LoginView } from '@/components/views/login'
 import { RegisterView } from '@/components/views/register-page'
+import { ForgotPasswordView } from '@/components/views/forgot-password'
+import { ResetPasswordView } from '@/components/views/reset-password'
 import { PendingApprovalView } from '@/components/views/pending-approval'
 import { Footer } from '@/components/layout/footer'
 
@@ -53,6 +55,14 @@ export default function Home() {
 
         if (currentView.type === 'register') {
             return <RegisterView />
+        }
+
+        if (currentView.type === 'forgot-password') {
+            return <ForgotPasswordView />
+        }
+
+        if (currentView.type === 'reset-password') {
+            return <ResetPasswordView />
         }
 
         if (currentView.type === 'pending-approval') {

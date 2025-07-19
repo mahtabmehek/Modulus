@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useApp } from '@/lib/hooks/use-app'
-import { Users, BookOpen, Plus, TrendingUp, Layers, Eye, Edit, Tag, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Users, BookOpen, Plus, Layers, Eye, Edit, Tag, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Lab } from '@/lib/api/labs'
 
 interface Course {
@@ -22,23 +22,39 @@ export function InstructorDashboard() {
   const { user, navigate } = useApp()
   const [labs, setLabs] = useState<Lab[]>([])
   const [courses, setCourses] = useState<Course[]>([])
+  const [studentCount, setStudentCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [coursesLoading, setCoursesLoading] = useState(true)
   const [currentLabPage, setCurrentLabPage] = useState(0)
   const [showAllCourses, setShowAllCourses] = useState(false)
 
   const stats = {
-    totalStudents: 156,
+    totalStudents: studentCount,
     activeLabs: labs.length,
-    totalPaths: 2,
-    monthlyEngagement: 87
+    totalPaths: 2
   }
 
   // Load labs and courses on component mount
   useEffect(() => {
     loadLabs()
     loadCourses()
+    loadStudentCount()
   }, [])
+
+  const loadStudentCount = async () => {
+    try {
+      const response = await fetch('http://localhost:3001/api/health/stats')
+
+      if (response.ok) {
+        const data = await response.json()
+        setStudentCount(data.studentCount || 0)
+      } else {
+        console.error('Failed to load student count:', response.statusText)
+      }
+    } catch (error) {
+      console.error('Error loading student count:', error)
+    }
+  }
 
   const loadLabs = async () => {
     try {
@@ -126,70 +142,63 @@ export function InstructorDashboard() {
   // Course display helpers
   const displayedCourses = showAllCourses ? courses : courses.slice(0, 4)
 
-  const recentActivity = [
-    { id: 1, student: 'Alex Johnson', action: 'Completed Firewall Configuration Lab', time: '2 hours ago' },
-    { id: 2, student: 'Maria Garcia', action: 'Started SQL Injection Lab', time: '4 hours ago' },
-    { id: 3, student: 'David Kim', action: 'Submitted APT Simulation Lab', time: '6 hours ago' },
-  ]
-
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-6 text-white">
-        <h1 className="text-2xl font-bold mb-2">
-          Instructor Dashboard 👩‍🏫
-        </h1>
-        <p className="text-blue-100 mb-4">
-          Create and manage module content within assigned courses. Track student progress and engagement.
-        </p>
-        <div className="flex flex-wrap gap-4">
-          <div className="flex items-center bg-white/20 rounded-lg px-4 py-2">
-            <Users className="w-5 h-5 mr-2" />
-            <span className="font-semibold">{stats.totalStudents} Students</span>
+    <div className="min-h-screen bg-background text-foreground">
+      <div className="max-w-6xl mx-auto p-6">
+        <div className="space-y-8">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-6 text-white">
+            <h1 className="text-2xl font-bold mb-4">
+              Instructor Dashboard 👩‍🏫
+            </h1>
+            <div className="flex flex-wrap gap-4">
+              <div className="flex items-center bg-white/20 rounded-lg px-4 py-2">
+                <Users className="w-5 h-5 mr-2" />
+                <span className="font-semibold">{stats.totalStudents} Students</span>
+              </div>
+              <div className="flex items-center bg-white/20 rounded-lg px-4 py-2">
+                <BookOpen className="w-5 h-5 mr-2" />
+                <span className="font-semibold">{courses.length} Courses</span>
+              </div>
+              <div className="flex items-center bg-white/20 rounded-lg px-4 py-2">
+                <Layers className="w-5 h-5 mr-2" />
+                <span className="font-semibold">{stats.activeLabs} Labs</span>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center bg-white/20 rounded-lg px-4 py-2">
-            <BookOpen className="w-5 h-5 mr-2" />
-            <span className="font-semibold">{stats.activeLabs} Active Labs</span>
-          </div>
-          <div className="flex items-center bg-white/20 rounded-lg px-4 py-2">
-            <TrendingUp className="w-5 h-5 mr-2" />
-            <span className="font-semibold">{stats.monthlyEngagement}% Engagement</span>
-          </div>
-        </div>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Quick Actions */}
-          <section>
+          <div className="space-y-6">
+            {/* Main Content */}
+            <div className="space-y-6">
+              {/* Quick Actions */}
+              <section>
             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
               Quick Actions
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <button
-                onClick={() => navigate('lab-creation')}
-                className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 text-left hover:border-blue-300 dark:hover:border-blue-600 transition-colors"
+                onClick={() => navigate('course-creation')}
+                className="bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl border-2 border-green-400 p-6 text-left hover:from-green-600 hover:to-green-700 transition-all transform hover:scale-105 shadow-lg"
               >
-                <Plus className="w-8 h-8 text-blue-600 dark:text-blue-400 mb-3" />
-                <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
-                  Create New Lab
+                <Layers className="w-8 h-8 text-white mb-3" />
+                <h3 className="font-semibold text-white mb-1">
+                  Design a Course
                 </h3>
-                <p className="text-gray-600 dark:text-gray-400 text-sm">
-                  Design interactive labs with virtual environments
+                <p className="text-green-100 text-sm">
+                  Create modules and organize labs into structured courses
                 </p>
               </button>
 
               <button
-                onClick={() => navigate('course-creation')}
-                className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 text-left hover:border-blue-300 dark:hover:border-blue-600 transition-colors"
+                onClick={handleCreateLab}
+                className="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl border-2 border-blue-400 p-6 text-left hover:from-blue-600 hover:to-blue-700 transition-all transform hover:scale-105 shadow-lg"
               >
-                <Layers className="w-8 h-8 text-green-600 dark:text-green-400 mb-3" />
-                <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
-                  Design a Course
+                <Plus className="w-8 h-8 text-white mb-3" />
+                <h3 className="font-semibold text-white mb-1">
+                  Create New Lab
                 </h3>
-                <p className="text-gray-600 dark:text-gray-400 text-sm">
-                  Create modules and organize labs into structured courses
+                <p className="text-blue-100 text-sm">
+                  Design interactive labs with virtual environments
                 </p>
               </button>
             </div>
@@ -230,13 +239,6 @@ export function InstructorDashboard() {
                   </div>
                 )}
               </div>
-              <button
-                onClick={handleCreateLab}
-                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center transition-colors"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Create New Lab
-              </button>
             </div>
 
             {loading ? (
@@ -249,20 +251,20 @@ export function InstructorDashboard() {
                 <p className="text-sm">Create your first lab to get started!</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {currentLabs.map((lab) => (
                   <div
                     key={lab.id}
-                    className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 hover:border-blue-300 dark:hover:border-blue-600 transition-colors"
+                    className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:border-blue-300 dark:hover:border-blue-600 transition-colors"
                   >
                     <div className="flex flex-col items-center text-center h-full">
                       {/* Lab Icon - Centered at top */}
-                      <div className="mb-4">
-                        {lab.icon_url ? (
+                      <div className="mb-3">
+                        {lab.icon_path ? (
                           <img
-                            src={lab.icon_url}
+                            src={lab.icon_path}
                             alt={lab.title}
-                            className="w-16 h-16 rounded-lg object-cover border border-gray-200 dark:border-gray-600"
+                            className="w-12 h-12 rounded-lg object-cover border border-gray-200 dark:border-gray-600"
                             onError={(e) => {
                               // Show default icon if image fails to load
                               const target = e.target as HTMLImageElement;
@@ -271,36 +273,33 @@ export function InstructorDashboard() {
                             }}
                           />
                         ) : (
-                          <div className="w-16 h-16 flex items-center justify-center bg-blue-100 dark:bg-blue-900 rounded-lg border border-gray-200 dark:border-gray-600">
-                            <BookOpen className="w-8 h-8 text-blue-600 dark:text-blue-300" />
+                          <div className="w-12 h-12 flex items-center justify-center bg-blue-100 dark:bg-blue-900 rounded-lg border border-gray-200 dark:border-gray-600">
+                            <BookOpen className="w-6 h-6 text-blue-600 dark:text-blue-300" />
                           </div>
                         )}
                       </div>
 
-                      {/* Title and Description - Centered below icon */}
-                      <div className="flex-grow mb-4">
-                        <h3 className="font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2">
+                      {/* Title and Tags - Centered below icon */}
+                      <div className="flex-grow mb-3">
+                        <h3 className="font-semibold text-gray-900 dark:text-white mb-2 text-sm line-clamp-2">
                           {lab.title}
                         </h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-3 mb-3">
-                          {lab.description || 'No description provided'}
-                        </p>
 
                         {/* Tags */}
                         {lab.tags && lab.tags.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mb-3 justify-center">
-                            {lab.tags.slice(0, 3).map((tag, index) => (
+                          <div className="flex flex-wrap gap-1 mb-2 justify-center">
+                            {lab.tags.slice(0, 2).map((tag, index) => (
                               <span
                                 key={index}
-                                className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                                className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
                               >
-                                <Tag className="w-3 h-3 mr-1" />
+                                <Tag className="w-2.5 h-2.5 mr-1" />
                                 {tag}
                               </span>
                             ))}
-                            {lab.tags.length > 3 && (
+                            {lab.tags.length > 2 && (
                               <span className="text-xs text-gray-500 dark:text-gray-400">
-                                +{lab.tags.length - 3} more
+                                +{lab.tags.length - 2}
                               </span>
                             )}
                           </div>
@@ -308,17 +307,17 @@ export function InstructorDashboard() {
                       </div>
 
                       {/* Action Buttons */}
-                      <div className="flex gap-2 w-full">
+                      <div className="flex gap-1.5 w-full">
                         <button
                           onClick={() => handlePreviewLab(lab.id)}
-                          className="flex-1 flex items-center justify-center px-3 py-2 bg-purple-100 hover:bg-purple-200 text-purple-700 text-sm rounded-lg transition-colors"
+                          className="flex-1 flex items-center justify-center px-2 py-1.5 bg-purple-100 hover:bg-purple-200 text-purple-700 text-xs rounded-md transition-colors"
                         >
                           <Eye className="w-3 h-3 mr-1" />
                           Preview
                         </button>
                         <button
                           onClick={() => handleEditLab(lab.id)}
-                          className="flex-1 flex items-center justify-center px-3 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 text-sm rounded-lg transition-colors"
+                          className="flex-1 flex items-center justify-center px-2 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-700 text-xs rounded-md transition-colors"
                         >
                           <Edit className="w-3 h-3 mr-1" />
                           Edit
@@ -337,13 +336,6 @@ export function InstructorDashboard() {
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                 Your Courses
               </h2>
-              <button
-                onClick={() => navigate('course-creation')}
-                className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg flex items-center transition-colors"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Create New Course
-              </button>
             </div>
 
             {coursesLoading ? (
@@ -423,78 +415,8 @@ export function InstructorDashboard() {
               </div>
             )}
           </section>
-        </div>
-
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Student Activity */}
-          <section>
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
-              Recent Student Activity
-            </h2>
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-              <div className="space-y-4">
-                {recentActivity.map((activity) => (
-                  <div key={activity.id} className="flex items-start space-x-3">
-                    <div className="w-8 h-8 bg-gradient-to-br from-green-400 to-green-500 rounded-full flex items-center justify-center flex-shrink-0">
-                      <span className="text-white text-xs font-medium">
-                        {activity.student.charAt(0)}
-                      </span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">
-                        {activity.student}
-                      </p>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {activity.action}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                        {activity.time}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
             </div>
-          </section>
-
-          {/* Performance Overview */}
-          <section>
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
-              Performance Overview
-            </h2>
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-              <div className="space-y-4">
-                <div>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="text-gray-600 dark:text-gray-400">Lab Completion Rate</span>
-                    <span className="font-medium text-gray-900 dark:text-white">78%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                    <div className="bg-green-500 h-2 rounded-full" style={{ width: '78%' }}></div>
-                  </div>
-                </div>
-                <div>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="text-gray-600 dark:text-gray-400">Average Score</span>
-                    <span className="font-medium text-gray-900 dark:text-white">85%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                    <div className="bg-blue-500 h-2 rounded-full" style={{ width: '85%' }}></div>
-                  </div>
-                </div>
-                <div>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="text-gray-600 dark:text-gray-400">Student Engagement</span>
-                    <span className="font-medium text-gray-900 dark:text-white">92%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                    <div className="bg-purple-500 h-2 rounded-full" style={{ width: '92%' }}></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
+          </div>
         </div>
       </div>
     </div>

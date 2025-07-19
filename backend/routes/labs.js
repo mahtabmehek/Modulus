@@ -137,7 +137,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
 
     // Add tasks to lab object
     lab.tasks = tasks;
-    
+
     console.log('🔍 Final lab object tasks before sending to frontend:', lab.tasks.map(t => ({ id: t.id, title: t.title, order_index: t.order_index })));
 
     res.json({
@@ -175,7 +175,7 @@ router.post('/',
   async (req, res) => {
     try {
       const db = pool;
-      
+
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
         return res.status(400).json({
@@ -340,7 +340,7 @@ router.put('/:id',
   async (req, res) => {
     try {
       const db = pool;
-      
+
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
         return res.status(400).json({
@@ -368,8 +368,8 @@ router.put('/:id',
 
       // Valid lab table columns
       const validLabColumns = [
-        'module_id', 'title', 'description', 'lab_type', 'vm_image', 
-        'container_image', 'required_tools', 'network_requirements', 
+        'module_id', 'title', 'description', 'lab_type', 'vm_image',
+        'container_image', 'required_tools', 'network_requirements',
         'points_possible', 'estimated_minutes', 'icon_path', 'icon_url', 'tags'
       ];
 
@@ -474,7 +474,7 @@ router.put('/:id',
 router.delete('/:id', authenticateToken, async (req, res) => {
   try {
     const db = pool;
-    
+
     if (req.user.role !== 'admin') {
       return res.status(403).json({ error: 'Admin access required' });
     }
@@ -482,7 +482,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     const { id } = req.params;
 
     // Check if lab exists and get lab details
-    const labCheck = await db.query('SELECT id, title, name FROM labs WHERE id = $1', [id]);
+    const labCheck = await db.query('SELECT id, title FROM labs WHERE id = $1', [id]);
     if (labCheck.rows.length === 0) {
       return res.status(404).json({ error: 'Lab not found' });
     }
@@ -505,7 +505,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     // Delete physical files for this lab
     try {
       const uploadsDir = path.join(__dirname, '..', 'uploads', 'labs', id.toString());
-      
+
       // Check if the directory exists
       try {
         await fs.access(uploadsDir);
@@ -667,7 +667,7 @@ router.put('/tasks/:id/metadata',
         return res.status(404).json({ error: 'Task not found' });
       }
 
-      res.json({ 
+      res.json({
         message: 'Task metadata updated successfully',
         task: result.rows[0]
       });
@@ -702,7 +702,7 @@ router.put('/questions/:id/metadata',
         return res.status(404).json({ error: 'Question not found' });
       }
 
-      res.json({ 
+      res.json({
         message: 'Question metadata updated successfully',
         question: result.rows[0]
       });
@@ -853,6 +853,31 @@ router.post('/:id/stop', authenticateToken, async (req, res) => {
     console.error('Error stopping lab session:', error);
     res.status(500).json({
       error: 'Failed to stop lab session',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// GET /api/labs/tags - Get all unique tags from existing labs
+router.get('/tags', authenticateToken, async (req, res) => {
+  try {
+    const db = pool;
+    
+    const query = `
+      SELECT DISTINCT unnest(tags) as tag 
+      FROM labs 
+      WHERE tags IS NOT NULL AND tags != '{}' 
+      ORDER BY tag ASC
+    `;
+    
+    const result = await db.query(query);
+    const tags = result.rows.map(row => row.tag).filter(tag => tag && tag.trim());
+    
+    res.json(tags);
+  } catch (error) {
+    console.error('Error fetching tags:', error);
+    res.status(500).json({
+      error: 'Failed to fetch tags',
       details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }

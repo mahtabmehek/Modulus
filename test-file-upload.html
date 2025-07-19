@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>Test File Upload</title>
 </head>
+
 <body>
     <h1>Test File Upload</h1>
-    
+
     <form id="uploadForm" enctype="multipart/form-data">
         <div>
             <label>Lab Name:</label>
@@ -25,40 +27,40 @@
         </div>
         <button type="button" onclick="uploadFiles()">Upload</button>
     </form>
-    
+
     <div id="result"></div>
-    
+
     <script>
         async function uploadFiles() {
             const formData = new FormData();
-            
+
             const labName = document.getElementById('labName').value;
             formData.append('labName', labName);
-            
+
             const iconFile = document.getElementById('iconFile').files[0];
             if (iconFile) {
                 formData.append('icon', iconFile);
             }
-            
+
             const imageFiles = document.getElementById('imageFiles').files;
             for (let file of imageFiles) {
                 formData.append('images', file);
             }
-            
+
             const attachmentFiles = document.getElementById('attachmentFiles').files;
             for (let file of attachmentFiles) {
                 formData.append('attachments', file);
             }
-            
+
             try {
                 const response = await fetch('http://localhost:3001/api/files/upload-lab-files', {
                     method: 'POST',
                     body: formData
                 });
-                
+
                 const result = await response.json();
                 document.getElementById('result').innerHTML = '<pre>' + JSON.stringify(result, null, 2) + '</pre>';
-                
+
                 // Test accessing the uploaded files
                 if (result.success) {
                     if (result.data.icon) {
@@ -76,4 +78,5 @@
         }
     </script>
 </body>
+
 </html>

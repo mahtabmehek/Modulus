@@ -22,7 +22,7 @@ const pool = new Pool({
 async function testConnection() {
     const maxRetries = 3;
     let retries = 0;
-    
+
     while (retries < maxRetries) {
         try {
             const client = await pool.connect();

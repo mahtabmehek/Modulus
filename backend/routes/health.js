@@ -18,11 +18,11 @@ router.get('/db', async (req, res) => {
   try {
     const db = pool;
     const start = Date.now();
-    
+
     // Test database connection with a simple query
     const result = await db.query('SELECT NOW() as current_time, version() as db_version');
     const responseTime = Date.now() - start;
-    
+
     res.json({
       status: 'healthy',
       message: 'Database connection successful',
@@ -49,7 +49,7 @@ router.get('/db', async (req, res) => {
 router.get('/debug/tables', async (req, res) => {
   try {
     const db = pool;
-    
+
     // Check if users table exists
     const tablesResult = await db.query(`
       SELECT table_name 
@@ -57,9 +57,9 @@ router.get('/debug/tables', async (req, res) => {
       WHERE table_schema = 'public' 
       AND table_name = 'users'
     `);
-    
+
     const usersTableExists = tablesResult.rows.length > 0;
-    
+
     // If users table exists, get its structure
     let tableStructure = null;
     if (usersTableExists) {
@@ -71,14 +71,14 @@ router.get('/debug/tables', async (req, res) => {
       `);
       tableStructure = structureResult.rows;
     }
-    
+
     // Get all tables in the database
     const allTablesResult = await db.query(`
       SELECT table_name 
       FROM information_schema.tables 
       WHERE table_schema = 'public'
     `);
-    
+
     res.json({
       status: 'success',
       database: {
@@ -88,12 +88,12 @@ router.get('/debug/tables', async (req, res) => {
         allTables: allTablesResult.rows.map(row => row.table_name)
       }
     });
-    
+
   } catch (error) {
     console.error('Debug tables error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       status: 'error',
-      error: error.message 
+      error: error.message
     });
   }
 });
@@ -102,7 +102,7 @@ router.get('/debug/tables', async (req, res) => {
 router.get('/db-indexes', async (req, res) => {
   try {
     const db = pool;
-    
+
     // Get table structure
     const tables = await db.query(`
       SELECT table_name, column_name, data_type, is_nullable, column_default
@@ -110,7 +110,7 @@ router.get('/db-indexes', async (req, res) => {
       WHERE table_schema = 'public' 
       ORDER BY table_name, ordinal_position
     `);
-    
+
     // Get indexes
     const indexes = await db.query(`
       SELECT 
@@ -133,7 +133,7 @@ router.get('/db-indexes', async (req, res) => {
         AND t.relname NOT LIKE 'pg_%'
       ORDER BY t.relname, i.relname;
     `);
-    
+
     // Get table statistics
     const stats = await db.query(`
       SELECT 
@@ -146,7 +146,7 @@ router.get('/db-indexes', async (req, res) => {
       WHERE schemaname = 'public'
       ORDER BY tablename, attname;
     `);
-    
+
     res.json({
       status: 'success',
       timestamp: new Date().toISOString(),
@@ -156,7 +156,7 @@ router.get('/db-indexes', async (req, res) => {
         statistics: stats.rows
       }
     });
-    
+
   } catch (error) {
     console.error('Database indexes check error:', error);
     res.status(500).json({
@@ -172,7 +172,7 @@ router.post('/optimize-indexes', async (req, res) => {
   try {
     const db = pool;
     const results = [];
-    
+
     const indexes = [
       {
         name: 'idx_users_role',
@@ -200,13 +200,13 @@ router.post('/optimize-indexes', async (req, res) => {
         description: 'Partial index for unapproved users (most queried by admins)'
       }
     ];
-    
+
     for (const index of indexes) {
       try {
         const start = Date.now();
         await db.query(index.sql);
         const duration = Date.now() - start;
-        
+
         results.push({
           index_name: index.name,
           status: 'created',
@@ -222,20 +222,56 @@ router.post('/optimize-indexes', async (req, res) => {
         });
       }
     }
-    
+
     res.json({
       status: 'completed',
       message: 'Database index optimization completed',
       timestamp: new Date().toISOString(),
       results: results
     });
-    
+
   } catch (error) {
     console.error('Database index optimization error:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to optimize database indexes',
       error: error.message
+    });
+  }
+});
+
+// GET /health/stats - Public basic stats (no authentication required)
+router.get('/stats', async (req, res) => {
+  try {
+    const db = pool;
+    
+    // Get student count
+    const studentResult = await db.query(
+      'SELECT COUNT(*) as count FROM users WHERE role = $1',
+      ['student']
+    );
+    
+    // Get total labs count
+    const labsResult = await db.query('SELECT COUNT(*) as count FROM labs');
+    
+    // Get total courses count
+    const coursesResult = await db.query('SELECT COUNT(*) as count FROM courses');
+    
+    res.json({
+      studentCount: parseInt(studentResult.rows[0].count),
+      labsCount: parseInt(labsResult.rows[0].count),
+      coursesCount: parseInt(coursesResult.rows[0].count),
+      success: true
+    });
+
+  } catch (error) {
+    console.error('Get stats error:', error);
+    res.status(500).json({ 
+      error: 'Internal server error',
+      studentCount: 0,
+      labsCount: 0,
+      coursesCount: 0,
+      success: false
     });
   }
 });

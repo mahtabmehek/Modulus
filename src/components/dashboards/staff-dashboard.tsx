@@ -799,10 +799,10 @@ export function StaffDashboard() {
                         <p className="text-sm text-muted-foreground">{user.email}</p>
                         <div className="flex items-center gap-2 mt-1">
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${user.role === 'instructor'
-                              ? 'bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-300'
-                              : user.role === 'student'
-                                ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300'
-                                : 'bg-gray-100 text-gray-600 dark:bg-gray-900 dark:text-gray-300'
+                            ? 'bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-300'
+                            : user.role === 'student'
+                              ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300'
+                              : 'bg-gray-100 text-gray-600 dark:bg-gray-900 dark:text-gray-300'
                             }`}>
                             {user.role}
                           </span>

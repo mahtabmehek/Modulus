@@ -5,19 +5,44 @@ const { body, validationResult } = require('express-validator');
 const { pool } = require('../db');
 const router = express.Router();
 
+// Add logging for all requests to this router
+router.use((req, res, next) => {
+  console.log('🔍 AUTH ROUTER - Request received:', {
+    method: req.method,
+    url: req.url,
+    fullPath: req.originalUrl,
+    headers: {
+      'content-type': req.headers['content-type'],
+      'authorization': req.headers['authorization'] ? 'Bearer ***' : 'None'
+    }
+  })
+  next()
+})
+
 // Authentication middleware for local development
 const authenticateToken = (req, res, next) => {
+  console.log('🔐 AUTH ROUTE - authenticateToken called for:', req.method, req.url)
+  
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
+  console.log('🔐 AUTH ROUTE - Token check:', {
+    hasAuthHeader: !!authHeader,
+    hasToken: !!token,
+    tokenPreview: token ? `${token.substring(0, 30)}...` : 'No token'
+  })
+
   if (!token) {
+    console.log('❌ AUTH ROUTE - No token provided')
     return res.status(401).json({ message: 'Access token required' });
   }
 
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+  jwt.verify(token, process.env.JWT_SECRET || 'modulus-lms-secret-key-change-in-production', (err, user) => {
     if (err) {
+      console.log('❌ AUTH ROUTE - Token verification failed:', err.message)
       return res.status(403).json({ message: 'Invalid or expired token' });
     }
+    console.log('✅ AUTH ROUTE - Token verified for user:', user.email)
     req.user = user;
     next();
   });
@@ -448,8 +473,16 @@ router.put('/change-password', [
   body('newPassword').isLength({ min: 8 }).withMessage('New password must be at least 8 characters')
 ], async (req, res) => {
   try {
+    console.log('🔐 PASSWORD CHANGE REQUEST:', {
+      userId: req.user?.userId,
+      email: req.user?.email,
+      hasCurrentPassword: !!req.body?.currentPassword,
+      hasNewPassword: !!req.body?.newPassword
+    })
+
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log('❌ PASSWORD CHANGE VALIDATION ERRORS:', errors.array())
       return res.status(400).json({ errors: errors.array() });
     }
 
@@ -463,6 +496,7 @@ router.put('/change-password', [
     );
 
     if (result.rows.length === 0) {
+      console.log('❌ PASSWORD CHANGE - User not found:', req.user.userId)
       return res.status(404).json({ error: 'User not found' });
     }
 
@@ -471,6 +505,7 @@ router.put('/change-password', [
     // Verify current password
     const isValidPassword = await bcrypt.compare(currentPassword, user.password_hash);
     if (!isValidPassword) {
+      console.log('❌ PASSWORD CHANGE - Current password incorrect for user:', req.user.userId)
       return res.status(401).json({ error: 'Current password is incorrect' });
     }
 
@@ -484,10 +519,11 @@ router.put('/change-password', [
       [newPasswordHash, req.user.userId]
     );
 
+    console.log('✅ PASSWORD CHANGE SUCCESSFUL for user:', req.user.userId)
     res.json({ message: 'Password changed successfully' });
 
   } catch (error) {
-    console.error('Change password error:', error);
+    console.error('❌ PASSWORD CHANGE ERROR:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -994,6 +1030,152 @@ router.put('/admin/update-user/:id', authenticateToken, requireAdmin, async (req
 
   } catch (error) {
     console.error('Update user error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Forgot Password - Send reset email
+router.post('/forgot-password', [
+  body('email').isEmail().normalizeEmail().withMessage('Please provide a valid email address')
+], async (req, res) => {
+  console.log('🔑 FORGOT PASSWORD - Request received:', req.body);
+  
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      console.log('❌ FORGOT PASSWORD - Validation errors:', errors.array());
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { email } = req.body;
+
+    // Check if user exists
+    const userQuery = 'SELECT id, email, name FROM users WHERE email = $1';
+    const userResult = await pool.query(userQuery, [email]);
+
+    // Always return success to prevent email enumeration attacks
+    if (userResult.rows.length === 0) {
+      console.log('⚠️ FORGOT PASSWORD - User not found for email:', email);
+      return res.status(200).json({ 
+        message: 'If an account with that email exists, we have sent password reset instructions.' 
+      });
+    }
+
+    const user = userResult.rows[0];
+    console.log('✅ FORGOT PASSWORD - User found:', user.email);
+
+    // Generate reset token
+    const resetToken = jwt.sign(
+      { 
+        userId: user.id, 
+        email: user.email,
+        type: 'password-reset'
+      },
+      process.env.JWT_SECRET || 'modulus-lms-secret-key-change-in-production',
+      { expiresIn: '1h' } // Token expires in 1 hour
+    );
+
+    // Store reset token in database (optional - for additional security)
+    const resetTokenQuery = `
+      INSERT INTO password_resets (user_id, token, expires_at, created_at) 
+      VALUES ($1, $2, NOW() + INTERVAL '1 hour', NOW())
+      ON CONFLICT (user_id) 
+      DO UPDATE SET token = $2, expires_at = NOW() + INTERVAL '1 hour', created_at = NOW()
+    `;
+    
+    try {
+      await pool.query(resetTokenQuery, [user.id, resetToken]);
+      console.log('✅ FORGOT PASSWORD - Reset token stored for user:', user.email);
+    } catch (dbError) {
+      // If the table doesn't exist, we'll just rely on JWT expiration
+      console.log('⚠️ FORGOT PASSWORD - Could not store reset token (table may not exist):', dbError.message);
+    }
+
+    // In a real application, you would send an email here
+    // For demo purposes, we'll log the reset link
+    const resetLink = `${req.protocol}://${req.get('host')}/reset-password?token=${resetToken}`;
+    console.log('📧 FORGOT PASSWORD - Reset link generated:', resetLink);
+    
+    // TODO: Implement actual email sending
+    // await sendPasswordResetEmail(user.email, user.name, resetLink);
+
+    res.status(200).json({ 
+      message: 'If an account with that email exists, we have sent password reset instructions.',
+      // For development purposes, include the token (REMOVE IN PRODUCTION)
+      ...(process.env.NODE_ENV === 'development' && { resetToken, resetLink })
+    });
+
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Reset Password - Use token to set new password
+router.post('/reset-password', [
+  body('token').notEmpty().withMessage('Reset token is required'),
+  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters long')
+], async (req, res) => {
+  console.log('🔑 RESET PASSWORD - Request received');
+  
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      console.log('❌ RESET PASSWORD - Validation errors:', errors.array());
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { token, password } = req.body;
+
+    // Verify reset token
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET || 'modulus-lms-secret-key-change-in-production');
+      console.log('✅ RESET PASSWORD - Token verified for:', decoded.email);
+    } catch (jwtError) {
+      console.log('❌ RESET PASSWORD - Invalid token:', jwtError.message);
+      return res.status(400).json({ error: 'Invalid or expired reset token' });
+    }
+
+    // Check if token is for password reset
+    if (decoded.type !== 'password-reset') {
+      console.log('❌ RESET PASSWORD - Invalid token type:', decoded.type);
+      return res.status(400).json({ error: 'Invalid reset token' });
+    }
+
+    // Check if user still exists
+    const userQuery = 'SELECT id, email FROM users WHERE id = $1 AND email = $2';
+    const userResult = await pool.query(userQuery, [decoded.userId, decoded.email]);
+
+    if (userResult.rows.length === 0) {
+      console.log('❌ RESET PASSWORD - User not found for token');
+      return res.status(400).json({ error: 'Invalid reset token' });
+    }
+
+    // Hash new password
+    const saltRounds = 12;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    // Update password in database
+    const updateQuery = 'UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2';
+    await pool.query(updateQuery, [hashedPassword, decoded.userId]);
+
+    // Optional: Invalidate the reset token by removing it from database
+    try {
+      await pool.query('DELETE FROM password_resets WHERE user_id = $1', [decoded.userId]);
+      console.log('✅ RESET PASSWORD - Reset token invalidated');
+    } catch (dbError) {
+      console.log('⚠️ RESET PASSWORD - Could not invalidate token (table may not exist)');
+    }
+
+    console.log('✅ RESET PASSWORD - Password updated successfully for:', decoded.email);
+
+    res.status(200).json({ 
+      message: 'Password has been reset successfully. You can now log in with your new password.' 
+    });
+
+  } catch (error) {
+    console.error('Reset password error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

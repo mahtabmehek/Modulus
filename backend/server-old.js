@@ -1,4 +1,4 @@
-const express = require('express');
+﻿const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
@@ -12,7 +12,6 @@ const healthRoutes = require('./routes/health');
 const adminRoutes = require('./routes/admin');
 const coursesRoutes = require('./routes/courses');
 const labsRoutes = require('./routes/labs');
-const filesRoutes = require('./routes/files');
 
 // Load desktop routes for local development
 let desktopRoutes = null;
@@ -49,37 +48,6 @@ app.use(limiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files from uploads directory with proper CORS headers
-app.use('/uploads', (req, res, next) => {
-  // Set comprehensive CORS headers for static files
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-  res.header('Access-Control-Expose-Headers', 'Content-Length, Content-Type');
-  res.header('Cross-Origin-Resource-Policy', 'cross-origin');
-  res.header('Cross-Origin-Embedder-Policy', 'unsafe-none');
-
-  // Handle preflight requests
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
-
-  next();
-}, express.static('uploads', {
-  setHeaders: (res, path) => {
-    // Ensure proper content types for images
-    if (path.endsWith('.png')) {
-      res.setHeader('Content-Type', 'image/png');
-    } else if (path.endsWith('.jpg') || path.endsWith('.jpeg')) {
-      res.setHeader('Content-Type', 'image/jpeg');
-    } else if (path.endsWith('.gif')) {
-      res.setHeader('Content-Type', 'image/gif');
-    } else if (path.endsWith('.webp')) {
-      res.setHeader('Content-Type', 'image/webp');
-    }
-  }
-}));
-
 // Request logging middleware
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
@@ -103,25 +71,22 @@ const pool = new Pool({
   connectionTimeoutMillis: 5000
 });
 
-// Test database connection
+// Test database connection on startup
 pool.connect()
   .then(client => {
     console.log('✅ Connected to database');
-    client.release();
+    if (client.release) client.release();
   })
   .catch(err => {
     console.error('❌ Database connection error:', err.message);
     console.log('🔄 Falling back to mock database for local development');
 
     // Use mock database as fallback
-    try {
-      const MockDatabase = require('./mock-db');
-      app.locals.db = new MockDatabase();
-      console.log('✅ Mock database initialized');
-    } catch (mockErr) {
-      console.error('❌ Mock database not available:', mockErr.message);
-    }
+    const MockDatabase = require('./mock-db');
+    app.locals.db = new MockDatabase();
+    console.log('✅ Mock database initialized');
   });
+}
 
 // Make pool available to routes
 app.locals.db = pool;
@@ -133,14 +98,13 @@ app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/courses', coursesRoutes);
 app.use('/api/labs', labsRoutes);
-app.use('/api/files', filesRoutes);
 
 // Only use desktop routes if available
 if (desktopRoutes) {
   app.use('/api/desktop', desktopRoutes);
 }
 
-// Simple health check endpoint
+// Simple health check endpoint for ECS health checks
 app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'healthy',
@@ -192,13 +156,14 @@ process.on('SIGINT', () => {
   });
 });
 
-// Start the server
+// Export the app for Lambda deployment
+module.exports = app;
+
+// Only start the server if running directly (not in Lambda)
 if (require.main === module) {
   app.listen(PORT, () => {
     console.log(`🚀 Modulus Backend API listening on port ${PORT}`);
     console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`Database: ${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || 5432}/${process.env.DB_NAME || 'modulus'}`);
+    console.log(`Database: ${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME}`);
   });
 }
-
-module.exports = app;

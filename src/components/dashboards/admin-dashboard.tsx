@@ -6,10 +6,7 @@ import { apiClient } from '@/lib/api'
 import toast from 'react-hot-toast'
 import {
   Users,
-  Server,
-  Shield,
   BarChart3 as Activity,
-  Settings,
   AlertTriangle,
   Database,
   Cloud,
@@ -40,8 +37,8 @@ import {
 } from 'lucide-react'
 
 export function AdminDashboard() {
-  const { user } = useApp()
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'courses' | 'labs' | 'infrastructure' | 'security'>('overview')
+  const { user, navigate } = useApp()
+  const [activeTab, setActiveTab] = useState<'users' | 'courses' | 'labs'>('users')
   const [realUsers, setRealUsers] = useState<any[]>([])
   const [pendingApprovals, setPendingApprovals] = useState<any[]>([])
   const [courses, setCourses] = useState<any[]>([])
@@ -55,7 +52,6 @@ export function AdminDashboard() {
   const [labSearchTerm, setLabSearchTerm] = useState('')
   const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null)
   const [selectedUser, setSelectedUser] = useState<any>(null)
-  const [showUserActions, setShowUserActions] = useState<{ [key: string]: boolean }>({})
 
   // Pagination state
   const [approvalsPage, setApprovalsPage] = useState(1)
@@ -71,31 +67,11 @@ export function AdminDashboard() {
   const [courseFormData, setCourseFormData] = useState({
     title: '',
     code: '',
-    department: '',
     academicLevel: 'bachelor',
     totalCredits: 0
   })
 
   // Load real user data when component mounts or users tab is selected
-  // Close dropdowns when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Element
-      // Check if the click is outside all action dropdowns
-      if (!target.closest('.actions-dropdown') && Object.keys(showUserActions).length > 0) {
-        setShowUserActions({})
-      }
-    }
-
-    // Only add listener if there are open dropdowns
-    if (Object.values(showUserActions).some(isOpen => isOpen)) {
-      document.addEventListener('click', handleClickOutside, true)
-      return () => {
-        document.removeEventListener('click', handleClickOutside, true)
-      }
-    }
-  }, [showUserActions])
-
   useEffect(() => {
     if (activeTab === 'users') {
       loadUsers()
@@ -112,14 +88,30 @@ export function AdminDashboard() {
       // Load all users for the user management section
       const usersResponse = await apiClient.getAllUsers()
       console.log('Admin users response:', usersResponse)
-      setRealUsers(usersResponse.users || [])
+      
+      // Filter to only show admin and staff users
+      const filteredUsers = (usersResponse.users || []).filter((user: any) => 
+        user.role === 'admin' || user.role === 'staff'
+      )
+      setRealUsers(filteredUsers)
 
       // Load pending approvals using the dedicated endpoint
       const pendingResponse = await apiClient.getPendingApprovals()
       console.log('Admin pending approvals response:', pendingResponse)
       setPendingApprovals(pendingResponse.users || [])
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to load users:', error)
+      
+      // Handle authentication errors
+      if (error.message?.includes('Invalid or expired token') || error.message?.includes('401')) {
+        toast.error('Session expired. Please log in again.')
+        // Clear the invalid token and redirect to login
+        apiClient.setToken(null)
+        navigate('login')
+        return
+      }
+      
+      toast.error('Failed to load users. Please try again.')
       setRealUsers([])
       setPendingApprovals([])
     } finally {
@@ -175,7 +167,7 @@ export function AdminDashboard() {
 
   // Export to CSV
   const exportToCSV = () => {
-    const headers = ['ID', 'Name', 'Email', 'Role', 'Department', 'Created At']
+    const headers = ['ID', 'Name', 'Email', 'Role', 'Created At']
     const csvData = [
       headers.join(','),
       ...sortedUsers.map(user => [
@@ -183,7 +175,6 @@ export function AdminDashboard() {
         `"${user.name || ''}"`,
         user.email || '',
         user.role || '',
-        user.department || 'N/A',
         user.created_at ? new Date(user.created_at).toLocaleDateString() : ''
       ].join(','))
     ].join('\n')
@@ -200,13 +191,6 @@ export function AdminDashboard() {
   }
 
   // Handle user actions
-  const handleEditUser = (user: any) => {
-    // Close dropdown
-    setShowUserActions({})
-    setSelectedUser(user)
-    setShowEditUserModal(true)
-  }
-
   const handleApproveUser = async (userId: string) => {
     console.log('Attempting to approve user:', userId)
     try {
@@ -235,28 +219,7 @@ export function AdminDashboard() {
     }
   }
 
-  const handleDisableUser = async (userId: string) => {
-    // Close dropdown
-    setShowUserActions({})
-
-    if (confirm('Are you sure you want to disable this user?')) {
-      console.log('Attempting to disable user:', userId)
-      try {
-        const response = await apiClient.disableUser(Number(userId))
-        console.log('Disable response:', response)
-        await loadUsers() // Refresh the list
-        toast.success('User disabled successfully!')
-      } catch (error) {
-        console.error('Failed to disable user:', error)
-        toast.error('Failed to disable user. Please try again.')
-      }
-    }
-  }
-
   const handleDeleteUser = async (userId: string) => {
-    // Close dropdown
-    setShowUserActions({})
-
     if (confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
       console.log('Attempting to delete user:', userId)
       try {
@@ -267,23 +230,6 @@ export function AdminDashboard() {
       } catch (error) {
         console.error('Failed to delete user:', error)
         toast.error('Failed to delete user. Please try again.')
-      }
-    }
-  }
-
-  const handleEnableUser = async (userId: string) => {
-    // Close dropdown
-    setShowUserActions({})
-
-    if (confirm('Are you sure you want to enable this user?')) {
-      try {
-        console.log('Attempting to enable user:', userId)
-        await apiClient.enableUser(Number(userId))
-        await loadUsers() // Refresh the list
-        toast.success('User enabled successfully!')
-      } catch (error) {
-        console.error('Failed to enable user:', error)
-        toast.error('Failed to enable user. Please try again.')
       }
     }
   }
@@ -311,7 +257,7 @@ export function AdminDashboard() {
     }
   }
 
-  const handleCreateCourse = async (courseData: { title: string; code: string; department: string; academicLevel: string; totalCredits: number }) => {
+  const handleCreateCourse = async (courseData: { title: string; code: string; academicLevel: string; totalCredits: number }) => {
     try {
       setLoading(true)
       console.log('Creating course:', courseData)
@@ -319,7 +265,7 @@ export function AdminDashboard() {
       const response = await apiClient.createCourse({
         title: courseData.title,
         code: courseData.code,
-        department: courseData.department,
+        department: 'General', // Default department since we removed it from UI
         academicLevel: courseData.academicLevel,
         totalCredits: courseData.totalCredits,
         description: `${courseData.title} course`,
@@ -337,22 +283,25 @@ export function AdminDashboard() {
     }
   }
 
-  const toggleUserActions = (userId: string) => {
-    setShowUserActions(prev => {
-      // Close all other dropdowns and toggle the clicked one
-      const newState: { [key: string]: boolean } = {}
-      newState[userId] = !prev[userId]
-      return newState
-    })
-  }
-
   const loadCourses = async () => {
     setLoading(true)
     try {
       const response = await apiClient.getCourses()
       setCourses(response.courses)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to load courses:', error)
+      
+      // Handle authentication errors
+      if (error.message?.includes('Invalid or expired token') || error.message?.includes('401')) {
+        toast.error('Session expired. Please log in again.')
+        // Clear the invalid token and redirect to login
+        apiClient.setToken(null)
+        navigate('login')
+        return
+      }
+      
+      toast.error('Failed to load courses. Please try again.')
+      setCourses([])
     } finally {
       setLoading(false)
     }
@@ -368,8 +317,19 @@ export function AdminDashboard() {
         console.error('Failed to load labs')
         setLabs([])
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to load labs:', error)
+      
+      // Handle authentication errors
+      if (error.message?.includes('Invalid or expired token') || error.message?.includes('401')) {
+        toast.error('Session expired. Please log in again.')
+        // Clear the invalid token and redirect to login
+        apiClient.setToken(null)
+        navigate('login')
+        return
+      }
+      
+      toast.error('Failed to load labs. Please try again.')
       setLabs([])
     } finally {
       setLoading(false)
@@ -392,6 +352,22 @@ export function AdminDashboard() {
     }
   }
 
+  const deleteCourse = async (courseId: string, courseName: string) => {
+    if (!confirm(`Are you sure you want to delete the course "${courseName}"? This action cannot be undone and will remove all associated data.`)) {
+      return
+    }
+
+    try {
+      const response = await apiClient.deleteCourse(courseId)
+      toast.success('Course deleted successfully')
+      // Reload courses after deletion
+      loadCourses()
+    } catch (error) {
+      console.error('Failed to delete course:', error)
+      toast.error('Failed to delete course')
+    }
+  }
+
   const systemStats = {
     totalUsers: 1247,
     activeUsers: 89,
@@ -400,7 +376,6 @@ export function AdminDashboard() {
     totalLabs: 156,
     completedLabSessions: 3842,
     systemUptime: '99.8%',
-    securityAlerts: 2,
     avgSessionTime: '45 minutes',
     storageUsed: '2.3TB',
     totalStorage: '5TB'
@@ -457,13 +432,6 @@ export function AdminDashboard() {
     { id: 'u4', name: 'David Wilson', email: 'david@university.edu', role: 'student', status: 'active', joinedAt: '1 day ago' },
   ]
 
-  const resourceUsage = {
-    cpu: 45,
-    memory: 62,
-    storage: 46,
-    network: 25
-  }
-
   const getAlertIcon = (type: string) => {
     switch (type) {
       case 'error': return <AlertCircle className="w-4 h-4 text-red-500" />
@@ -476,43 +444,19 @@ export function AdminDashboard() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl p-6 text-white">
-        <h1 className="text-2xl font-bold mb-2">
-          System Administration 🛡️
+      <div className="bg-gradient-to-r from-purple-700 to-purple-800 rounded-xl p-6 text-white">
+        <h1 className="text-2xl font-bold">
+          System Admin
         </h1>
-        <p className="text-purple-100 mb-4">
-          Monitor platform health, manage users, and maintain security infrastructure.
-        </p>
-        <div className="flex flex-wrap gap-4">
-          <div className="flex items-center bg-white/20 rounded-lg px-4 py-2">
-            <Users className="w-5 h-5 mr-2" />
-            <span className="font-semibold">{systemStats.totalUsers} Users</span>
-          </div>
-          <div className="flex items-center bg-white/20 rounded-lg px-4 py-2">
-            <Server className="w-5 h-5 mr-2" />
-            <span className="font-semibold">{systemStats.activeDesktops} Active Desktops</span>
-          </div>
-          <div className="flex items-center bg-white/20 rounded-lg px-4 py-2">
-            <Activity className="w-5 h-5 mr-2" />
-            <span className="font-semibold">{systemStats.systemUptime} Uptime</span>
-          </div>
-          <div className="flex items-center bg-white/20 rounded-lg px-4 py-2">
-            <AlertTriangle className="w-5 h-5 mr-2" />
-            <span className="font-semibold">{systemStats.securityAlerts} Alerts</span>
-          </div>
-        </div>
       </div>
 
       {/* Navigation Tabs */}
       <div className="border-b border-gray-200 dark:border-gray-700">
         <nav className="flex space-x-8">
           {[
-            { key: 'overview', label: 'Overview', icon: Activity },
             { key: 'users', label: 'User Management', icon: Users },
             { key: 'courses', label: 'Course Management', icon: BookOpen },
-            { key: 'labs', label: 'Lab Management', icon: Monitor },
-            { key: 'infrastructure', label: 'Infrastructure', icon: Server },
-            { key: 'security', label: 'Security', icon: Shield }
+            { key: 'labs', label: 'Lab Management', icon: Monitor }
           ].map(({ key, label, icon: Icon }) => (
             <button
               key={key}
@@ -530,120 +474,6 @@ export function AdminDashboard() {
       </div>
 
       {/* Tab Content */}
-      {activeTab === 'overview' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* System Health */}
-          <div className="lg:col-span-2 space-y-6">
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                System Health
-              </h3>
-              <div className="space-y-3">
-                {systemHealth.map((service, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-3 h-3 rounded-full ${service.status === 'healthy' ? 'bg-green-500' :
-                        service.status === 'warning' ? 'bg-yellow-500' : 'bg-red-500'
-                        }`}></div>
-                      <span className="font-medium text-gray-900 dark:text-white">{service.name}</span>
-                      <span className="text-xs text-gray-500 dark:text-gray-400">({service.instances} instances)</span>
-                    </div>
-                    <span className="text-sm text-gray-600 dark:text-gray-400">{service.uptime}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Resource Usage */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Resource Usage
-              </h3>
-              <div className="grid grid-cols-2 gap-4">
-                {[
-                  { name: 'CPU', value: resourceUsage.cpu, icon: Cpu, color: 'bg-blue-500' },
-                  { name: 'Memory', value: resourceUsage.memory, icon: Activity, color: 'bg-green-500' },
-                  { name: 'Storage', value: resourceUsage.storage, icon: HardDrive, color: 'bg-yellow-500' },
-                  { name: 'Network', value: resourceUsage.network, icon: Network, color: 'bg-purple-500' }
-                ].map((resource) => {
-                  const Icon = resource.icon
-                  return (
-                    <div key={resource.name} className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Icon className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                          <span className="text-sm font-medium text-gray-900 dark:text-white">{resource.name}</span>
-                        </div>
-                        <span className="text-sm text-gray-600 dark:text-gray-400">{resource.value}%</span>
-                      </div>
-                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                        <div
-                          className={`${resource.color} h-2 rounded-full transition-all duration-300`}
-                          style={{ width: `${resource.value}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          </div>
-
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Alerts */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Recent Alerts
-              </h3>
-              <div className="space-y-3">
-                {recentAlerts.slice(0, 4).map((alert) => (
-                  <div key={alert.id} className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                    {getAlertIcon(alert.type)}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-gray-900 dark:text-white font-medium">
-                        {alert.message}
-                      </p>
-                      <div className="flex items-center justify-between mt-1">
-                        <span className="text-xs text-gray-500 dark:text-gray-400">{alert.time}</span>
-                        <button className="text-xs text-purple-600 hover:text-purple-700 dark:text-purple-400">
-                          {alert.action}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Quick Stats */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Quick Stats
-              </h3>
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Active Users</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">{systemStats.activeUsers}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Lab Sessions Today</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">127</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Avg Session Time</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">{systemStats.avgSessionTime}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Storage Used</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">{systemStats.storageUsed} / {systemStats.totalStorage}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {activeTab === 'users' && (
         <div className="space-y-6">
           {/* Pending Approvals Card */}
@@ -785,13 +615,6 @@ export function AdminDashboard() {
                     Refresh
                   </button>
                   <button
-                    onClick={() => setShowUserModal(true)}
-                    className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
-                  >
-                    <UserPlus className="w-4 h-4" />
-                    Add User
-                  </button>
-                  <button
                     onClick={exportToCSV}
                     className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
                   >
@@ -859,8 +682,6 @@ export function AdminDashboard() {
                               )}
                             </div>
                           </th>
-                          <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Department</th>
-                          <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Status</th>
                           <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Actions</th>
                         </tr>
                       </thead>
@@ -885,66 +706,19 @@ export function AdminDashboard() {
                                 {user.role}
                               </span>
                             </td>
-                            <td className="py-3 px-4 text-gray-600 dark:text-gray-400">
-                              {user.department || 'N/A'}
-                            </td>
                             <td className="py-3 px-4">
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${user.is_approved === false
-                                ? 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300'
-                                : 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300'
-                                }`}>
-                                {user.is_approved === false ? 'Disabled' : 'Active'}
-                              </span>
-                            </td>
-                            <td className="py-3 px-4">
-                              <div className="relative actions-dropdown">
-                                <button
-                                  onClick={() => toggleUserActions(user.id)}
-                                  className="text-gray-600 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                                >
-                                  <Settings className="w-4 h-4" />
-                                </button>
-                                {showUserActions[user.id] && (
-                                  <div className="absolute right-0 top-8 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 min-w-32">
-                                    <button
-                                      onClick={() => handleEditUser(user)}
-                                      className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 first:rounded-t-lg"
-                                    >
-                                      <Edit className="w-4 h-4" />
-                                      Edit
-                                    </button>
-                                    {user.is_approved === false ? (
-                                      <button
-                                        onClick={() => handleEnableUser(user.id)}
-                                        className="flex items-center gap-2 w-full px-3 py-2 text-sm text-green-700 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/20"
-                                      >
-                                        <UserCheck className="w-4 h-4" />
-                                        Enable
-                                      </button>
-                                    ) : (
-                                      <button
-                                        onClick={() => handleDisableUser(user.id)}
-                                        className="flex items-center gap-2 w-full px-3 py-2 text-sm text-yellow-700 hover:bg-yellow-50 dark:text-yellow-400 dark:hover:bg-yellow-900/20"
-                                      >
-                                        <UserX className="w-4 h-4" />
-                                        Disable
-                                      </button>
-                                    )}
-                                    <button
-                                      onClick={() => handleDeleteUser(user.id)}
-                                      className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 last:rounded-b-lg"
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                      Delete
-                                    </button>
-                                  </div>
-                                )}
-                              </div>
+                              <button
+                                onClick={() => handleDeleteUser(user.id)}
+                                className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 p-2 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                title="Delete User"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
                             </td>
                           </tr>
                         )) : (
                           <tr>
-                            <td colSpan={6} className="py-8 text-center text-gray-500 dark:text-gray-400">
+                            <td colSpan={4} className="py-8 text-center text-gray-500 dark:text-gray-400">
                               {searchTerm ? 'No users found matching your search.' : 'No users found. Click refresh to load users from the API.'}
                             </td>
                           </tr>
@@ -980,127 +754,6 @@ export function AdminDashboard() {
                 )}
               </div>
             )}
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'infrastructure' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Kubernetes Cluster
-            </h3>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Nodes</span>
-                <span className="text-sm font-medium text-gray-900 dark:text-white">5 / 5 Ready</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Pods</span>
-                <span className="text-sm font-medium text-gray-900 dark:text-white">127 / 200 Running</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Namespaces</span>
-                <span className="text-sm font-medium text-gray-900 dark:text-white">8 Active</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Desktop Sessions</span>
-                <span className="text-sm font-medium text-gray-900 dark:text-white">23 Active</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Database Status
-            </h3>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Primary DB</span>
-                <span className="text-sm font-medium text-green-600 dark:text-green-400">Healthy</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Read Replicas</span>
-                <span className="text-sm font-medium text-green-600 dark:text-green-400">2 / 2 Healthy</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Connections</span>
-                <span className="text-sm font-medium text-gray-900 dark:text-white">45 / 200</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Storage</span>
-                <span className="text-sm font-medium text-gray-900 dark:text-white">1.2TB / 2TB</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'security' && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <Shield className="w-8 h-8 text-green-500" />
-                <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white">Security Score</h3>
-                  <p className="text-2xl font-bold text-green-600">94/100</p>
-                </div>
-              </div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Excellent security posture</p>
-            </div>
-
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <AlertTriangle className="w-8 h-8 text-yellow-500" />
-                <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white">Open Alerts</h3>
-                  <p className="text-2xl font-bold text-yellow-600">{systemStats.securityAlerts}</p>
-                </div>
-              </div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Require attention</p>
-            </div>
-
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <Activity className="w-8 h-8 text-blue-500" />
-                <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white">Active Sessions</h3>
-                  <p className="text-2xl font-bold text-blue-600">{systemStats.activeUsers}</p>
-                </div>
-              </div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Currently monitored</p>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Security Events
-            </h3>
-            <div className="space-y-3">
-              {recentAlerts.map((alert) => (
-                <div key={alert.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    {getAlertIcon(alert.type)}
-                    <div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">{alert.message}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">{alert.time}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${alert.severity === 'high' ? 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300' :
-                      alert.severity === 'medium' ? 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900 dark:text-yellow-300' :
-                        'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300'
-                      }`}>
-                      {alert.severity}
-                    </span>
-                    <button className="text-sm text-purple-600 hover:text-purple-700 dark:text-purple-400 px-3 py-1 rounded border border-purple-200 dark:border-purple-800">
-                      {alert.action}
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
         </div>
       )}
@@ -1154,32 +807,32 @@ export function AdminDashboard() {
                     return title.includes(searchLower) || description.includes(searchLower)
                   })
                   .map((lab) => (
-                  <div key={lab.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 text-center">
-                    {/* Lab Icon */}
-                    <div className="w-16 h-16 bg-blue-600 rounded-xl flex items-center justify-center mx-auto mb-6">
-                      <BookOpen className="w-8 h-8 text-white" />
+                    <div key={lab.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 text-center">
+                      {/* Lab Icon */}
+                      <div className="w-16 h-16 bg-blue-600 rounded-xl flex items-center justify-center mx-auto mb-6">
+                        <BookOpen className="w-8 h-8 text-white" />
+                      </div>
+
+                      {/* Lab Name */}
+                      <h4 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                        {lab.title || lab.name || 'Untitled Lab'}
+                      </h4>
+
+                      {/* Lab Description/Type */}
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-8">
+                        {lab.description || lab.type || 'No description'}
+                      </p>
+
+                      {/* Delete Button */}
+                      <button
+                        onClick={() => deleteLab(lab.id, lab.title || lab.name || 'Untitled Lab')}
+                        className="w-full flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-3 rounded-lg transition-colors font-medium"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Delete
+                      </button>
                     </div>
-                    
-                    {/* Lab Name */}
-                    <h4 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                      {lab.title || lab.name || 'Untitled Lab'}
-                    </h4>
-                    
-                    {/* Lab Description/Type */}
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-8">
-                      {lab.description || lab.type || 'No description'}
-                    </p>
-                    
-                    {/* Delete Button */}
-                    <button 
-                      onClick={() => deleteLab(lab.id, lab.title || lab.name || 'Untitled Lab')}
-                      className="w-full flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-3 rounded-lg transition-colors font-medium"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      Delete
-                    </button>
-                  </div>
-                ))}
+                  ))}
               </div>
             )}
 
@@ -1190,16 +843,16 @@ export function AdminDashboard() {
               const description = (lab.description || lab.type || '').toLowerCase()
               return title.includes(searchLower) || description.includes(searchLower)
             }).length === 0 && (
-              <div className="text-center py-8">
-                <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                  {labSearchTerm ? 'No labs match your search' : 'No labs found'}
-                </h4>
-                <p className="text-gray-600 dark:text-gray-400">
-                  {labSearchTerm ? `No labs match "${labSearchTerm}". Try a different search term.` : 'No labs have been created yet.'}
-                </p>
-              </div>
-            )}
+                <div className="text-center py-8">
+                  <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                    {labSearchTerm ? 'No labs match your search' : 'No labs found'}
+                  </h4>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    {labSearchTerm ? `No labs match "${labSearchTerm}". Try a different search term.` : 'No labs have been created yet.'}
+                  </p>
+                </div>
+              )}
           </div>
         </div>
       )}
@@ -1246,7 +899,6 @@ export function AdminDashboard() {
                     <tr className="border-b border-gray-200 dark:border-gray-700">
                       <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Course</th>
                       <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Code</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Department</th>
                       <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Level</th>
                       <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Credits</th>
                       <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Students</th>
@@ -1265,7 +917,6 @@ export function AdminDashboard() {
                           </div>
                         </td>
                         <td className="py-3 px-4 text-gray-900 dark:text-white font-mono">{course.code}</td>
-                        <td className="py-3 px-4 text-gray-600 dark:text-gray-400">{course.department}</td>
                         <td className="py-3 px-4">
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${course.academicLevel === 'Bachelor'
                             ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300'
@@ -1281,22 +932,18 @@ export function AdminDashboard() {
                           {course.enrolledStudents || 0}
                         </td>
                         <td className="py-3 px-4">
-                          <div className="flex gap-2">
-                            <button className="text-blue-600 hover:text-blue-700 dark:text-blue-400 p-1">
-                              <Eye className="w-4 h-4" />
-                            </button>
-                            <button className="text-gray-600 hover:text-gray-700 dark:text-gray-400 p-1">
-                              <Settings className="w-4 h-4" />
-                            </button>
-                            <button className="text-red-600 hover:text-red-700 dark:text-red-400 p-1">
-                              <AlertTriangle className="w-4 h-4" />
-                            </button>
-                          </div>
+                          <button 
+                            onClick={() => deleteCourse(course.id, course.title)}
+                            className="text-red-600 hover:text-red-700 dark:text-red-400 hover:dark:text-red-300 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                            title="Delete Course"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </td>
                       </tr>
                     )) : (
                       <tr>
-                        <td colSpan={7} className="py-8 text-center text-gray-500 dark:text-gray-400">
+                        <td colSpan={6} className="py-8 text-center text-gray-500 dark:text-gray-400">
                           No courses found. Click refresh to load courses from the API.
                         </td>
                       </tr>
@@ -1416,18 +1063,6 @@ export function AdminDashboard() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Department
-                </label>
-                <input
-                  type="text"
-                  value={courseFormData.department}
-                  onChange={(e) => setCourseFormData({ ...courseFormData, department: e.target.value })}
-                  className="block w-full border-gray-300 dark:border-gray-700 rounded-lg shadow-sm focus:ring-purple-500 focus:border-purple-500"
-                  placeholder="Enter department name"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Level
                 </label>
                 <select
@@ -1463,7 +1098,7 @@ export function AdminDashboard() {
                   onClick={() => {
                     if (courseFormData.title && courseFormData.code) {
                       handleCreateCourse(courseFormData)
-                      setCourseFormData({ title: '', code: '', department: '', academicLevel: 'bachelor', totalCredits: 0 })
+                      setCourseFormData({ title: '', code: '', academicLevel: 'bachelor', totalCredits: 0 })
                     }
                   }}
                   className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
@@ -1493,7 +1128,7 @@ export function AdminDashboard() {
                   type="text"
                   value={selectedUser.name}
                   onChange={(e) => setSelectedUser({ ...selectedUser, name: e.target.value })}
-                  className="block w-full border-gray-300 dark:border-gray-700 rounded-lg shadow-sm focus:ring-purple-500 focus:border-purple-500"
+                  className="block w-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-purple-500 focus:border-purple-500 px-3 py-2"
                   placeholder="Enter full name"
                 />
               </div>
@@ -1505,7 +1140,7 @@ export function AdminDashboard() {
                   type="email"
                   value={selectedUser.email}
                   onChange={(e) => setSelectedUser({ ...selectedUser, email: e.target.value })}
-                  className="block w-full border-gray-300 dark:border-gray-700 rounded-lg shadow-sm focus:ring-purple-500 focus:border-purple-500"
+                  className="block w-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-purple-500 focus:border-purple-500 px-3 py-2"
                   placeholder="Enter email address"
                 />
               </div>
@@ -1516,26 +1151,12 @@ export function AdminDashboard() {
                 <select
                   value={selectedUser.role}
                   onChange={(e) => setSelectedUser({ ...selectedUser, role: e.target.value })}
-                  className="block w-full border-gray-300 dark:border-gray-700 rounded-lg shadow-sm focus:ring-purple-500 focus:border-purple-500"
+                  className="block w-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-purple-500 focus:border-purple-500 px-3 py-2"
                 >
                   <option value="student">Student</option>
                   <option value="instructor">Instructor</option>
                   <option value="staff">Staff</option>
                   <option value="admin">Admin</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Status
-                </label>
-                <select
-                  value={selectedUser.status || 'active'}
-                  onChange={(e) => setSelectedUser({ ...selectedUser, status: e.target.value })}
-                  className="block w-full border-gray-300 dark:border-gray-700 rounded-lg shadow-sm focus:ring-purple-500 focus:border-purple-500"
-                >
-                  <option value="active">Active</option>
-                  <option value="pending">Pending Approval</option>
-                  <option value="suspended">Suspended</option>
                 </select>
               </div>
               <div className="flex justify-end gap-2">
