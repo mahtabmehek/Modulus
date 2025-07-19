@@ -45,10 +45,37 @@ export default function CourseDesignView() {
     const [availableLabs, setAvailableLabs] = useState<Lab[]>([])
     const [availableCourses, setAvailableCourses] = useState<DatabaseCourse[]>([])
     const [selectedCourseId, setSelectedCourseId] = useState<number | null>(null)
-    const [searchTerm, setSearchTerm] = useState('')
+    const [moduleSearchTerms, setModuleSearchTerms] = useState<{[moduleId: string]: string}>({})
     const [filteredLabs, setFilteredLabs] = useState<Lab[]>([])
     const [loading, setLoading] = useState(false)
     const [isSaving, setIsSaving] = useState(false)
+
+    // Helper functions for per-module search
+    const getModuleSearchTerm = (moduleId: string): string => {
+        return moduleSearchTerms[moduleId] || ''
+    }
+
+    const setModuleSearchTerm = (moduleId: string, term: string) => {
+        setModuleSearchTerms(prev => ({
+            ...prev,
+            [moduleId]: term
+        }))
+    }
+
+    const getFilteredLabsForModule = (moduleId: string): Lab[] => {
+        const searchTerm = getModuleSearchTerm(moduleId)
+        if (!searchTerm.trim()) {
+            return availableLabs
+        }
+
+        return availableLabs.filter(lab =>
+            lab.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            lab.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (lab.tags && lab.tags.some(tag =>
+                tag.toLowerCase().includes(searchTerm.toLowerCase())
+            ))
+        )
+    }
 
     // Load available labs and courses when component mounts
     useEffect(() => {
@@ -77,23 +104,6 @@ export default function CourseDesignView() {
             }
         }
     }, [selectedCourseId, availableCourses])
-
-    // Filter labs based on search term
-    useEffect(() => {
-        if (!searchTerm.trim()) {
-            setFilteredLabs([])
-            return
-        }
-
-        const filtered = availableLabs.filter(lab =>
-            lab.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            lab.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (lab.tags && lab.tags.some(tag =>
-                tag.toLowerCase().includes(searchTerm.toLowerCase())
-            ))
-        )
-        setFilteredLabs(filtered)
-    }, [searchTerm, availableLabs])
 
     const loadAvailableLabs = async () => {
         try {
@@ -235,6 +245,16 @@ export default function CourseDesignView() {
     }
 
     const addLabToModule = (moduleId: string, lab: Lab) => {
+        // Check if the lab is already assigned to any module
+        const isLabAlreadyAssigned = courseData.modules.some(module => 
+            module.labs.some(moduleLab => moduleLab.id === lab.id)
+        )
+
+        if (isLabAlreadyAssigned) {
+            toast.error(`Lab "${lab.title}" is already assigned to another module`)
+            return
+        }
+
         setCourseData({
             ...courseData,
             modules: courseData.modules.map(module =>
@@ -243,6 +263,7 @@ export default function CourseDesignView() {
                     : module
             )
         })
+        toast.success(`Lab "${lab.title}" added to module`)
     }
 
     const removeLabFromModule = (moduleId: string, labId: number) => {
@@ -549,14 +570,14 @@ export default function CourseDesignView() {
                                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                                             <input
                                                 type="text"
-                                                value={searchTerm}
-                                                onChange={(e) => setSearchTerm(e.target.value)}
+                                                value={getModuleSearchTerm(module.id)}
+                                                onChange={(e) => setModuleSearchTerm(module.id, e.target.value)}
                                                 placeholder="Search by lab name or tag..."
                                                 className="w-full pl-9 pr-9 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                             />
-                                            {searchTerm && (
+                                            {getModuleSearchTerm(module.id) && (
                                                 <button
-                                                    onClick={() => setSearchTerm('')}
+                                                    onClick={() => setModuleSearchTerm(module.id, '')}
                                                     className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 hover:text-gray-600"
                                                 >
                                                     <X className="h-4 w-4" />
@@ -569,8 +590,13 @@ export default function CourseDesignView() {
                                             <p className="text-sm text-gray-500 dark:text-gray-400">Loading labs...</p>
                                         ) : (
                                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-48 overflow-y-auto">
-                                                {filteredLabs
-                                                    .filter(lab => !module.labs.some(moduleLab => moduleLab.id === lab.id))
+                                                {getFilteredLabsForModule(module.id)
+                                                    .filter(lab => {
+                                                        // Check if lab is already assigned to ANY module in the course
+                                                        return !courseData.modules.some(anyModule => 
+                                                            anyModule.labs.some(moduleLab => moduleLab.id === lab.id)
+                                                        )
+                                                    })
                                                     .map((lab) => (
                                                         <button
                                                             key={lab.id}
@@ -605,9 +631,13 @@ export default function CourseDesignView() {
                                         )}
 
                                         {/* No results message */}
-                                        {searchTerm && filteredLabs.filter(lab => !module.labs.some(moduleLab => moduleLab.id === lab.id)).length === 0 && (
+                                        {getModuleSearchTerm(module.id) && getFilteredLabsForModule(module.id).filter(lab => {
+                                            return !courseData.modules.some(anyModule => 
+                                                anyModule.labs.some(moduleLab => moduleLab.id === lab.id)
+                                            )
+                                        }).length === 0 && (
                                             <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
-                                                No labs found matching "{searchTerm}"
+                                                No available labs found matching "{getModuleSearchTerm(module.id)}"
                                             </p>
                                         )}
                                     </div>

@@ -95,13 +95,13 @@ router.get('/my-course', authenticateToken, async (req, res) => {
     const db = pool;
     console.log('Database connection:', !!db);
 
-    // Get the user's assigned course_id
-    console.log('Querying user course_id...');
-    const userResult = await db.query('SELECT course_id FROM users WHERE id = $1', [req.user.userId]);
+    // Get the user's assigned course_code
+    console.log('Querying user course_code...');
+    const userResult = await db.query('SELECT course_code FROM users WHERE id = $1', [req.user.userId]);
     console.log('User query result:', userResult.rows);
     const user = userResult.rows[0];
 
-    if (!user || !user.course_id) {
+    if (!user || !user.course_code) {
       console.log('MY COURSE - No course assigned to user');
       return res.json({
         success: true,
@@ -109,9 +109,9 @@ router.get('/my-course', authenticateToken, async (req, res) => {
       });
     }
 
-    console.log('MY COURSE - User course ID:', user.course_id);
+    console.log('MY COURSE - User course code:', user.course_code);
 
-    // Get the course by ID
+    // Get the course by code
     const courseQuery = `
       SELECT 
         id,
@@ -123,13 +123,13 @@ router.get('/my-course', authenticateToken, async (req, res) => {
         duration,
         total_credits
       FROM courses 
-      WHERE id = $1 AND is_published = true
+      WHERE code = $1
     `;
 
-    const courseResult = await db.query(courseQuery, [user.course_id]);
+    const courseResult = await db.query(courseQuery, [user.course_code]);
 
     if (courseResult.rows.length === 0) {
-      console.log('MY COURSE - Course not found or not published');
+      console.log('MY COURSE - Course not found for code:', user.course_code);
       return res.json({
         success: true,
         course: null
@@ -137,8 +137,10 @@ router.get('/my-course', authenticateToken, async (req, res) => {
     }
 
     const course = courseResult.rows[0];
+    console.log('MY COURSE - Found course:', course);
 
     // Get modules for this course
+    console.log('MY COURSE - Querying modules for course_id:', course.id);
     const modulesQuery = `
       SELECT 
         id,
@@ -146,29 +148,33 @@ router.get('/my-course', authenticateToken, async (req, res) => {
         description,
         order_index
       FROM modules 
-      WHERE course_id = $1 AND is_published = true
+      WHERE course_id = $1
       ORDER BY order_index
     `;
 
     const modulesResult = await db.query(modulesQuery, [course.id]);
+    console.log('MY COURSE - Found modules:', modulesResult.rows.length);
 
     // Get labs for each module
     const modules = [];
     for (const module of modulesResult.rows) {
       const labsQuery = `
         SELECT 
-          id,
-          title,
-          description,
-          order_index,
-          estimated_minutes,
-          points_possible
-        FROM labs 
-        WHERE module_id = $1 AND is_published = true
-        ORDER BY order_index
+          l.id,
+          l.title,
+          l.description,
+          l.estimated_minutes,
+          l.points_possible,
+          ml.order_index
+        FROM labs l
+        JOIN module_labs ml ON l.id = ml.lab_id
+        WHERE ml.module_id = $1
+        ORDER BY ml.order_index
       `;
 
+      console.log('MY COURSE - Querying labs for module:', module.id);
       const labsResult = await db.query(labsQuery, [module.id]);
+      console.log('MY COURSE - Found labs for module:', module.id, 'count:', labsResult.rows.length);
 
       modules.push({
         id: module.id,
@@ -255,10 +261,11 @@ router.get('/:id', async (req, res) => {
     const modules = [];
     for (const module of modulesResult.rows) {
       const labsResult = await db.query(
-        `SELECT id, title, description, order_index
-         FROM labs 
-         WHERE module_id = $1
-         ORDER BY order_index`,
+        `SELECT l.id, l.title, l.description, ml.order_index
+         FROM labs l
+         JOIN module_labs ml ON l.id = ml.lab_id
+         WHERE ml.module_id = $1
+         ORDER BY ml.order_index`,
         [module.id]
       );
 
@@ -503,8 +510,10 @@ router.delete('/:id', authenticateToken, requireStaffOrAdmin, async (req, res) =
     const modules = await db.query('SELECT COUNT(*) FROM modules WHERE course_id = $1', [courseId]);
     dependencies.modules = parseInt(modules.rows[0].count);
     
-    // Check users assigned to this course
-    const users = await db.query('SELECT COUNT(*) FROM users WHERE course_id = $1', [courseId]);
+    // Check users assigned to this course (by course code)
+    const courseCodeResult = await db.query('SELECT code FROM courses WHERE id = $1', [courseId]);
+    const courseCode = courseCodeResult.rows[0]?.code;
+    const users = await db.query('SELECT COUNT(*) FROM users WHERE course_code = $1', [courseCode]);
     dependencies.assignedUsers = parseInt(users.rows[0].count);
 
     const totalDependencies = dependencies.modules + dependencies.assignedUsers;
@@ -575,6 +584,10 @@ router.put('/:id/modules', authenticateToken, requireStaffOrAdmin, async (req, r
     await db.query('BEGIN');
 
     try {
+      // Debug: Check if we can see labs inside the transaction
+      const allLabsInTransaction = await db.query('SELECT id, title FROM labs ORDER BY id');
+      console.log('🔍 Labs visible in transaction:', allLabsInTransaction.rows.map(l => `${l.id}:${l.title}`));
+
       // First, delete existing modules for this course
       await db.query(
         'DELETE FROM modules WHERE course_id = $1',
@@ -599,13 +612,32 @@ router.put('/:id/modules', authenticateToken, requireStaffOrAdmin, async (req, r
         if (module.labs && module.labs.length > 0) {
           for (let i = 0; i < module.labs.length; i++) {
             const lab = module.labs[i];
-            console.log('Inserting lab:', lab);
+            console.log('Linking existing lab to module:', lab);
+            console.log('Lab ID type:', typeof lab.id, 'Value:', lab.id);
 
-            await db.query(
-              `INSERT INTO labs (module_id, title, description, order_index, created_at, updated_at)
-               VALUES ($1, $2, $3, $4, NOW(), NOW())`,
-              [moduleId, lab.title, lab.description || '', i]
-            );
+            // Verify the lab exists before linking
+            const labCheck = await db.query('SELECT id FROM labs WHERE id = $1', [lab.id]);
+            console.log('Lab exists check:', labCheck.rows.length > 0 ? 'YES' : 'NO');
+
+            if (labCheck.rows.length === 0) {
+              console.log('❌ SKIPPING - Lab ID', lab.id, 'does not exist in labs table');
+              continue;
+            }
+
+            // Use module_labs junction table to link existing labs to this module
+            // The lab.id should be the existing lab ID from the database
+            try {
+              await db.query(
+                `INSERT INTO module_labs (module_id, lab_id, order_index)
+                 VALUES ($1, $2, $3)
+                 ON CONFLICT (module_id, lab_id) DO UPDATE SET order_index = EXCLUDED.order_index`,
+                [moduleId, lab.id, i]
+              );
+              console.log('✅ Successfully linked lab', lab.id, 'to module', moduleId);
+            } catch (linkError) {
+              console.log('❌ Failed to link lab', lab.id, 'to module', moduleId, ':', linkError.message);
+              throw linkError; // Re-throw to trigger transaction rollback
+            }
           }
         }
       }

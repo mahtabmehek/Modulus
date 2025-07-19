@@ -1,6 +1,40 @@
 const express = require('express');
+const jwt = require('jsonwebtoken');
 const { pool } = require('../db');
 const router = express.Router();
+
+const JWT_SECRET = process.env.JWT_SECRET || 'modulus-lms-secret-key-change-in-production';
+
+// Test route to verify module-labs router is working
+router.get('/test', (req, res) => {
+    console.log('🧪 MODULE-LABS TEST ROUTE - Hit successfully');
+    res.json({ message: 'Module-labs router is working!' });
+});
+
+// Middleware to verify JWT token
+const authenticateToken = (req, res, next) => {
+  console.log('🔐 MODULE-LABS AUTH - Starting authentication check');
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  console.log('🔐 MODULE-LABS AUTH - Auth header:', authHeader ? 'Present' : 'Missing');
+  console.log('🔐 MODULE-LABS AUTH - Token extracted:', token ? 'Present' : 'Missing');
+
+  if (!token) {
+    console.log('❌ MODULE-LABS AUTH - No token provided');
+    return res.status(401).json({ error: 'Access token required' });
+  }
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) {
+      console.log('❌ MODULE-LABS AUTH - Token verification failed:', err.message);
+      return res.status(403).json({ error: 'Invalid or expired token' });
+    }
+    console.log('✅ MODULE-LABS AUTH - Token verified successfully for user:', user.email);
+    req.user = user;
+    next();
+  });
+};
 
 // Add lab to module (Many-to-Many relationship)
 router.post('/modules/:moduleId/labs/:labId', async (req, res) => {
@@ -80,6 +114,8 @@ router.delete('/modules/:moduleId/labs/:labId', async (req, res) => {
 router.get('/modules/:moduleId/labs', async (req, res) => {
     try {
         const { moduleId } = req.params;
+        console.log('🔍 MODULE-LABS GET - Module ID:', moduleId);
+        console.log('🔍 MODULE-LABS GET - Request headers:', req.headers);
 
         const result = await pool.query(`
             SELECT 
@@ -92,12 +128,15 @@ router.get('/modules/:moduleId/labs', async (req, res) => {
             ORDER BY ml.order_index;
         `, [moduleId]);
 
+        console.log('🔍 MODULE-LABS GET - Query result:', result.rows.length, 'labs found');
+        console.log('🔍 MODULE-LABS GET - Labs data:', result.rows);
+
         res.json({
             success: true,
             data: result.rows
         });
     } catch (error) {
-        console.error('Error fetching module labs:', error);
+        console.error('❌ MODULE-LABS GET - Error fetching module labs:', error);
         res.status(500).json({ error: 'Failed to fetch module labs' });
     }
 });

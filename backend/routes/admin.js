@@ -409,11 +409,11 @@ router.get('/list-users', async (req, res) => {
         u.role, 
         u.is_approved, 
         u.created_at,
-        u.course_id,
+        u.course_code,
         c.code as "courseCode",
         c.title as "courseTitle"
       FROM users u
-      LEFT JOIN courses c ON u.course_id = c.id
+      LEFT JOIN courses c ON u.course_code = c.code
       ORDER BY u.id
     `;
     const result = await db.query(query);

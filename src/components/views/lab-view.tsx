@@ -1,10 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ChevronUp, ChevronRight, X, Monitor, AlertTriangle } from 'lucide-react'
+import { ChevronUp, ChevronRight, Monitor, AlertTriangle, ArrowLeft, Clock, Award, BookOpen, GraduationCap, Play } from 'lucide-react'
 import { useApp } from '@/lib/hooks/use-app'
 import { labAPI } from '@/lib/api/labs'
-import { DesktopSession } from '@/components/desktop/DesktopSession'
 
 export default function LabView() {
   const { navigate, currentView } = useApp()
@@ -14,7 +13,6 @@ export default function LabView() {
   const [currentModule, setCurrentModule] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [showDesktop, setShowDesktop] = useState(false)
 
   // Get lab and module data from the URL/state
   const labId = currentView.params?.labId
@@ -57,12 +55,14 @@ export default function LabView() {
 
   if (!currentLab || !currentModule) {
     return (
-      <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Lab not found</h1>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <Monitor className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold mb-2 text-gray-900">Lab Not Found</h2>
+          <p className="text-gray-600 mb-4">The requested lab could not be found.</p>
           <button
             onClick={() => navigate('dashboard')}
-            className="text-red-400 hover:text-red-300"
+            className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
           >
             Return to Dashboard
           </button>
@@ -81,10 +81,10 @@ export default function LabView() {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading lab...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 text-lg">Loading lab...</p>
         </div>
       </div>
     )
@@ -93,14 +93,14 @@ export default function LabView() {
   // Error state
   if (error) {
     return (
-      <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center max-w-md">
           <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold mb-2">Error Loading Lab</h2>
-          <p className="text-muted-foreground mb-4">{error}</p>
+          <h2 className="text-xl font-semibold mb-2 text-gray-900">Error Loading Lab</h2>
+          <p className="text-gray-600 mb-4">{error}</p>
           <button
             onClick={() => navigate('dashboard')}
-            className="bg-primary text-primary-foreground px-4 py-2 rounded hover:bg-primary/90"
+            className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
           >
             Return to Dashboard
           </button>
@@ -112,14 +112,14 @@ export default function LabView() {
   // No lab data
   if (!currentLab) {
     return (
-      <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center max-w-md">
-          <Monitor className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h2 className="text-xl font-semibold mb-2">Lab Not Found</h2>
-          <p className="text-muted-foreground mb-4">The requested lab could not be found.</p>
+          <Monitor className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold mb-2 text-gray-900">Lab Not Found</h2>
+          <p className="text-gray-600 mb-4">The requested lab could not be found.</p>
           <button
             onClick={() => navigate('dashboard')}
-            className="bg-primary text-primary-foreground px-4 py-2 rounded hover:bg-primary/90"
+            className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
           >
             Return to Dashboard
           </button>
@@ -129,69 +129,57 @@ export default function LabView() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex">
-      {/* Left Sidebar - Module Content */}
-      <div className={`${isSidebarCollapsed ? 'w-16' : 'w-72'} bg-card border-r border-border flex flex-col transition-all duration-300 ease-in-out`}>
-        <div className="p-4 border-b border-border">
-          <div className="flex items-center justify-between">
-            {!isSidebarCollapsed && (
-              <h3 className="text-foreground font-medium">Module Content</h3>
-            )}
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-                className="text-muted-foreground hover:text-foreground transition-colors p-1"
-                title={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-              >
-                <ChevronRight className={`w-5 h-5 transition-transform duration-300 ${isSidebarCollapsed ? 'rotate-0' : 'rotate-180'}`} />
-              </button>
-              {!isSidebarCollapsed && (
-                <button
-                  onClick={() => navigate('module', { moduleId: currentModule.id })}
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                  title="Close lab view"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              )}
-            </div>
-          </div>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header Section */}
+      <div className="bg-white border-b border-gray-200 px-6 py-4">
+        {/* Breadcrumb */}
+        <div className="flex items-center text-sm text-gray-500 mb-4">
+          <button
+            onClick={() => navigate('dashboard')}
+            className="hover:text-gray-700 transition-colors flex items-center gap-1"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Dashboard
+          </button>
+          <ChevronRight className="w-4 h-4 mx-2" />
+          <button
+            onClick={() => navigate('module', { moduleId: currentModule.id })}
+            className="hover:text-gray-700 transition-colors"
+          >
+            {currentModule.title}
+          </button>
+          <ChevronRight className="w-4 h-4 mx-2" />
+          <span className="text-gray-900 font-medium">{currentLab.title}</span>
         </div>
 
-        <div className="flex-1 p-4">
-          <div className="space-y-2">
-            {/* Simple lab content navigation */}
-            <div
-              className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'justify-between'} ${isSidebarCollapsed ? 'p-2' : 'p-3'} rounded-lg transition-colors cursor-pointer ${expandedSections.content
-                  ? 'bg-red-600 text-white'
-                  : 'bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground'
-                }`}
-              onClick={() => {
-                if (isSidebarCollapsed) {
-                  setIsSidebarCollapsed(false)
-                }
-                toggleSection('content')
-              }}
-              title={isSidebarCollapsed ? 'Lab Instructions' : undefined}
-            >
-              <div className={`flex items-center ${isSidebarCollapsed ? 'justify-center w-full' : 'space-x-3'}`}>
-                {isSidebarCollapsed ? (
-                  <div className="w-8 h-8 flex items-center justify-center bg-muted rounded text-sm">
-                    📋
-                  </div>
-                ) : (
-                  <>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-lg">📋</span>
-                      <div>
-                        <span className="text-sm font-medium">Lab Instructions</span>
-                        <div className="text-xs opacity-75">
-                          {currentLab.estimated_minutes} min • {currentLab.points_possible} points
-                        </div>
-                      </div>
-                    </div>
-                  </>
-                )}
+        {/* Lab Header */}
+        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl p-8 text-white">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="bg-white/20 rounded-lg p-2 backdrop-blur-sm">
+                  <Play className="w-6 h-6 text-white" />
+                </div>
+                <h1 className="text-3xl font-bold">{currentLab.title}</h1>
+              </div>
+              
+              <p className="text-indigo-100 text-lg leading-relaxed mb-4">
+                {currentLab.description}
+              </p>
+              
+              <div className="flex items-center gap-6 text-indigo-100">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-5 h-5" />
+                  <span>{currentLab.estimated_minutes} minutes</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Award className="w-5 h-5" />
+                  <span>{currentLab.points_possible} points</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <GraduationCap className="w-5 h-5" />
+                  <span>{currentLab.lab_type || 'Practical Lab'}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -199,102 +187,64 @@ export default function LabView() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
-        {/* Breadcrumb */}
-        <div className="bg-card border-b border-border px-6 py-4">
-          <div className="text-sm text-muted-foreground flex items-center space-x-2">
-            <button
-              onClick={() => navigate('dashboard')}
-              className="hover:text-foreground transition-colors"
-            >
-              Dashboard
-            </button>
-            <span>{'>'}</span>
-            <button
-              onClick={() => navigate('path', { pathId: currentModule.pathId })}
-              className="hover:text-foreground transition-colors"
-            >
-              Learning Path
-            </button>
-            <span>{'>'}</span>
-            <button
-              onClick={() => navigate('module', { moduleId: currentModule.id })}
-              className="hover:text-foreground transition-colors"
-            >
-              {currentModule.title}
-            </button>
-            <span>{'>'}</span>
-            <span className="text-foreground">{currentLab.title}</span>
+      <div className="max-w-6xl mx-auto p-6">
+        {/* Lab Content Overview */}
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-1 h-6 bg-gradient-to-b from-indigo-500 to-purple-500 rounded-full"></div>
+            <h2 className="text-2xl font-bold text-gray-900">Lab Overview</h2>
           </div>
-        </div>
-
-        {/* Lab Header */}
-        <div className="bg-card border-b border-border px-6 py-6">
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <h1 className="text-3xl font-bold text-foreground mb-2">
-                {currentLab.title}
-              </h1>
-              <p className="text-muted-foreground text-lg">
+          
+          <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+            <div className="prose prose-gray max-w-none">
+              <p className="text-gray-600 text-lg leading-relaxed">
                 {currentLab.description}
               </p>
             </div>
-
-            <div className="flex items-center space-x-4 ml-6">
-              {/* Lab Machine Controls */}
-              <div className="text-center">
-                <p className="text-muted-foreground text-sm mb-2">Kali Linux Desktop</p>
-                <button
-                  onClick={() => setShowDesktop(true)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
-                >
-                  <Monitor className="w-4 h-4" />
-                  <span>Launch Desktop</span>
-                </button>
-                <p className="text-muted-foreground text-xs mt-1">
-                  Persistent Kali environment
-                </p>
-              </div>
-            </div>
           </div>
         </div>
 
-        {/* Lab Content */}
-        <div className="flex-1 p-6 bg-background min-h-0">
-          <div className="h-full">
-            {/* Lab Content */}
-            <div className="mb-6 bg-card rounded-lg border border-border p-6">
-              <h2 className="text-xl font-semibold text-foreground mb-4">Lab Overview</h2>
-              {currentLab.description && (
-                <div className="mb-4">
-                  <h3 className="font-medium text-foreground mb-2">Description</h3>
-                  <p className="text-muted-foreground">{currentLab.description}</p>
+        {/* Lab Instructions */}
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-1 h-6 bg-gradient-to-b from-indigo-500 to-purple-500 rounded-full"></div>
+            <h2 className="text-2xl font-bold text-gray-900">Instructions</h2>
+          </div>
+          
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div 
+              className="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200 cursor-pointer"
+              onClick={() => toggleSection('content')}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="bg-indigo-100 rounded-lg p-2">
+                    <BookOpen className="w-5 h-5 text-indigo-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900">Lab Instructions</h3>
                 </div>
-              )}
+                <ChevronUp className={`w-5 h-5 text-gray-500 transition-transform ${
+                  expandedSections.content ? 'rotate-180' : ''
+                }`} />
+              </div>
             </div>
 
-            {/* Lab Instructions */}
             {expandedSections.content && (
-              <div className="bg-card rounded-lg border border-border overflow-hidden">
-                <div className="bg-muted/50 px-6 py-4 border-b border-border cursor-pointer"
-                  onClick={() => toggleSection('content')}>
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold text-foreground flex items-center space-x-3">
-                      <span>Instructions</span>
-                    </h2>
-                    <ChevronUp className={`w-5 h-5 text-muted-foreground transition-transform ${expandedSections.content ? 'rotate-180' : ''
-                      }`} />
-                  </div>
-                </div>
-
-                <div className="p-6">
-                  <div className="prose prose-gray dark:prose-invert max-w-none">
-                    {currentLab.instructions ? (
-                      <div className="whitespace-pre-wrap">{currentLab.instructions}</div>
-                    ) : (
-                      <p className="text-muted-foreground italic">No instructions provided yet.</p>
-                    )}
-                  </div>
+              <div className="p-6">
+                <div className="prose prose-gray max-w-none">
+                  {currentLab.instructions ? (
+                    <div className="whitespace-pre-wrap text-gray-700 leading-relaxed">
+                      {currentLab.instructions}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                      <p className="text-gray-500 text-lg">No instructions provided yet.</p>
+                      <p className="text-gray-400 text-sm mt-2">
+                        Instructions will be available when the lab is ready.
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -302,31 +252,6 @@ export default function LabView() {
         </div>
       </div>
 
-      {/* Desktop Session Modal */}
-      {showDesktop && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-2xl w-full h-full max-w-7xl max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between p-4 border-b bg-gray-50">
-              <h2 className="text-lg font-semibold text-gray-900">
-                Kali Linux Desktop - {currentLab?.title}
-              </h2>
-              <button
-                onClick={() => setShowDesktop(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-            <div className="flex-1 min-h-0">
-              <DesktopSession
-                labId={labId || ''}
-                labTitle={currentLab?.title}
-                onClose={() => setShowDesktop(false)}
-              />
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

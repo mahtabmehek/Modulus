@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useApp } from '@/lib/hooks/use-app'
 import { apiClient } from '@/lib/api'
 import { labAPI, Lab } from '@/lib/api/labs'
-import { ArrowLeft, BookOpen, Code, GraduationCap, Clock, Award } from 'lucide-react'
+import { ArrowLeft, BookOpen, Code, GraduationCap, Clock, Award, Play, CheckCircle, ChevronRight } from 'lucide-react'
 
 export function ModuleView() {
   const { navigate, currentView } = useApp()
@@ -56,8 +56,24 @@ export function ModuleView() {
           console.log('🔍 Module ID type:', typeof moduleId)
           const moduleIdNumber = parseInt(moduleId)
           console.log('🔍 Parsed module ID:', moduleIdNumber)
-          const labsData = await labAPI.getLabs(moduleIdNumber)
-          console.log('✅ Labs loaded:', labsData)
+          
+          // Use the dedicated module-labs endpoint instead of the general labs endpoint
+          // This avoids potential duplication from both direct and junction table relationships
+          const response = await fetch(`http://localhost:3001/api/module-labs/modules/${moduleIdNumber}/labs`, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`,
+              'Content-Type': 'application/json'
+            }
+          })
+          
+          if (!response.ok) {
+            throw new Error(`Failed to fetch module labs: ${response.statusText}`)
+          }
+          
+          const result = await response.json()
+          const labsData = result.data || []
+          
+          console.log('✅ Labs loaded via module-labs endpoint:', labsData)
           console.log('✅ Number of labs:', labsData.length)
           setLabs(labsData)
         } catch (error) {
@@ -104,84 +120,127 @@ export function ModuleView() {
     <div className="min-h-screen bg-background text-foreground">
       <div className="max-w-6xl mx-auto p-6">
         {/* Breadcrumb */}
-        <div className="flex items-center space-x-2 text-muted-foreground mb-6">
-          <button
+        <div className="flex items-center text-sm text-muted-foreground mb-6">
+          <button 
             onClick={() => navigate('dashboard')}
-            className="hover:text-foreground transition-colors"
+            className="hover:text-foreground transition-colors flex items-center gap-1"
           >
+            <ArrowLeft className="w-4 h-4" />
             Dashboard
           </button>
-          <span>&gt;</span>
-          <button
-            onClick={() => navigate('dashboard')}
-            className="hover:text-foreground transition-colors"
-          >
-            Learning Path
-          </button>
-          <span>&gt;</span>
-          <span className="text-foreground">{currentModule.title}</span>
+          <ChevronRight className="w-4 h-4 mx-2" />
+          <span className="text-blue-600 font-medium">Learning Path</span>
+          <ChevronRight className="w-4 h-4 mx-2" />
+          <span className="text-foreground font-medium">{currentModule.title}</span>
         </div>
 
         {/* Module Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">{currentModule.title}</h1>
-          <p className="text-muted-foreground">
-            {currentModule.description}
-          </p>
+        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl p-8 text-white mb-8">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <h1 className="text-3xl font-bold mb-3">{currentModule.title}</h1>
+              <p className="text-indigo-100 text-lg leading-relaxed mb-4">
+                {currentModule.description}
+              </p>
+              <div className="flex items-center gap-6 text-indigo-100">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-5 h-5" />
+                  <span>Estimated: {currentModule.estimatedDuration || '2-3 hours'}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <GraduationCap className="w-5 h-5" />
+                  <span>{currentModule.difficulty || 'Intermediate'}</span>
+                </div>
+              </div>
+            </div>
+            <div className="bg-white/20 rounded-xl p-4 backdrop-blur-sm">
+              <BookOpen className="w-12 h-12 text-white" />
+            </div>
+          </div>
         </div>
 
         {/* Labs Section */}
         <div>
-          <h2 className="text-xl font-semibold mb-6">Labs in this Module</h2>
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-1 h-6 bg-gradient-to-b from-indigo-500 to-purple-500 rounded-full"></div>
+            <h2 className="text-2xl font-bold text-foreground">Lab Exercises</h2>
+          </div>
 
           {labsLoading ? (
-            <div className="bg-card rounded-lg p-6 border border-border text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-muted-foreground">Loading labs...</p>
+            <div className="bg-white rounded-xl p-8 border border-gray-200 text-center shadow-sm">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+              <p className="text-gray-600 text-lg">Loading labs...</p>
             </div>
           ) : labs.length > 0 ? (
-            <div className="grid gap-4">
-              {labs.map((lab) => (
+            <div className="grid gap-6">
+              {labs.map((lab, index) => (
                 <div
                   key={lab.id}
-                  className="bg-card rounded-lg p-6 border border-border hover:border-blue-500 transition-colors cursor-pointer"
+                  className="group bg-white rounded-xl p-6 border border-gray-200 hover:border-indigo-300 hover:shadow-lg transition-all duration-300 cursor-pointer relative overflow-hidden"
                   onClick={() => navigate('lab', { labId: lab.id.toString() })}
                 >
-                  <div className="flex justify-between items-start mb-3">
-                    <h3 className="text-lg font-semibold text-foreground">{lab.title}</h3>
-                    <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded-full">
-                      {lab.lab_type || 'Lab'}
-                    </span>
+                  {/* Gradient accent */}
+                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 to-purple-500"></div>
+                  
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-start gap-4">
+                      <div className="bg-gradient-to-br from-indigo-100 to-purple-100 rounded-xl p-3 group-hover:from-indigo-200 group-hover:to-purple-200 transition-colors">
+                        <Play className="w-6 h-6 text-indigo-600" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="text-xl font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">
+                            {lab.title}
+                          </h3>
+                          <span className="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-sm font-medium">
+                            {lab.lab_type || 'Lab'}
+                          </span>
+                        </div>
+                        
+                        {lab.description && (
+                          <p className="text-gray-600 leading-relaxed mb-4">{lab.description}</p>
+                        )}
+                        
+                        <div className="flex items-center gap-6 text-sm text-gray-500">
+                          <div className="flex items-center gap-2">
+                            <Clock className="w-4 h-4" />
+                            <span className="font-medium">{lab.estimated_minutes || 30} minutes</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Award className="w-4 h-4" />
+                            <span className="font-medium">{lab.points_possible || 0} points</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <BookOpen className="w-4 h-4" />
+                            <span className="font-medium">Exercise {lab.order_index}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-indigo-500 transition-colors" />
+                    </div>
                   </div>
-
-                  {lab.description && (
-                    <p className="text-muted-foreground mb-4">{lab.description}</p>
-                  )}
-
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-1">
-                      <Clock className="w-4 h-4" />
-                      <span>{lab.estimated_minutes || 30} min</span>
+                  
+                  {/* Progress indicator (placeholder) */}
+                  <div className="flex items-center gap-2 text-sm">
+                    <div className="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
+                      <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full w-0 transition-all duration-300"></div>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Award className="w-4 h-4" />
-                      <span>{lab.points_possible || 0} pts</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <BookOpen className="w-4 h-4" />
-                      <span>Order: {lab.order_index}</span>
-                    </div>
+                    <span className="text-gray-500 text-xs min-w-fit">Not Started</span>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="bg-card rounded-lg p-6 border border-border text-center">
-              <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground">No labs available for this module yet.</p>
-              <p className="text-sm text-muted-foreground mt-2">
-                Module ID: {moduleId}
-              </p>
+            <div className="bg-white rounded-xl p-12 border border-gray-200 text-center shadow-sm">
+              <div className="bg-gray-100 rounded-full p-6 w-fit mx-auto mb-6">
+                <BookOpen className="w-12 h-12 text-gray-400" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">No Labs Available</h3>
+              <p className="text-gray-600 mb-4">There are no lab exercises for this module yet.</p>
+              <p className="text-sm text-gray-400">Module ID: {moduleId}</p>
             </div>
           )}
         </div>

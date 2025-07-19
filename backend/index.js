@@ -70,7 +70,7 @@ const labsRouter = require('./routes/labs');
 app.use('/api/labs', labsRouter);
 
 const moduleLabsRouter = require('./routes/module-labs');
-app.use('/api', moduleLabsRouter);
+app.use('/api/module-labs', moduleLabsRouter);
 
 const usersRouter = require('./routes/users');
 app.use('/api/users', usersRouter);
@@ -380,7 +380,7 @@ app.get('/api/labs', authenticateToken, async (req, res) => {
                 FROM labs l
                 JOIN module_labs ml ON l.id = ml.lab_id
                 JOIN modules m ON ml.module_id = m.id
-                WHERE l.is_published = true AND ml.module_id = $1
+                WHERE ml.module_id = $1
                 ORDER BY ml.order_index
             `;
             params = [module_id];
@@ -406,7 +406,6 @@ app.get('/api/labs', authenticateToken, async (req, res) => {
                 FROM labs l
                 LEFT JOIN module_labs ml ON l.id = ml.lab_id
                 LEFT JOIN modules m ON ml.module_id = m.id
-                WHERE l.is_published = true
                 GROUP BY l.id, l.title, l.description, l.instructions,
                          l.is_published, l.estimated_minutes, l.points_possible,
                          l.max_attempts, l.created_at, l.updated_at,
@@ -444,13 +443,13 @@ app.get('/api/labs/:id', authenticateToken, async (req, res) => {
             FROM labs l
             JOIN modules m ON l.module_id = m.id
             JOIN courses c ON m.course_id = c.id
-            WHERE l.id = $1 AND l.is_published = true
+            WHERE l.id = $1
         `;
 
         const result = await pool.query(query, [id]);
 
         if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'Lab not found or not published' });
+            return res.status(404).json({ error: 'Lab not found' });
         }
 
         res.json({

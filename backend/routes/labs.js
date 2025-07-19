@@ -41,20 +41,31 @@ router.get('/', authenticateToken, async (req, res) => {
     const db = pool;
 
     let query = `
-      SELECT l.*, m.title as module_title, m.course_id 
+      SELECT DISTINCT l.*, m.title as module_title, m.course_id,
+             COALESCE(ml.order_index, l.order_index) as effective_order
       FROM labs l
-      JOIN modules m ON l.module_id = m.id
+      LEFT JOIN modules m ON l.module_id = m.id
+      LEFT JOIN module_labs ml ON l.id = ml.lab_id
     `;
     let params = [];
 
     if (module_id) {
-      query += ' WHERE l.module_id = $1';
+      query += ' WHERE (l.module_id = $1 OR ml.module_id = $1)';
       params = [module_id];
     }
 
-    query += ' ORDER BY l.created_at DESC';
+    query += ' ORDER BY effective_order ASC, l.created_at DESC';
+
+    console.log('🔍 LABS QUERY DEBUG:');
+    console.log('- Module ID filter:', module_id);
+    console.log('- SQL Query:', query);
+    console.log('- Parameters:', params);
 
     const result = await db.query(query, params);
+
+    console.log('🔍 LABS RESULT DEBUG:');
+    console.log('- Total labs found:', result.rows.length);
+    console.log('- Lab titles:', result.rows.map(lab => `${lab.id}: ${lab.title}`));
 
     res.json({
       success: true,
@@ -64,6 +75,31 @@ router.get('/', authenticateToken, async (req, res) => {
     console.error('Error fetching labs:', error);
     res.status(500).json({
       error: 'Failed to fetch labs',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// GET /api/labs/tags - Get all unique tags from existing labs
+router.get('/tags', authenticateToken, async (req, res) => {
+  try {
+    const db = pool;
+
+    const query = `
+      SELECT DISTINCT unnest(tags) as tag 
+      FROM labs 
+      WHERE tags IS NOT NULL AND tags != '{}' 
+      ORDER BY tag ASC
+    `;
+
+    const result = await db.query(query);
+    const tags = result.rows.map(row => row.tag).filter(tag => tag && tag.trim());
+
+    res.json(tags);
+  } catch (error) {
+    console.error('Error fetching tags:', error);
+    res.status(500).json({
+      error: 'Failed to fetch tags',
       details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
@@ -79,8 +115,8 @@ router.get('/:id', authenticateToken, async (req, res) => {
     const labQuery = `
       SELECT l.*, m.title as module_title, m.course_id, c.title as course_title
       FROM labs l
-      JOIN modules m ON l.module_id = m.id
-      JOIN courses c ON m.course_id = c.id
+      LEFT JOIN modules m ON l.module_id = m.id
+      LEFT JOIN courses c ON m.course_id = c.id
       WHERE l.id = $1
     `;
 
@@ -129,7 +165,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
         points: q.points || 0,
         images: q.images || [],
         attachments: q.attachments || [],
-        multipleChoiceOptions: q.multiple_choice_options ? JSON.parse(q.multiple_choice_options) : undefined,
+        multipleChoiceOptions: q.multiple_choice_options || undefined, // JSONB is already parsed
         hints: q.hints || [],
         isOptional: !q.is_required
       }));
@@ -158,7 +194,7 @@ router.post('/',
   authenticateToken,
   requireStaffOrAdmin,
   [
-    body('module_id').isInt().withMessage('Valid module ID is required'),
+    body('module_id').optional().isInt().withMessage('Module ID must be an integer if provided'),
     body('title').trim().isLength({ min: 1, max: 255 }).withMessage('Title must be 1-255 characters'),
     body('description').optional().isLength({ max: 2000 }).withMessage('Description must be under 2000 characters'),
     body('lab_type').isIn(['vm', 'container', 'web', 'simulation']).withMessage('Valid lab type required (vm, container, web, simulation)'),
@@ -201,22 +237,33 @@ router.post('/',
         tasks // Add tasks to the expected fields
       } = req.body;
 
-      // Verify module exists and user has access
-      const moduleCheck = await db.query(
-        'SELECT id FROM modules WHERE id = $1',
-        [module_id]
-      );
+      // Verify module exists if module_id is provided
+      if (module_id) {
+        const moduleCheck = await db.query(
+          'SELECT id FROM modules WHERE id = $1',
+          [module_id]
+        );
 
-      if (moduleCheck.rows.length === 0) {
-        return res.status(404).json({ error: 'Module not found' });
+        if (moduleCheck.rows.length === 0) {
+          return res.status(404).json({ error: 'Module not found' });
+        }
       }
 
-      // Get next order index
-      const orderResult = await db.query(
-        'SELECT COALESCE(MAX(order_index), 0) + 1 as next_order FROM labs WHERE module_id = $1',
-        [module_id]
-      );
-      const finalOrderIndex = orderResult.rows[0].next_order;
+      // Get next order index (for standalone labs, just use a simple counter)
+      let finalOrderIndex;
+      if (module_id) {
+        const orderResult = await db.query(
+          'SELECT COALESCE(MAX(order_index), 0) + 1 as next_order FROM labs WHERE module_id = $1',
+          [module_id]
+        );
+        finalOrderIndex = orderResult.rows[0].next_order;
+      } else {
+        // For standalone labs, use a simple incremental order
+        const orderResult = await db.query(
+          'SELECT COALESCE(MAX(order_index), 0) + 1 as next_order FROM labs WHERE module_id IS NULL'
+        );
+        finalOrderIndex = orderResult.rows[0].next_order;
+      }
 
       // Use lab_type directly - must match database constraint: 'vm', 'container', 'web', 'simulation'
       const dbLabType = lab_type;
@@ -236,7 +283,7 @@ router.post('/',
       `;
 
       const values = [
-        module_id,
+        module_id || null, // Explicitly set to null if not provided
         title,
         description || null,
         dbLabType,
@@ -853,31 +900,6 @@ router.post('/:id/stop', authenticateToken, async (req, res) => {
     console.error('Error stopping lab session:', error);
     res.status(500).json({
       error: 'Failed to stop lab session',
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
-  }
-});
-
-// GET /api/labs/tags - Get all unique tags from existing labs
-router.get('/tags', authenticateToken, async (req, res) => {
-  try {
-    const db = pool;
-
-    const query = `
-      SELECT DISTINCT unnest(tags) as tag 
-      FROM labs 
-      WHERE tags IS NOT NULL AND tags != '{}' 
-      ORDER BY tag ASC
-    `;
-
-    const result = await db.query(query);
-    const tags = result.rows.map(row => row.tag).filter(tag => tag && tag.trim());
-
-    res.json(tags);
-  } catch (error) {
-    console.error('Error fetching tags:', error);
-    res.status(500).json({
-      error: 'Failed to fetch tags',
       details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
