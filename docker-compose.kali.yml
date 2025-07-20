@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  kali-desktop:
+    image: kasmweb/kali-rolling-desktop:1.14.0
+    container_name: kali-novnc
+    ports:
+      - "6901:6901"  # noVNC web interface
+    environment:
+      - VNC_PW=kali123
+      - KASM_PORT=6901
+    volumes:
+      - ./kali-shared:/home/kasm-user/Desktop/shared
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+      - SYS_ADMIN
+    privileged: true

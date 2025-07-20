@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ChevronUp, ChevronRight, Monitor, AlertTriangle, ArrowLeft, Clock, Award, BookOpen, GraduationCap, Play, Send, Menu, X, List } from 'lucide-react'
+import { ChevronUp, ChevronRight, Monitor, AlertTriangle, ArrowLeft, Clock, Award, BookOpen, GraduationCap, Play, Send, Menu, X, List, Trophy, Star } from 'lucide-react'
 import { useApp } from '@/lib/hooks/use-app'
 import { labAPI } from '@/lib/api/labs'
 import { submissionsAPI } from '@/lib/api/submissions'
+import { achievementsAPI } from '@/lib/api/achievements'
 
 export default function LabView() {
   const { navigate, currentView } = useApp()
@@ -19,6 +20,10 @@ export default function LabView() {
   const [questionStatus, setQuestionStatus] = useState<Record<string, 'correct' | 'incorrect' | 'pending'>>({})
   const [shakingQuestions, setShakingQuestions] = useState<Set<string>>(new Set())
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null)
+  const [showLabCompletionPopup, setShowLabCompletionPopup] = useState(false)
+  const [showAchievementPopup, setShowAchievementPopup] = useState(false)
+  const [newAchievements, setNewAchievements] = useState<any[]>([])
+  const [isLabCompleted, setIsLabCompleted] = useState(false)
 
   // Get lab and module data from the URL/state
   const labId = currentView.params?.labId
@@ -106,6 +111,57 @@ export default function LabView() {
     }))
   }
 
+  // Check if all questions in the lab are completed
+  const checkLabCompletion = () => {
+    if (!currentLab?.tasks) return false
+    
+    let totalQuestions = 0
+    let completedQuestions = 0
+    
+    for (const task of currentLab.tasks) {
+      if (task.questions) {
+        for (const question of task.questions) {
+          totalQuestions++
+          const questionKey = `question-${question.id}`
+          if (submittedQuestions.has(questionKey) && 
+              questionStatus[questionKey] === 'correct') {
+            completedQuestions++
+          }
+        }
+      }
+    }
+    
+    console.log('🎯 LAB COMPLETION CHECK:', {
+      totalQuestions,
+      completedQuestions,
+      submittedQuestions: Array.from(submittedQuestions),
+      questionStatus,
+      isComplete: totalQuestions > 0 && completedQuestions === totalQuestions
+    })
+    
+    return totalQuestions > 0 && completedQuestions === totalQuestions
+  }
+
+  // Handle achievement checking after lab completion
+  const handleLabCompletion = async () => {
+    try {
+      console.log('🎯 LAB COMPLETED - Checking for achievements...')
+      // Check for new achievements
+      const achievementResponse = await achievementsAPI.checkMyAchievements()
+      
+      if (achievementResponse.success && achievementResponse.data.newAchievements.length > 0) {
+        console.log('🏆 NEW ACHIEVEMENTS EARNED:', achievementResponse.data.newAchievements)
+        setNewAchievements(achievementResponse.data.newAchievements)
+        setShowAchievementPopup(true)
+      } else {
+        console.log('🎯 No new achievements earned')
+      }
+    } catch (error) {
+      console.error('🚨 Failed to check achievements (but lab completion still works):', error)
+      // Don't show error to user - achievement checking is optional
+    }
+  }
+
   // Load existing submissions for this lab
   const loadExistingSubmissions = async (labId: string) => {
     try {
@@ -125,6 +181,14 @@ export default function LabView() {
         setSubmittedQuestions(existingSubmissions)
         setAnswers(existingAnswers)
         setQuestionStatus(existingStatus)
+        
+        // Check if lab is already completed
+        setTimeout(() => {
+          const labCompleted = checkLabCompletion()
+          if (labCompleted) {
+            setIsLabCompleted(true)
+          }
+        }, 100)
       }
     } catch (error) {
       console.error('Failed to load existing submissions:', error)
@@ -189,10 +253,24 @@ export default function LabView() {
             newSet.add(questionId)
             return newSet
           })
-          setQuestionStatus(prev => ({
-            ...prev,
-            [questionId]: 'correct'
-          }))
+          setQuestionStatus(prev => {
+            const newStatus = {
+              ...prev,
+              [questionId]: 'correct' as const
+            }
+            
+            // Check if this completion makes the lab complete
+            setTimeout(() => {
+              const labCompleted = checkLabCompletion()
+              if (labCompleted && !isLabCompleted) {
+                setIsLabCompleted(true)
+                setShowLabCompletionPopup(true)
+                handleLabCompletion()
+              }
+            }, 100)
+            
+            return newStatus
+          })
         } else {
           setQuestionStatus(prev => ({
             ...prev,
@@ -403,6 +481,12 @@ export default function LabView() {
                   <Play className="w-6 h-6 text-white" />
                 </div>
                 <h1 className="text-3xl font-bold">{currentLab.title}</h1>
+                {isLabCompleted && (
+                  <div className="flex items-center gap-2 bg-green-500/20 backdrop-blur-sm px-3 py-1 rounded-full">
+                    <Trophy className="w-5 h-5 text-green-300" />
+                    <span className="text-green-300 font-semibold">Completed</span>
+                  </div>
+                )}
               </div>
 
               <p className="text-indigo-100 text-lg leading-relaxed mb-4">
@@ -661,6 +745,84 @@ export default function LabView() {
           )}
         </div>
       </div>
+
+      {/* Lab Completion Popup */}
+      {showLabCompletionPopup && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-md w-full mx-4 text-center transform animate-pulse">
+            <div className="mb-6">
+              <div className="w-20 h-20 bg-gradient-to-r from-green-400 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Trophy className="w-12 h-12 text-white" />
+              </div>
+              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                🎉 Lab Completed! 🎉
+              </h2>
+              <p className="text-lg text-gray-600 dark:text-gray-300">
+                Congratulations! You've successfully completed <span className="font-semibold text-indigo-600 dark:text-indigo-400">{currentLab?.title}</span>
+              </p>
+            </div>
+            
+            <div className="space-y-3">
+              <button
+                onClick={() => setShowLabCompletionPopup(false)}
+                className="w-full bg-gradient-to-r from-green-500 to-blue-500 text-white px-6 py-3 rounded-lg hover:from-green-600 hover:to-blue-600 transition-all duration-200 font-semibold text-lg"
+              >
+                Awesome! 🚀
+              </button>
+              <button
+                onClick={() => {
+                  setShowLabCompletionPopup(false)
+                  navigate('dashboard')
+                }}
+                className="w-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-6 py-3 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              >
+                Back to Dashboard
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Achievement Award Popup */}
+      {showAchievementPopup && newAchievements.length > 0 && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-md w-full mx-4 text-center">
+            <div className="mb-6">
+              <div className="w-20 h-20 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
+                <Award className="w-12 h-12 text-white" />
+              </div>
+              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                🏆 Achievement Unlocked! 🏆
+              </h2>
+              <p className="text-lg text-gray-600 dark:text-gray-300 mb-4">
+                You've earned {newAchievements.length} new achievement{newAchievements.length > 1 ? 's' : ''}!
+              </p>
+            </div>
+            
+            <div className="space-y-3 mb-6">
+              {newAchievements.map((achievement, index) => (
+                <div key={index} className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900 dark:to-orange-900 p-4 rounded-lg border-2 border-yellow-200 dark:border-yellow-700">
+                  <div className="flex items-center gap-3">
+                    <Star className="w-8 h-8 text-yellow-500" />
+                    <div className="text-left">
+                      <h3 className="font-bold text-gray-900 dark:text-white">
+                        {achievement.achievement_name}
+                      </h3>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            <button
+              onClick={() => setShowAchievementPopup(false)}
+              className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-6 py-3 rounded-lg hover:from-yellow-600 hover:to-orange-600 transition-all duration-200 font-semibold text-lg"
+            >
+              Claim Rewards! ✨
+            </button>
+          </div>
+        </div>
+      )}
     </div>
     </div>
   )

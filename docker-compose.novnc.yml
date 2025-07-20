@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  novnc-desktop:
+    image: dorowu/ubuntu-desktop-lxde-vnc:latest
+    ports:
+      - "6080:80"  # noVNC web interface
+      - "5900:5900"  # VNC port (optional)
+    environment:
+      - VNC_PASSWORD=password123
+      - RESOLUTION=1920x1080
+    volumes:
+      - ./shared:/home/ubuntu/shared  # Shared folder
+    restart: unless-stopped
+    
+  # Alternative with Kali Linux for cybersecurity labs
+  kali-desktop:
+    image: kasmweb/kali-rolling-desktop:1.14.0
+    ports:
+      - "6081:6901"  # Kasm web interface
+    environment:
+      - VNC_PW=password123
+      - KASM_PORT=6901
+    restart: unless-stopped
+    profiles:
+      - kali

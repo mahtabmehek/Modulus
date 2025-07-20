@@ -12,36 +12,19 @@ setInterval(() => {
 
 const router = express.Router();
 
-// Debug middleware to log all requests to desktop routes
-router.use((req, res, next) => {
-  console.log(`🖥️  DESKTOP ROUTE: ${req.method} ${req.path}`);
-  next();
-});
-
 // Inline authentication middleware for Lambda compatibility
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
-  console.log('🔐 DESKTOP AUTH DEBUG: Header present:', !!authHeader);
-  console.log('🔐 DESKTOP AUTH DEBUG: Token extracted:', !!token);
-
   if (!token) {
-    console.log('❌ DESKTOP AUTH DEBUG: No token provided');
     return res.status(401).json({ message: 'Access token required' });
   }
 
-  const secret = process.env.JWT_SECRET || 'modulus-lms-secret-key-change-in-production';
-  console.log('🔐 DESKTOP AUTH DEBUG: Using JWT secret:', secret.substring(0, 10) + '...');
-
-  jwt.verify(token, secret, (err, user) => {
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
     if (err) {
-      console.log('❌ DESKTOP AUTH DEBUG: JWT verification failed:', err.message);
-      console.log('❌ DESKTOP AUTH DEBUG: Token preview:', token.substring(0, 20) + '...');
-      console.log('❌ DESKTOP AUTH DEBUG: Error name:', err.name);
       return res.status(403).json({ message: 'Invalid or expired token' });
     }
-    console.log('✅ DESKTOP AUTH DEBUG: JWT verification successful for user:', user.userId || user.id);
     req.user = user;
     next();
   });

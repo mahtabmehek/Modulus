@@ -88,6 +88,22 @@ router.post('/',
 
       const submission = submissionResult.rows[0];
 
+      // Check for new achievements if the answer was correct
+      let newAchievements = [];
+      if (isCorrect) {
+        try {
+          // Update user streak
+          await db.query('SELECT update_user_streak($1)', [userId]);
+          
+          // Check and award achievements
+          const achievementResult = await db.query('SELECT * FROM check_and_award_achievements($1)', [userId]);
+          newAchievements = achievementResult.rows;
+        } catch (achievementError) {
+          console.error('Error checking achievements:', achievementError);
+          // Don't fail the submission if achievement checking fails
+        }
+      }
+
       // Return response with feedback
       res.json({
         success: true,
@@ -98,7 +114,8 @@ router.post('/',
           submittedAt: submission.submitted_at,
           feedback: isCorrect ? 
             'Correct! Well done.' : 
-            'Incorrect answer. Please try again.'
+            'Incorrect answer. Please try again.',
+          newAchievements: newAchievements || []
         }
       });
 

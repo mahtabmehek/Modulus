@@ -14,13 +14,15 @@ const coursesRoutes = require('./routes/courses');
 const labsRoutes = require('./routes/labs');
 const filesRoutes = require('./routes/files');
 const submissionsRoutes = require('./routes/submissions');
+const achievementsRoutes = require('./routes/achievements');
 
 // Load desktop routes for local development
 let desktopRoutes = null;
 try {
   desktopRoutes = require('./routes/desktop');
+  console.log('✅ Desktop routes loaded successfully');
 } catch (error) {
-  console.log('Desktop routes not available:', error.message);
+  console.log('❌ Desktop routes not available:', error.message);
 }
 
 const app = express();
@@ -136,10 +138,14 @@ app.use('/api/courses', coursesRoutes);
 app.use('/api/labs', labsRoutes);
 app.use('/api/files', filesRoutes);
 app.use('/api/submissions', submissionsRoutes);
+app.use('/api/achievements', achievementsRoutes);
 
 // Only use desktop routes if available
 if (desktopRoutes) {
+  console.log('🔗 Registering desktop routes at /api/desktop');
   app.use('/api/desktop', desktopRoutes);
+} else {
+  console.log('⚠️  Desktop routes not registered - desktopRoutes is null');
 }
 
 // Simple health check endpoint

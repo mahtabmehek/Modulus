@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { useApp } from '@/lib/hooks/use-app'
-import { Users, BookOpen, Plus, Layers, Eye, Edit, Tag, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Users, BookOpen, Plus, Layers, Eye, Edit, Tag, ChevronLeft, ChevronRight, Trophy } from 'lucide-react'
 import { Lab } from '@/lib/api/labs'
+import { SimpleAchievementCreator } from '@/components/achievements/simple-achievement-creator'
 
 interface Course {
   id: number
@@ -27,6 +28,7 @@ export function InstructorDashboard() {
   const [coursesLoading, setCoursesLoading] = useState(true)
   const [currentLabPage, setCurrentLabPage] = useState(0)
   const [showAllCourses, setShowAllCourses] = useState(false)
+  const [showAchievementCreator, setShowAchievementCreator] = useState(false)
 
   const stats = {
     totalStudents: studentCount,
@@ -122,6 +124,11 @@ export function InstructorDashboard() {
     navigate('course-creation', { courseId: courseId.toString() })
   }
 
+  const handleAchievementCreated = () => {
+    console.log('Achievement created successfully')
+    setShowAchievementCreator(false)
+  }
+
   // Lab pagination helpers
   const labsPerPage = 6
   const totalLabPages = Math.ceil(labs.length / labsPerPage)
@@ -175,7 +182,20 @@ export function InstructorDashboard() {
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
                   Quick Actions
                 </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <button
+                    onClick={() => setShowAchievementCreator(true)}
+                    className="bg-gradient-to-r from-yellow-500 to-yellow-600 text-white rounded-xl border-2 border-yellow-400 p-6 text-left hover:from-yellow-600 hover:to-yellow-700 transition-all transform hover:scale-105 shadow-lg"
+                  >
+                    <Trophy className="w-8 h-8 text-white mb-3" />
+                    <h3 className="font-semibold text-white mb-1">
+                      Create Achievement
+                    </h3>
+                    <p className="text-yellow-100 text-sm">
+                      Design course completion badges for students
+                    </p>
+                  </button>
+
                   <button
                     onClick={() => navigate('course-creation')}
                     className="bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl border-2 border-green-400 p-6 text-left hover:from-green-600 hover:to-green-700 transition-all transform hover:scale-105 shadow-lg"
@@ -418,6 +438,13 @@ export function InstructorDashboard() {
             </div>
           </div>
         </div>
+
+        {/* Simple Achievement Creator Modal */}
+        <SimpleAchievementCreator
+          isOpen={showAchievementCreator}
+          onClose={() => setShowAchievementCreator(false)}
+          onAchievementCreated={handleAchievementCreated}
+        />
       </div>
     </div>
   )

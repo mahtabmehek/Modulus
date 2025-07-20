@@ -2,19 +2,19 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useApp } from '@/lib/hooks/use-app'
-import { Menu, Bell, User, Sun, Moon, Monitor, LogOut, Flame, Award, Trophy, Zap, Server, Wifi } from 'lucide-react'
+import { Menu, User, Sun, Moon, Monitor, LogOut, Flame, Award, Trophy, Zap, Server, Wifi } from 'lucide-react'
 import { useTheme } from 'next-themes'
-import { userProgress, getStreakEmoji, getLevelInfo, achievements } from '@/demo/achievements'
+import { achievementsAPI, Achievement } from '@/lib/api/achievements'
 
 export function Header() {
   const { user, navigate, logout, currentView, getCurrentLabSession, updateLabInteraction, cleanupExpiredSessions } = useApp()
   const { theme, setTheme, resolvedTheme } = useTheme()
   const [showUserMenu, setShowUserMenu] = useState(false)
-  const [showNotifications, setShowNotifications] = useState(false)
   const [showAchievements, setShowAchievements] = useState(false)
   const [currentTime, setCurrentTime] = useState<Date | null>(null)
-  const [showCopiedNotification, setShowCopiedNotification] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [achievements, setAchievements] = useState<Achievement[]>([])
+  const [achievementsSummary, setAchievementsSummary] = useState<any>(null)
 
   // Get current lab session
   const currentLabSession = getCurrentLabSession()
@@ -24,9 +24,27 @@ export function Header() {
     setMounted(true)
   }, [])
 
+  // Load achievements for students
+  useEffect(() => {
+    if (user?.role === 'student' && mounted) {
+      loadAchievements()
+    }
+  }, [user, mounted])
+
+  const loadAchievements = async () => {
+    try {
+      const response = await achievementsAPI.getMyAchievements()
+      if (response.success) {
+        setAchievements(response.data.achievements)
+        setAchievementsSummary(response.data.summary)
+      }
+    } catch (error) {
+      console.error('Failed to load achievements:', error)
+    }
+  }
+
   // Refs for dropdown menus
   const userMenuRef = useRef<HTMLDivElement>(null)
-  const notificationsRef = useRef<HTMLDivElement>(null)
   const achievementsRef = useRef<HTMLDivElement>(null)
 
   // Handle clicking outside dropdowns
@@ -34,9 +52,6 @@ export function Header() {
     function handleClickOutside(event: MouseEvent) {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
         setShowUserMenu(false)
-      }
-      if (notificationsRef.current && !notificationsRef.current.contains(event.target as Node)) {
-        setShowNotifications(false)
       }
       if (achievementsRef.current && !achievementsRef.current.contains(event.target as Node)) {
         setShowAchievements(false)
@@ -107,10 +122,7 @@ export function Header() {
   const handleCopyIP = (e: React.MouseEvent, ip: string) => {
     e.stopPropagation() // Prevent lab navigation when clicking IP
     navigator.clipboard.writeText(ip).then(() => {
-      setShowCopiedNotification(true)
-      setTimeout(() => {
-        setShowCopiedNotification(false)
-      }, 2000) // Hide after 2 seconds
+      // IP copied successfully
     }).catch(err => {
       console.error('Failed to copy IP:', err)
     })
@@ -126,11 +138,32 @@ export function Header() {
     dark: Moon,
   }
 
+  // Helper functions
+  const getStreakEmoji = (streak: number): string => {
+    if (streak >= 30) return '🔥'
+    if (streak >= 14) return '⚡'
+    if (streak >= 7) return '🌟'
+    if (streak >= 3) return '💫'
+    return '✨'
+  }
+
+  const getLevelInfo = (level: number) => {
+    const titles = [
+      'Newbie', 'Apprentice', 'Explorer', 'Practitioner', 'Specialist',
+      'Expert', 'Master', 'Elite', 'Champion', 'Legend'
+    ]
+    
+    return {
+      title: titles[Math.min(level - 1, titles.length - 1)] || 'Legend',
+      color: level >= 8 ? 'text-purple-600' : level >= 5 ? 'text-blue-600' : 'text-green-600'
+    }
+  }
+
   // Use the current theme for icon display
   const currentThemeForIcon = resolvedTheme || theme
   const ThemeIcon = themeIcons[currentThemeForIcon as keyof typeof themeIcons] || Moon
-  const levelInfo = getLevelInfo(userProgress.level)
-  const earnedAchievements = achievements.filter(a => a.earned)
+  const levelInfo = getLevelInfo(user?.level || 1)
+  const earnedAchievements = achievements.filter(a => a.is_completed)
 
   // Check if user is in a lab or desktop view
   const isInLab = currentView.type === 'lab' || currentView.type === 'desktop'
@@ -191,8 +224,8 @@ export function Header() {
             {/* Current Streak - Only show for students */}
             {user?.role === 'student' && (
               <div className="flex items-center space-x-1">
-                <span className="text-lg">{getStreakEmoji(userProgress.currentStreak)}</span>
-                <span className="font-medium">{userProgress.currentStreak}</span>
+                <span className="text-lg">{getStreakEmoji(user?.streakDays || 0)}</span>
+                <span className="font-medium">{user?.streakDays || 0}</span>
               </div>
             )}
 
@@ -200,56 +233,16 @@ export function Header() {
             {user?.role === 'student' && (
               <div className="relative" ref={achievementsRef}>
                 <button
-                  onClick={() => setShowAchievements(!showAchievements)}
+                  onClick={() => navigate('profile')}
                   className="flex items-center space-x-1 hover:bg-red-500 px-2 py-1 rounded transition-colors"
                 >
                   <Award className="w-4 h-4" />
                   <span className="font-medium">{earnedAchievements.length}</span>
                 </button>
-
-                {showAchievements && (
-                  <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 text-gray-900 dark:text-gray-100">
-                    <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                      <h3 className="font-semibold">Achievements</h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {earnedAchievements.length} of {achievements.length} unlocked
-                      </p>
-                    </div>
-                    <div className="max-h-64 overflow-y-auto">
-                      {achievements.map((achievement) => (
-                        <div
-                          key={achievement.id}
-                          className={`p-3 border-b border-gray-100 dark:border-gray-600 last:border-b-0 ${achievement.earned ? 'bg-green-50 dark:bg-green-900/20' : 'opacity-50'
-                            }`}
-                        >
-                          <div className="flex items-start space-x-3">
-                            <span className="text-2xl">{achievement.icon}</span>
-                            <div className="flex-1">
-                              <h4 className="font-medium text-sm">{achievement.name}</h4>
-                              <p className="text-xs text-gray-500 dark:text-gray-400">
-                                {achievement.description}
-                              </p>
-                              <div className="flex items-center space-x-2 mt-1">
-                                <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-0.5 rounded">
-                                  {achievement.points} XP
-                                </span>
-                                {achievement.earned && achievement.earnedDate && (
-                                  <span className="text-xs text-gray-500 dark:text-gray-400">
-                                    {achievement.earnedDate.toLocaleDateString()}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
             )}
 
-            {/* Desktop Button and Notifications - Only visible for students */}
+            {/* Desktop Button - Only visible for students */}
             {user?.role === 'student' && (
               <>
                 {/* Desktop Button */}
@@ -259,45 +252,6 @@ export function Header() {
                 >
                   <Monitor className="w-4 h-4" />
                   <span className="font-medium">Desktop</span>
-                </div>
-
-                {/* Notifications */}
-                <div className="relative" ref={notificationsRef}>
-                  <button
-                    onClick={() => setShowNotifications(!showNotifications)}
-                    className="p-2 text-white/80 hover:text-white transition-colors relative"
-                  >
-                    <Bell className="w-5 h-5" />
-                    <span className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-500 rounded-full"></span>
-                  </button>
-
-                  {showNotifications && (
-                    <div className="absolute right-0 mt-2 w-80 bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-50">
-                      <div className="p-4 border-b border-gray-600">
-                        <h3 className="font-semibold text-white">Notifications</h3>
-                      </div>
-                      <div className="max-h-64 overflow-y-auto">
-                        <div className="p-4 hover:bg-gray-700 border-b border-gray-600">
-                          <p className="text-sm text-white font-medium">
-                            New lab available: APT Simulation
-                          </p>
-                          <p className="text-xs text-gray-400 mt-1">2 hours ago</p>
-                        </div>
-                        <div className="p-4 hover:bg-gray-700 border-b border-gray-600">
-                          <p className="text-sm text-white font-medium">
-                            Congratulations! You earned ⚡12 🏆3 points and badges
-                          </p>
-                          <p className="text-xs text-gray-400 mt-1">1 day ago</p>
-                        </div>
-                        <div className="p-4 hover:bg-gray-700">
-                          <p className="text-sm text-white font-medium">
-                            Achievement unlocked: ⚡25 🏆1 earned from completing Web Security module
-                          </p>
-                          <p className="text-xs text-gray-400 mt-1">3 days ago</p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
                 </div>
               </>
             )}
@@ -377,18 +331,6 @@ export function Header() {
           </div>
         </div>
       </div>
-
-      {/* Copied Notification Popup */}
-      {showCopiedNotification && (
-        <div className="fixed top-20 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-in slide-in-from-top-2 duration-300">
-          <div className="flex items-center space-x-2">
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-            </svg>
-            <span className="text-sm font-medium">Copied!</span>
-          </div>
-        </div>
-      )}
     </header>
   )
 }

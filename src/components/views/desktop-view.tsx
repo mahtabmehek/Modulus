@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useApp } from '@/lib/hooks/use-app'
+import { apiClient } from '@/lib/api'
 import { 
   Monitor, 
   Maximize2, 
@@ -25,29 +26,90 @@ import {
   Battery
 } from 'lucide-react'
 
+interface DesktopSession {
+  sessionId: string;
+  vncUrl: string;
+  webUrl: string;
+  port?: number;
+  status: string;
+  osType?: string;
+  ipAddress?: string;
+  persistenceType?: string;
+  labId?: string;
+  createdAt?: string;
+}
+
 export function DesktopView() {
   const { navigate } = useApp()
+  const [session, setSession] = useState<DesktopSession | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
   const [isConnected, setIsConnected] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [sessionTime, setSessionTime] = useState(0)
   const [activeMenu, setActiveMenu] = useState('desktop')
-
-  // Desktop session would come from API
-  const session = {
-    id: '',
-    status: 'disconnected',
-    osType: '',
-    ipAddress: '',
-    vncPort: 0,
-    sshPort: 0,
-    expiresAt: new Date(),
-  }
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    // Simulate connection process
-    const timer = setTimeout(() => setIsConnected(true), 3000)
-    return () => clearTimeout(timer)
+    initializeDesktopSession()
   }, [])
+
+  const initializeDesktopSession = async () => {
+    try {
+      setIsLoading(true)
+      setError(null)
+
+      // First try to get existing session
+      try {
+        console.log('🔍 Checking for existing Kali session...')
+        const existingSession = await apiClient.desktop.getCurrentSession()
+        if (existingSession.success) {
+          console.log('✅ Found existing session:', existingSession.session)
+          setSession(existingSession.session)
+          setIsConnected(true)
+          setIsLoading(false)
+          return
+        }
+      } catch (err) {
+        console.log('ℹ️ No existing session found, creating new one...')
+      }
+
+      // Create new session
+      console.log('🐉 Creating new Kali desktop session...')
+      const newSession = await apiClient.desktop.createSession('')
+      
+      if (newSession.success) {
+        console.log('✅ Kali session created:', newSession.session)
+        setSession(newSession.session)
+        
+        // Wait a bit for container to be ready
+        setTimeout(() => {
+          setIsConnected(true)
+          setIsLoading(false)
+        }, 5000)
+      } else {
+        throw new Error('Failed to create session')
+      }
+
+    } catch (error) {
+      console.error('❌ Failed to initialize desktop session:', error)
+      setError(error instanceof Error ? error.message : 'Failed to start desktop session')
+      setIsLoading(false)
+    }
+  }
+
+  const terminateSession = async () => {
+    if (!session) return
+    
+    try {
+      console.log('🛑 Terminating Kali session...')
+      await apiClient.desktop.terminateSession()
+      setSession(null)
+      setIsConnected(false)
+      navigate('dashboard')
+    } catch (error) {
+      console.error('❌ Failed to terminate session:', error)
+    }
+  }
 
   useEffect(() => {
     // Session timer
@@ -125,7 +187,7 @@ export function DesktopView() {
               {activeMenu === 'desktop' ? 'Remote Desktop' : activeMenu === 'terminal' ? 'Terminal' : 'File Browser'}
             </span>
             <div className="text-xs text-gray-400">
-              {session.osType} • {session.ipAddress}:{session.vncPort}
+              {session?.osType || 'Kali Linux'} • {session?.ipAddress || 'localhost'}:{session?.port || 'N/A'}
             </div>
           </div>
           
@@ -154,8 +216,12 @@ export function DesktopView() {
               >
                 {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
               </button>
-              <button className="p-1 hover:bg-gray-700 rounded transition-colors text-gray-400 hover:text-white" title="Settings">
-                <Settings className="w-4 h-4" />
+              <button 
+                onClick={terminateSession}
+                className="p-1 hover:bg-red-700 rounded transition-colors text-red-400 hover:text-red-300" 
+                title="Terminate Session"
+              >
+                <Power className="w-4 h-4" />
               </button>
             </div>
           </div>
@@ -165,12 +231,35 @@ export function DesktopView() {
         <div className="flex-1 relative bg-gray-900">
           {activeMenu === 'desktop' && (
             <div className="h-full">
-              {!isConnected ? (
+              {isLoading ? (
+                <div className="h-full flex items-center justify-center">
+                  <div className="text-center">
+                    <Monitor className="w-12 h-12 mx-auto mb-3 text-gray-500" />
+                    <h3 className="text-base font-medium mb-2 text-white">Starting Kali Desktop Session</h3>
+                    <p className="text-sm text-gray-400 mb-4">Creating container and initializing noVNC...</p>
+                    <div className="w-6 h-6 border-3 border-red-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                  </div>
+                </div>
+              ) : error ? (
+                <div className="h-full flex items-center justify-center">
+                  <div className="text-center">
+                    <Monitor className="w-12 h-12 mx-auto mb-3 text-red-500" />
+                    <h3 className="text-base font-medium mb-2 text-white">Failed to Start Desktop</h3>
+                    <p className="text-sm text-gray-400 mb-4">{error}</p>
+                    <button
+                      onClick={initializeDesktopSession}
+                      className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded transition-colors"
+                    >
+                      Retry
+                    </button>
+                  </div>
+                </div>
+              ) : !isConnected ? (
                 <div className="h-full flex items-center justify-center">
                   <div className="text-center">
                     <Monitor className="w-12 h-12 mx-auto mb-3 text-gray-500" />
                     <h3 className="text-base font-medium mb-2 text-white">Starting Desktop Session</h3>
-                    <p className="text-sm text-gray-400 mb-4">Connecting to {session.osType}...</p>
+                    <p className="text-sm text-gray-400 mb-4">Connecting to {session?.osType || 'Kali Linux'}...</p>
                     <div className="w-6 h-6 border-3 border-red-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
                   </div>
                 </div>
@@ -179,15 +268,15 @@ export function DesktopView() {
                   <div className="text-center">
                     <Monitor className="w-12 h-12 mx-auto mb-3 text-green-500" />
                     <h3 className="text-base font-medium mb-2 text-white">Desktop Connected</h3>
-                    <p className="text-sm text-gray-400 mb-4">VNC session active at {session.ipAddress}:{session.vncPort}</p>
-                    <div className="bg-black rounded border border-gray-700 p-4 min-h-[300px] min-w-[500px]">
-                      <div className="text-green-400 font-mono text-sm leading-relaxed">
-                        <div>root@kali:~# uname -a</div>
-                        <div>Linux kali 5.15.0-kali3-amd64 #1 SMP Debian 5.15.15-2kali1 (2022-01-31) x86_64 GNU/Linux</div>
-                        <div>root@kali:~# whoami</div>
-                        <div>root</div>
-                        <div>root@kali:~# <span className="animate-pulse">|</span></div>
-                      </div>
+                    <p className="text-sm text-gray-400 mb-4">VNC session active at {session?.ipAddress || 'localhost'}:{session?.port || 'N/A'}</p>
+                    {/* noVNC Iframe */}
+                    <div className="w-full h-96">
+                      <iframe
+                        src={session?.webUrl}
+                        className="w-full h-full border border-gray-700 rounded"
+                        title="Kali Linux Desktop"
+                        allow="fullscreen"
+                      />
                     </div>
                   </div>
                 </div>
@@ -258,7 +347,7 @@ export function DesktopView() {
         <div className="h-6 bg-gray-800 border-t border-gray-700 flex items-center justify-between px-4 text-xs">
           <div className="flex items-center space-x-4 text-gray-400">
             <span>Status: {isConnected ? <span className="text-green-400">Connected</span> : <span className="text-yellow-400">Connecting...</span>}</span>
-            <span>Session: {session.id}</span>
+            <span>Session: {session?.sessionId?.substring(0, 12) || 'N/A'}</span>
           </div>
           <div className="flex items-center space-x-3 text-gray-400">
             <div className="flex items-center space-x-1">
