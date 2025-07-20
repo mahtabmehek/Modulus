@@ -67,6 +67,9 @@ export const useAppStore = create<AppStore>()(
       },
 
       logout: () => {
+        // Clear token from API client
+        apiClient.setToken(null)
+
         set({ user: null, isAuthenticated: false, currentView: { type: 'login' } })
         if (typeof window !== 'undefined') {
           const url = new URL(window.location.href)
@@ -439,6 +442,14 @@ export const useAppStore = create<AppStore>()(
       // Initialize user state and check session validity
       initialize: () => {
         const { user, checkSession } = get()
+
+        // Set token in API client if user exists (token will be loaded from localStorage by API client)
+        if (user && typeof window !== 'undefined') {
+          const token = localStorage.getItem('modulus_token')
+          if (token) {
+            apiClient.setToken(token)
+          }
+        }
 
         // Check URL params and restore view state
         if (typeof window !== 'undefined') {

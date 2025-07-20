@@ -1,9 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { useApp } from '@/lib/hooks/use-app'
-import { apiClient } from '@/lib/api'
+import { labAPI } from '@/lib/api/labs'
+import { DragDropLabEditor } from '@/components/lab-creation/DragDropLabEditor'
+import { Task as LabTask } from '@/types/lab'
 import {
   ArrowLeft,
   Save,
@@ -33,7 +35,6 @@ interface Question {
   title: string
   description: string
   flag?: string
-  isOptional: boolean
   points: number
   images?: string[]
   attachments?: string[]
@@ -45,15 +46,29 @@ interface Question {
 }
 
 export default function LabCreationView() {
-  const { navigate } = useApp()
+  const { navigate, currentView } = useApp()
+  // Get editLabId from navigation parameters to enable edit mode
+  const editLabId = currentView?.params?.editLabId
+  const adminEditMode = currentView?.params?.adminEditMode
+
+  // Debug logging
+  console.log('Lab Creation View - editLabId:', editLabId)
+  console.log('Lab Creation View - adminEditMode:', adminEditMode)
+  console.log('Lab Creation View - currentView:', currentView)
+
+  const [modules, setModules] = useState<Array<{ id: number, title: string, course_id: number }>>([])
+  const [loadingModules, setLoadingModules] = useState(true)
+  const [isEditingTasks, setIsEditingTasks] = useState(false) // Flag to prevent reloads during editing
 
   const [labData, setLabData] = useState({
     title: '',
     description: '',
+    icon: '' as string | File, // Support both File objects (browser) and strings (server URLs)
     // Academic organization
     academicCategory: 'computing' as string,
     course: '',
     module: '',
+    moduleId: 0, // Will be set when user selects a module
     labType: 'mandatory' as 'mandatory' | 'challenge',
     // Technical details
     difficulty: 'beginner' as 'beginner' | 'intermediate' | 'advanced',
@@ -82,15 +97,195 @@ export default function LabCreationView() {
           title: 'Find the initial flag',
           description: 'Locate the flag hidden in the welcome message.',
           flag: 'MODULUS{w3lc0m3_t0_th3_l4b}',
-          isOptional: false,
-          points: 10
+          points: 0
         }
       ]
     }
   ])
 
+  // New drag & drop tasks with metadata support
+  const [dragDropTasks, setDragDropTasks] = useState<LabTask[]>([
+    {
+      id: 'task-1',
+      lab_id: editLabId || '',
+      title: 'Initial Setup',
+      description: 'Set up your environment and explore the lab infrastructure.',
+      order_index: 1,
+      metadata: {
+        difficulty: 'easy',
+        estimatedTime: 15,
+        tags: ['setup', 'introduction'],
+        customFields: {
+          instructor_notes: 'Students should familiarize themselves with the environment',
+          learning_objectives: ['Navigate the lab interface', 'Understand basic commands']
+        }
+      }
+    }
+  ])
+
   const [isSaving, setIsSaving] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
+  // Enhanced mode is now the default and only interface
+
+  // Tag management state
+  const [tagInput, setTagInput] = useState('')
+  const [suggestedTags, setSuggestedTags] = useState<string[]>([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [allAvailableTags, setAllAvailableTags] = useState<string[]>([])
+
+  // Load modules and lab data for editing
+  useEffect(() => {
+    console.log('🔄 useEffect triggered - editLabId:', editLabId)
+    loadModules()
+    loadTags()
+    if (editLabId) {
+      loadLabForEditing(editLabId)
+    }
+  }, [editLabId])
+
+  const loadModules = async () => {
+    try {
+      const token = localStorage.getItem('modulus_token')
+      const response = await fetch('http://localhost:3001/api/courses', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        const allModules: Array<{ id: number, title: string, course_id: number }> = []
+
+        // Extract modules from all courses
+        data.courses?.forEach((course: any) => {
+          if (course.modules) {
+            course.modules.forEach((module: any) => {
+              allModules.push({
+                id: module.id,
+                title: module.title,
+                course_id: course.id
+              })
+            })
+          }
+        })
+
+        setModules(allModules)
+      }
+    } catch (error) {
+      console.error('Error loading modules:', error)
+      toast.error('Failed to load modules')
+    } finally {
+      setLoadingModules(false)
+    }
+  }
+
+  const loadTags = async () => {
+    try {
+      const token = localStorage.getItem('modulus_token')
+      const response = await fetch('http://localhost:3001/api/labs/tags', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (response.ok) {
+        const tags = await response.json()
+        setAllAvailableTags(tags)
+      }
+    } catch (error) {
+      console.error('Error loading tags:', error)
+      // Don't show error toast for tags as it's not critical
+    }
+  }
+
+  const loadLabForEditing = async (labId: number) => {
+    console.log('� DATABASE LOAD TRIGGERED:')
+    console.log('  🔗 Lab ID:', labId)
+    console.log('  🏗️ isEditingTasks:', isEditingTasks)
+    console.log('  📍 Call stack:', new Error().stack?.split('\n')[1]?.trim())
+
+    // Removed async protection - immediate loading
+
+    console.log('✅ DATABASE LOAD PROCEEDING - loading lab data from server')
+    try {
+      const lab = await labAPI.getLab(labId)
+      if (lab) {
+        setLabData({
+          title: lab.title || '',
+          description: lab.description || '',
+          icon: lab.icon_path ? (
+            lab.icon_path.startsWith('http://') || lab.icon_path.startsWith('https://')
+              ? lab.icon_path
+              : lab.icon_path // Keep as relative path, will be converted in display logic
+          ) : '',
+          academicCategory: 'computing',
+          course: '',
+          module: '',
+          moduleId: lab.module_id || 0, // Use 0 to indicate no module
+          labType: lab.lab_type === 'vm' ? 'mandatory' : 'challenge',
+          difficulty: 'beginner',
+          category: 'programming',
+          estimatedTime: lab.estimated_minutes || 60,
+          vmImage: lab.vm_image || '',
+          vmResources: {
+            cpu: 2,
+            memory: 4,
+            storage: 20
+          },
+          prerequisites: lab.required_tools || [],
+          learningObjectives: [],
+          tags: lab.tags || []
+        })
+
+        // Load tasks and questions if they exist
+        const labWithTasks = lab as any; // Cast to any to access tasks property
+        if (labWithTasks.tasks && Array.isArray(labWithTasks.tasks)) {
+          console.log('� DATABASE LOAD - Lab Tasks & Questions:')
+          console.log('📋 Raw tasks from server:', labWithTasks.tasks.length, 'tasks')
+          labWithTasks.tasks.forEach((t: any, i: number) => {
+            console.log(`📝 Server Task ${i}: ID=${t.id}, Title="${t.title}", Order=${t.order_index}`);
+            if (t.questions && Array.isArray(t.questions)) {
+              t.questions.forEach((q: any, j: number) => {
+                console.log(`  ❓ Server Question ${j}: ID=${q.id}, Title="${q.title}", Order=${q.order_index}`)
+              })
+            }
+          });
+
+          const formattedTasks = labWithTasks.tasks.map((task: any) => ({
+            id: task.id.toString(),
+            lab_id: labId.toString(),
+            title: task.title,
+            description: task.description,
+            order_index: task.order_index,
+            questions: task.questions || [],
+            metadata: {
+              difficulty: 'easy',
+              estimatedTime: 15,
+              tags: [],
+              customFields: {
+                instructor_notes: '',
+                learning_objectives: []
+              }
+            }
+          }))
+
+          console.log('🔍 Formatted tasks before setState:');
+          formattedTasks.forEach((t: any, i: number) => {
+            console.log(`  Task ${i}: ID=${t.id}, Title="${t.title}", Order=${t.order_index}`);
+          });
+          setDragDropTasks(formattedTasks)
+          console.log('✅ Tasks loaded and state updated (from server)')
+        } else {
+          console.log('📋 No tasks found in lab data')
+        }
+      }
+    } catch (error) {
+      console.error('Error loading lab for editing:', error)
+      toast.error('Failed to load lab data')
+    }
+  }
 
   const addTask = () => {
     const newTask: Task = {
@@ -118,8 +313,7 @@ export default function LabCreationView() {
       type: 'flag',
       title: 'New Question',
       description: '',
-      isOptional: false,
-      points: 10,
+      points: 0,
       images: [],
       attachments: [],
       hints: []
@@ -145,48 +339,97 @@ export default function LabCreationView() {
     ))
   }
 
-  const handleImageUpload = (taskId: string, questionId: string, files: FileList | null) => {
+  const handleImageUpload = async (taskId: string, questionId: string, files: FileList | null) => {
     if (!files) return
 
-    // Simulate file upload - in real app, upload to cloud storage
-    const imageUrls = Array.from(files).map(file => URL.createObjectURL(file))
+    console.log('handleImageUpload called:', { taskId, questionId, filesCount: files.length });
 
-    setTasks(tasks.map(task =>
-      task.id === taskId
-        ? {
-          ...task,
-          questions: task.questions.map(q =>
-            q.id === questionId
-              ? { ...q, images: [...(q.images || []), ...imageUrls] }
-              : q
-          )
+    try {
+      // Upload files to backend
+      const formData = new FormData();
+      Array.from(files).forEach(file => {
+        formData.append('images', file);
+      });
+      const safeLabelName = (labData.title || 'unnamed-lab').replace(/[^a-zA-Z0-9\-_]/g, '_').toLowerCase();
+      formData.append('labName', safeLabelName);
+      console.log('Uploading images with safeLabelName:', safeLabelName);
+
+      const response = await fetch('http://localhost:3001/api/files/upload-lab-files', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && result.data.images) {
+          console.log('Images uploaded successfully:', result.data.images);
+
+          // Update state with backend URLs
+          setTasks(tasks.map(task =>
+            task.id === taskId
+              ? {
+                ...task,
+                questions: task.questions.map(q =>
+                  q.id === questionId
+                    ? { ...q, images: [...(q.images || []), ...result.data.images.map((url: string) => `http://localhost:3001${url}`)] }
+                    : q
+                )
+              }
+              : task
+          ));
         }
-        : task
-    ))
+      } else {
+        console.error('Failed to upload images:', response.statusText);
+      }
+    } catch (error) {
+      console.error('Error uploading images:', error);
+    }
   }
 
-  const handleAttachmentUpload = (taskId: string, questionId: string, files: FileList | null) => {
+  const handleAttachmentUpload = async (taskId: string, questionId: string, files: FileList | null) => {
     if (!files) return
 
-    // Simulate file upload - in real app, upload to cloud storage
-    const attachmentUrls = Array.from(files).map(file => ({
-      name: file.name,
-      url: URL.createObjectURL(file),
-      size: file.size
-    }))
+    console.log('handleAttachmentUpload called:', { taskId, questionId, filesCount: files.length });
 
-    setTasks(tasks.map(task =>
-      task.id === taskId
-        ? {
-          ...task,
-          questions: task.questions.map(q =>
-            q.id === questionId
-              ? { ...q, attachments: [...(q.attachments || []), ...attachmentUrls.map(a => a.url)] }
-              : q
-          )
+    try {
+      // Upload files to backend
+      const formData = new FormData();
+      Array.from(files).forEach(file => {
+        formData.append('attachments', file);
+      });
+      const safeLabelName = (labData.title || 'unnamed-lab').replace(/[^a-zA-Z0-9\-_]/g, '_').toLowerCase();
+      formData.append('labName', safeLabelName);
+
+      const response = await fetch('http://localhost:3001/api/files/upload-lab-files', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && result.data.attachments) {
+          console.log('Attachments uploaded successfully:', result.data.attachments);
+
+          // Update state with backend URLs
+          setTasks(tasks.map(task =>
+            task.id === taskId
+              ? {
+                ...task,
+                questions: task.questions.map(q =>
+                  q.id === questionId
+                    ? { ...q, attachments: [...(q.attachments || []), ...result.data.attachments.map((url: string) => `http://localhost:3001${url}`)] }
+                    : q
+                )
+              }
+              : task
+          ));
         }
-        : task
-    ))
+      } else {
+        console.error('Failed to upload attachments:', response.statusText);
+      }
+    } catch (error) {
+      console.error('Error uploading attachments:', error);
+    }
   }
 
   const addMultipleChoiceOption = (taskId: string, questionId: string) => {
@@ -218,29 +461,449 @@ export default function LabCreationView() {
     ))
   }
 
+  // New drag & drop task functions
+  const addDragDropTask = () => {
+    const newTask: LabTask = {
+      id: `task-${Date.now()}`,
+      lab_id: editLabId || '',
+      title: `Task ${dragDropTasks.length + 1}`,
+      description: '',
+      order_index: dragDropTasks.length + 1,
+      metadata: {
+        difficulty: 'easy',
+        estimatedTime: 15,
+        tags: [],
+        customFields: {
+          instructor_notes: '',
+          learning_objectives: []
+        }
+      }
+    }
+    setDragDropTasks([...dragDropTasks, newTask])
+  }
+
+  const updateDragDropTasks = (updatedTasks: LabTask[]) => {
+    console.log('🔄 SYNCHRONOUS updateDragDropTasks called with:', updatedTasks.map(t => ({ id: t.id, title: t.title, order_index: t.order_index })))
+    console.log('🔄 Before setState - current dragDropTasks:', dragDropTasks.map(t => ({ id: t.id, title: t.title, order_index: t.order_index })))
+
+    // NO ASYNC OPERATIONS - immediate state update only
+    setDragDropTasks(updatedTasks)
+    console.log('🔄 SYNCHRONOUS setState complete')
+  }
+
+  const uploadAllPendingFiles = async (tasks: LabTask[]) => {
+    console.log('📤 UPLOADING ALL PENDING FILES: Processing browser-stored files');
+
+    // Create consistent safe lab name for all uploads
+    const safeLabelName = (labData.title || 'unnamed-lab').replace(/[^a-zA-Z0-9\-_]/g, '_').toLowerCase();
+    console.log('📤 Safe label name for ALL uploads:', safeLabelName);
+
+    let uploadedIconPath = null; // Track uploaded icon path
+
+    // First, handle lab icon if it's a File object
+    let updatedLabData = { ...labData };
+    if (labData.icon instanceof File) {
+      console.log('🖼️ UPLOADING: Lab icon -', labData.icon.name);
+      console.log('🖼️ Current lab title:', labData.title);
+
+      try {
+        const formData = new FormData();
+        formData.append('icon', labData.icon);
+        formData.append('labName', safeLabelName);
+
+        console.log('🖼️ Starting upload request...');
+        const response = await fetch('http://localhost:3001/api/files/upload-lab-files', {
+          method: 'POST',
+          body: formData,
+        });
+
+        console.log('🖼️ Upload response status:', response.status);
+        if (response.ok) {
+          const result = await response.json();
+          console.log('🖼️ Upload result:', result);
+          if (result.success && result.data.icon) {
+            console.log('🖼️ SUCCESS: Lab icon uploaded -', result.data.icon);
+            console.log('🖼️ Full path will be: http://localhost:3001' + result.data.icon);
+            // Capture the uploaded icon path
+            uploadedIconPath = result.data.icon;
+            // Store the server path (relative) so it can be converted to full URL when needed
+            updatedLabData = { ...updatedLabData, icon: result.data.icon };
+            setLabData(updatedLabData); // Update state with server path
+          } else {
+            console.error('🖼️ Upload succeeded but no icon path returned:', result);
+          }
+        } else {
+          const errorText = await response.text();
+          console.error('🖼️ ERROR: Failed to upload lab icon. Status:', response.status, 'Response:', errorText);
+        }
+      } catch (error) {
+        console.error('🖼️ ERROR: Lab icon upload failed:', error);
+      }
+    }
+
+    const processedTasks = await Promise.all(tasks.map(async (task) => {
+      if (!(task as any).questions) return task;
+
+      const processedQuestions = await Promise.all((task as any).questions.map(async (question: any) => {
+        let updatedImages = [...(question.images || [])];
+        let updatedAttachments = [...(question.attachments || [])];
+
+        // Process images - upload File objects to server
+        const imageFiles = question.images?.filter((img: any) => img instanceof File) as File[];
+        if (imageFiles && imageFiles.length > 0) {
+          console.log(`📷 UPLOADING: ${imageFiles.length} images for question "${question.title}"`);
+
+          try {
+            const formData = new FormData();
+            imageFiles.forEach(file => formData.append('images', file));
+            formData.append('labName', safeLabelName);
+
+            const response = await fetch('http://localhost:3001/api/files/upload-lab-files', {
+              method: 'POST',
+              body: formData,
+            });
+
+            if (response.ok) {
+              const result = await response.json();
+              if (result.success && result.data.images) {
+                console.log(`📷 SUCCESS: ${result.data.images.length} images uploaded`);
+
+                // Replace File objects with server URLs
+                const existingUrls = question.images?.filter((img: any) => typeof img === 'string') as string[] || [];
+                const newUrls = result.data.images.map((url: string) => `http://localhost:3001${url}`);
+                updatedImages = [...existingUrls, ...newUrls];
+              }
+            } else {
+              console.error('📷 ERROR: Failed to upload images:', response.statusText);
+            }
+          } catch (error) {
+            console.error('📷 ERROR: Image upload failed:', error);
+          }
+        }
+
+        // Process attachments - upload File objects to server
+        const attachmentFiles = question.attachments?.filter((att: any) => att instanceof File) as File[];
+        if (attachmentFiles && attachmentFiles.length > 0) {
+          console.log(`📎 UPLOADING: ${attachmentFiles.length} attachments for question "${question.title}"`);
+
+          try {
+            const formData = new FormData();
+            attachmentFiles.forEach(file => formData.append('attachments', file));
+            formData.append('labName', safeLabelName);
+
+            const response = await fetch('http://localhost:3001/api/files/upload-lab-files', {
+              method: 'POST',
+              body: formData,
+            });
+
+            if (response.ok) {
+              const result = await response.json();
+              if (result.success && result.data.attachments) {
+                console.log(`📎 SUCCESS: ${result.data.attachments.length} attachments uploaded`);
+
+                // Replace File objects with server URLs
+                const existingUrls = question.attachments?.filter((att: any) => typeof att === 'string') as string[] || [];
+                const newUrls = result.data.attachments.map((url: string) => `http://localhost:3001${url}`);
+                updatedAttachments = [...existingUrls, ...newUrls];
+              }
+            } else {
+              console.error('📎 ERROR: Failed to upload attachments:', response.statusText);
+            }
+          } catch (error) {
+            console.error('📎 ERROR: Attachment upload failed:', error);
+          }
+        }
+
+        return {
+          ...question,
+          images: updatedImages,
+          attachments: updatedAttachments
+        };
+      }));
+
+      return {
+        ...task,
+        questions: processedQuestions
+      };
+    }));
+
+    console.log('📤 ALL FILE UPLOADS COMPLETE');
+    console.log('📤 Returning uploaded icon path:', uploadedIconPath);
+    return { tasks: processedTasks, iconPath: uploadedIconPath };
+  };
+
+  // Tag management functions
+  const filterSuggestions = (input: string) => {
+    if (!input.trim()) {
+      setSuggestedTags([])
+      setShowSuggestions(false)
+      return
+    }
+
+    const filtered = allAvailableTags
+      .filter(tag =>
+        tag.toLowerCase().includes(input.toLowerCase()) &&
+        !labData.tags.includes(tag)
+      )
+      .slice(0, 5) // Limit to 5 suggestions
+
+    setSuggestedTags(filtered)
+    setShowSuggestions(filtered.length > 0)
+  }
+
+  const addTag = (tag: string) => {
+    const trimmedTag = tag.trim()
+    if (trimmedTag && !labData.tags.includes(trimmedTag)) {
+      setLabData({ ...labData, tags: [...labData.tags, trimmedTag] })
+      setTagInput('')
+      setShowSuggestions(false)
+    }
+  }
+
+  const handleTagInput = (value: string) => {
+    setTagInput(value)
+    filterSuggestions(value)
+  }
+
+  const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      addTag(tagInput)
+    } else if (e.key === 'Escape') {
+      setShowSuggestions(false)
+    }
+  }
+
   const handleSave = async () => {
+    // Special handling for admin edit mode - only update icon URL
+    if (adminEditMode) {
+      setIsSaving(true)
+      try {
+        // Only update the icon_url field
+        const iconPayload = {
+          icon_url: typeof labData.icon === 'string' && labData.icon && !labData.icon.startsWith('blob:') ? labData.icon : null
+        }
+
+        await fetch(`/api/labs/${editLabId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify(iconPayload)
+        })
+
+        toast.success('Lab icon URL updated successfully!')
+        navigate('dashboard')
+        return
+      } catch (error: any) {
+        console.error('Failed to update lab icon:', error)
+        toast.error('Failed to update lab icon URL')
+        return
+      } finally {
+        setIsSaving(false)
+      }
+    }
+
+    // Regular save logic for non-admin mode
+    // Validate required fields before saving
+    if (!labData.title.trim()) {
+      toast.error('Lab title is required');
+      return;
+    }
+
+    if (labData.tags.length === 0) {
+      toast.error('At least one tag is required');
+      return;
+    }
+
     setIsSaving(true)
 
     try {
-      // Create the lab using the API
-      const response = await apiClient.createLab({
-        name: labData.title,
-        type: labData.labType,
-        description: labData.description,
-        instructions: tasks.map(task => `${task.title}: ${task.description}`).join('\n'),
-        estimatedDuration: labData.estimatedTime,
-        difficulty: labData.difficulty,
-        module_id: 1 // Default module ID - should be selected by user
+      // Create the lab using the new labs API that matches the database schema
+      const labTypeMapping = {
+        'mandatory': 'vm',
+        'challenge': 'container'
+      }
+
+      // Ensure tags are properly formatted as an array of strings
+      const cleanTags = labData.tags.filter(tag => tag && tag.trim()).map(tag => tag.trim())
+
+      let uploadedIconPath = null;
+      let tasksWithUploadedFiles = dragDropTasks;
+
+      // For editing existing labs, upload files first
+      if (editLabId) {
+        console.log('📤 EDITING MODE: Uploading files for existing lab...');
+        const uploadResult = await uploadAllPendingFiles(dragDropTasks);
+        tasksWithUploadedFiles = uploadResult.tasks;
+        uploadedIconPath = uploadResult.iconPath;
+        console.log('🖼️ Received uploaded icon path:', uploadedIconPath);
+      }
+
+      // Ensure tasks and questions have proper order_index values
+      const tasksWithOrderIndex = tasksWithUploadedFiles.map((task, taskIndex) => ({
+        ...task,
+        order_index: task.order_index || (taskIndex + 1),
+        questions: (task as any).questions?.map((question: any, questionIndex: number) => ({
+          ...question,
+          order_index: question.order_index || (questionIndex + 1)
+        })) || []
+      }));
+
+      console.log('💾 DATABASE SAVE - Lab Tasks & Questions:')
+      console.log('📋 Total tasks to save:', tasksWithOrderIndex.length)
+      tasksWithOrderIndex.forEach((task, i) => {
+        console.log(`📝 Task ${i + 1}: ID=${task.id}, Title="${task.title}", Order=${task.order_index}`)
+        if ((task as any).questions && (task as any).questions.length > 0) {
+          (task as any).questions.forEach((q: any, j: number) => {
+            console.log(`  ❓ Question ${j + 1}: ID=${q.id}, Title="${q.title}", Order=${q.order_index}`)
+          })
+        }
       })
 
-      console.log('Lab created:', response)
-      toast.success('Lab created successfully!')
+      const labPayload = {
+        // Remove module_id requirement - labs can be standalone
+        title: labData.title.trim(),
+        description: labData.description?.trim() || '',
+        icon_path: uploadedIconPath || (typeof labData.icon === 'string' && labData.icon && !labData.icon.startsWith('blob:') ? labData.icon : null),
+        lab_type: labTypeMapping[labData.labType] || 'vm',
+        vm_image: labData.vmImage?.trim() || undefined,
+        tags: cleanTags,
+        points_possible: 0, // Set to 0 since we removed points system
+        estimated_minutes: 60, // Default estimated time
+        tasks: tasksWithOrderIndex as any // Cast to avoid TypeScript issues with ID types
+      }
+
+      console.log('💾 FINAL LAB PAYLOAD with icon_path:', labPayload.icon_path);
+      console.log('Sending lab payload:', labPayload);
+      console.log('Tasks being sent:', dragDropTasks);
+      console.log('editLabId:', editLabId);
+      console.log('Will use update path:', !!editLabId);
+
+      let response
+      if (editLabId) {
+        // Update existing lab
+        console.log('Updating lab with ID:', editLabId);
+        response = await labAPI.updateLab(editLabId, labPayload)
+        toast.success('Lab updated successfully!')
+      } else {
+        // Create new lab first
+        console.log('Creating new lab');
+        response = await labAPI.createLab(labPayload)
+        
+        // Now upload files for the newly created lab
+        if (response && response.id) {
+          console.log('📤 NEW LAB CREATED: Uploading files for lab ID:', response.id);
+          // Update the lab data with the actual lab title for proper directory naming
+          const updatedLabData = { ...labData, title: labPayload.title };
+          
+          // Create a modified upload function that uses the lab title
+          const uploadAllPendingFilesForNewLab = async (tasks: any[]) => {
+            const safeLabelName = labPayload.title.replace(/[^a-zA-Z0-9\-_]/g, '_').toLowerCase();
+            console.log('📤 Using lab title for directory:', safeLabelName);
+            
+            let uploadedIconPath = null;
+            
+            // Upload lab icon if it's a File object
+            if (labData.icon instanceof File) {
+              console.log('🖼️ UPLOADING: Lab icon for new lab -', labData.icon.name);
+              
+              try {
+                const formData = new FormData();
+                formData.append('icon', labData.icon);
+                formData.append('labName', safeLabelName);
+                
+                const uploadResponse = await fetch('http://localhost:3001/api/files/upload-lab-files', {
+                  method: 'POST',
+                  body: formData,
+                });
+                
+                if (uploadResponse.ok) {
+                  const result = await uploadResponse.json();
+                  if (result.success && result.data.icon) {
+                    uploadedIconPath = result.data.icon;
+                    console.log('🖼️ SUCCESS: New lab icon uploaded -', uploadedIconPath);
+                  }
+                }
+              } catch (error) {
+                console.error('🖼️ ERROR: Failed to upload icon for new lab:', error);
+              }
+            }
+            
+            return { tasks, iconPath: uploadedIconPath };
+          };
+          
+          const newLabUploadResult = await uploadAllPendingFilesForNewLab(tasksWithUploadedFiles);
+          if (newLabUploadResult.iconPath) {
+            // Update the lab with the uploaded icon path
+            console.log('📤 UPDATING LAB with uploaded icon path:', newLabUploadResult.iconPath);
+            try {
+              await labAPI.updateLab(response.id, { icon_path: newLabUploadResult.iconPath });
+              console.log('✅ Lab icon path updated successfully');
+            } catch (iconUpdateError) {
+              console.error('❌ Failed to update lab with icon path:', iconUpdateError);
+            }
+          }
+        }
+        
+        toast.success('Lab created successfully!')
+      }
+
+      console.log('Lab saved:', response)
+      // No async state management
       navigate('dashboard')
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to save lab:', error)
-      toast.error('Failed to save lab. Please try again.')
+
+      // More detailed error message
+      if (error.response?.data?.details) {
+        console.error('Validation errors:', error.response.data.details);
+
+        // Handle both array and string details
+        if (Array.isArray(error.response.data.details)) {
+          toast.error(`Validation failed: ${error.response.data.details.map((d: any) => d.msg || d.message || d).join(', ')}`);
+        } else {
+          toast.error(`Validation failed: ${error.response.data.details}`);
+        }
+      } else if (error.response?.data?.error) {
+        toast.error(`Error: ${error.response.data.error}`);
+      } else if (error.message) {
+        toast.error(`Error: ${error.message}`);
+      } else {
+        toast.error(`Failed to ${editLabId ? 'update' : 'create'} lab. Please try again.`);
+      }
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  const handleDeleteLab = async () => {
+    if (!editLabId) {
+      toast.error('No lab to delete')
+      return
+    }
+
+    // Show confirmation dialog
+    const confirmed = window.confirm(
+      'Are you sure you want to delete this lab? This action cannot be undone.'
+    )
+
+    if (!confirmed) {
+      return
+    }
+
+    try {
+      await labAPI.deleteLab(editLabId)
+      toast.success('Lab deleted successfully!')
+      navigate('dashboard')
+    } catch (error: any) {
+      console.error('Failed to delete lab:', error)
+      if (error.message.includes('active sessions')) {
+        toast.error('Cannot delete lab with active sessions')
+      } else {
+        toast.error(error.message || 'Failed to delete lab')
+      }
     }
   }
 
@@ -416,48 +1079,58 @@ export default function LabCreationView() {
   const categories = getSubcategories(labData.academicCategory)
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white sticky top-0 z-10">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <button
                 onClick={() => navigate('dashboard')}
-                className="flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+                className="flex items-center text-blue-100 hover:text-white transition-colors"
               >
                 <ArrowLeft className="w-5 h-5 mr-2" />
                 Back to Dashboard
               </button>
-              <div className="h-6 border-l border-gray-300 dark:border-gray-600"></div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                Create New Lab
+              <div className="h-6 border-l border-blue-300"></div>
+              <h1 className="text-2xl font-bold text-white">
+                {adminEditMode ? 'View Lab Details (Admin)' : editLabId ? 'Edit Lab' : 'Create New Lab'}
               </h1>
             </div>
 
             <div className="flex items-center space-x-3">
               <button
                 onClick={() => setShowPreview(!showPreview)}
-                className="flex items-center px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                className="flex items-center px-4 py-2 text-white bg-white/20 rounded-lg hover:bg-white/30 transition-colors"
               >
                 {showPreview ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
                 {showPreview ? 'Hide Preview' : 'Preview'}
               </button>
 
+              {editLabId && !adminEditMode && (
+                <button
+                  onClick={handleDeleteLab}
+                  className="flex items-center px-4 py-2 text-white bg-red-500/80 rounded-lg hover:bg-red-500 transition-colors"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete Lab
+                </button>
+              )}
+
               <button
                 onClick={handleSave}
-                disabled={isSaving || !labData.title.trim()}
-                className="flex items-center px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+                disabled={isSaving || (!adminEditMode && (!labData.title.trim() || labData.tags.length === 0))}
+                className="flex items-center px-6 py-2 bg-white text-blue-600 hover:bg-blue-50 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed rounded-lg transition-colors font-medium"
               >
                 {isSaving ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Saving...
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                    {adminEditMode ? 'Updating...' : editLabId ? 'Updating...' : 'Saving...'}
                   </>
                 ) : (
                   <>
                     <Save className="w-4 h-4 mr-2" />
-                    Save Lab
+                    {adminEditMode ? 'Update Icon URL' : editLabId ? 'Update Lab' : 'Save Lab'}
                   </>
                 )}
               </button>
@@ -466,122 +1139,38 @@ export default function LabCreationView() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Form */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Academic Organization */}
-            <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
-                Academic Organization
-              </h2>
-
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Academic Field *
-                    </label>
-                    <select
-                      value={labData.academicCategory}
-                      onChange={(e) => setLabData({
-                        ...labData,
-                        academicCategory: e.target.value,
-                        category: getSubcategories(e.target.value)[0] || ''
-                      })}
-                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    >
-                      {academicCategories.map(cat => (
-                        <option key={cat} value={cat}>
-                          {cat.split('-').map(word =>
-                            word.charAt(0).toUpperCase() + word.slice(1)
-                          ).join(' ')}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Course *
-                    </label>
-                    <select
-                      value={labData.course}
-                      onChange={(e) => setLabData({ ...labData, course: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    >
-                      <option value="">Select Course</option>
-                      {courses.filter(course =>
-                        course.toLowerCase().includes(labData.academicCategory) ||
-                        (labData.academicCategory === 'computing' && course.includes('Computer Science')) ||
-                        (labData.academicCategory === 'medicine' && course.includes('MBBS')) ||
-                        (labData.academicCategory === 'business' && (course.includes('Business') || course.includes('MBA')))
-                      ).map(course => (
-                        <option key={course} value={course}>{course}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Module
-                    </label>
-                    <input
-                      type="text"
-                      value={labData.module}
-                      onChange={(e) => setLabData({ ...labData, module: e.target.value })}
-                      placeholder="e.g., Module 3: Data Structures"
-                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Lab Type *
-                    </label>
-                    <select
-                      value={labData.labType}
-                      onChange={(e) => setLabData({ ...labData, labType: e.target.value as 'mandatory' | 'challenge' })}
-                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    >
-                      <option value="mandatory">Mandatory</option>
-                      <option value="challenge">Challenge</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Subject Area
-                  </label>
-                  <select
-                    value={labData.category}
-                    onChange={(e) => setLabData({ ...labData, category: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  >
-                    {categories.map(cat => (
-                      <option key={cat} value={cat}>
-                        {cat.split('-').map(word =>
-                          word.charAt(0).toUpperCase() + word.slice(1)
-                        ).join(' ')}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+      {/* Admin Edit Mode Banner */}
+      {adminEditMode && (
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-400 p-4">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center">
+              <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 mr-2" />
+              <div>
+                <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+                  Admin View Mode - Most fields are read-only
+                </p>
+                <p className="text-xs text-yellow-700 dark:text-yellow-300">
+                  Only the lab icon/image can be edited in this mode
+                </p>
               </div>
-            </section>
+            </div>
+          </div>
+        </div>
+      )}
 
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="space-y-8">
+          {/* Main Form */}
+          <div className="space-y-8">
             {/* Lab Basic Information */}
-            <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
+            <section className="bg-card dark:bg-card rounded-xl border border-border p-6 shadow-sm">
+              <h2 className="text-xl font-bold text-foreground mb-6">
                 Basic Information
               </h2>
 
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     Lab Title *
                   </label>
                   <input
@@ -589,12 +1178,14 @@ export default function LabCreationView() {
                     value={labData.title}
                     onChange={(e) => setLabData({ ...labData, title: e.target.value })}
                     placeholder="e.g., SQL Injection Fundamentals"
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    readOnly={adminEditMode}
+                    className={`w-full px-4 py-3 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-background text-foreground placeholder-muted-foreground ${adminEditMode ? 'bg-gray-100 dark:bg-gray-800 cursor-not-allowed' : ''
+                      }`}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     Description
                   </label>
                   <textarea
@@ -602,453 +1193,211 @@ export default function LabCreationView() {
                     onChange={(e) => setLabData({ ...labData, description: e.target.value })}
                     placeholder="Describe what students will learn in this lab..."
                     rows={4}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    readOnly={adminEditMode}
+                    className={`w-full px-4 py-3 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-background text-foreground placeholder-muted-foreground ${adminEditMode ? 'bg-gray-100 dark:bg-gray-800 cursor-not-allowed' : ''
+                      }`}
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Difficulty
-                    </label>
-                    <select
-                      value={labData.difficulty}
-                      onChange={(e) => setLabData({ ...labData, difficulty: e.target.value as any })}
-                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    >
-                      <option value="beginner">Beginner</option>
-                      <option value="intermediate">Intermediate</option>
-                      <option value="advanced">Advanced</option>
-                    </select>
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Lab Icon/Image
+                  </label>
+                  <div className="space-y-3">
+                    {/* File Upload Input */}
+                    <div className="flex items-center justify-center w-full">
+                      <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:hover:bg-bray-800 dark:bg-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:hover:border-gray-500 dark:hover:bg-gray-600">
+                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                          <Upload className="w-8 h-8 mb-4 text-gray-500 dark:text-gray-400" />
+                          <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
+                            <span className="font-semibold">Click to upload</span> lab icon
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">PNG, JPG or GIF (MAX. 2MB)</p>
+                        </div>
+                        <input
+                          type="file"
+                          className="hidden"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              // Store File object in browser for immediate preview
+                              console.log('🖼️ Lab icon selected:', file.name, 'Size:', file.size, 'bytes');
+                              setLabData({ ...labData, icon: file });
+                              toast.success('Icon ready for upload! Will be saved when you create/save the lab.', {
+                                duration: 3000
+                              });
+                            }
+                          }}
+                        />
+                      </label>
+                    </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Estimated Time (minutes)
-                    </label>
-                    <input
-                      type="number"
-                      value={labData.estimatedTime}
-                      onChange={(e) => setLabData({ ...labData, estimatedTime: parseInt(e.target.value) || 0 })}
-                      min="15"
-                      max="480"
-                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    />
+                    {/* Image Preview */}
+                    {labData.icon && (
+                      <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <div className="flex-shrink-0">
+                          <img
+                            src={labData.icon instanceof File ?
+                              URL.createObjectURL(labData.icon) :
+                              (labData.icon.startsWith('http://') || labData.icon.startsWith('https://') ?
+                                labData.icon :
+                                `http://localhost:3001${labData.icon.startsWith('/') ? labData.icon : '/' + labData.icon}`
+                              )
+                            }
+                            alt="Lab icon preview"
+                            className="w-12 h-12 rounded-lg object-cover border border-gray-200 dark:border-gray-600"
+                            onError={(e) => {
+                              console.error('Failed to load icon:', labData.icon);
+                              // Fallback to a placeholder or remove the image
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-gray-900 dark:text-white">
+                            {labData.icon instanceof File ? labData.icon.name : 'Preview'}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            {labData.icon instanceof File ? (
+                              <span className="text-blue-600 dark:text-blue-400">📷 Ready to upload</span>
+                            ) : (
+                              'This is how your icon will appear'
+                            )}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setLabData({ ...labData, icon: '' })}
+                          className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
                   </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Tags & Keywords *
+                  </label>
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {labData.tags.map((tag, index) => (
+                      <span
+                        key={index}
+                        className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                      >
+                        {tag}
+                        <button
+                          onClick={() => {
+                            const newTags = labData.tags.filter((_, i) => i !== index)
+                            setLabData({ ...labData, tags: newTags })
+                          }}
+                          className="ml-2 text-blue-600 hover:text-blue-800 dark:text-blue-300 dark:hover:text-blue-100"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                  <div className="flex gap-2 relative">
+                    <div className="flex-1 relative">
+                      <input
+                        type="text"
+                        id="tagInput"
+                        value={tagInput}
+                        onChange={(e) => handleTagInput(e.target.value)}
+                        onKeyDown={handleTagKeyDown}
+                        onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                        onFocus={() => filterSuggestions(tagInput)}
+                        placeholder="Enter a tag and press Enter or Space"
+                        className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-background text-foreground placeholder-muted-foreground"
+                      />
+
+                      {/* Tag suggestions dropdown */}
+                      {showSuggestions && suggestedTags.length > 0 && (
+                        <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-lg z-10 max-h-40 overflow-y-auto">
+                          {suggestedTags.map((tag, index) => (
+                            <button
+                              key={index}
+                              type="button"
+                              onMouseDown={(e) => {
+                                e.preventDefault()
+                                addTag(tag)
+                              }}
+                              className="w-full text-left px-4 py-2 hover:bg-muted text-foreground transition-colors first:rounded-t-lg last:rounded-b-lg"
+                            >
+                              {tag}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => addTag(tagInput)}
+                      className="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Add relevant tags to help categorize and search for this lab. Press Enter or Space to add tags.
+                  </p>
                 </div>
               </div>
             </section>
 
             {/* VM Configuration */}
-            <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6 flex items-center">
-                <Monitor className="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400" />
+            <section className="bg-card dark:bg-card rounded-xl border border-border p-6 shadow-sm">
+              <h2 className="text-xl font-bold text-foreground mb-6 flex items-center">
+                <Monitor className="w-5 h-5 mr-2 text-blue-600" />
                 Virtual Machine Configuration
               </h2>
 
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    VM Image
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Public Image URL
                   </label>
                   <input
                     type="text"
                     value={labData.vmImage}
                     onChange={(e) => setLabData({ ...labData, vmImage: e.target.value })}
                     placeholder="e.g., ubuntu-20.04-security or custom-vulnhub-image"
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-background text-foreground placeholder-muted-foreground"
                   />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
-                    Resource Requirements
-                  </label>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">CPU Cores</label>
-                      <input
-                        type="number"
-                        value={labData.vmResources.cpu}
-                        onChange={(e) => setLabData({
-                          ...labData,
-                          vmResources: { ...labData.vmResources, cpu: parseInt(e.target.value) || 1 }
-                        })}
-                        min="1"
-                        max="8"
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Memory (GB)</label>
-                      <input
-                        type="number"
-                        value={labData.vmResources.memory}
-                        onChange={(e) => setLabData({
-                          ...labData,
-                          vmResources: { ...labData.vmResources, memory: parseInt(e.target.value) || 1 }
-                        })}
-                        min="1"
-                        max="32"
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Storage (GB)</label>
-                      <input
-                        type="number"
-                        value={labData.vmResources.storage}
-                        onChange={(e) => setLabData({
-                          ...labData,
-                          vmResources: { ...labData.vmResources, storage: parseInt(e.target.value) || 10 }
-                        })}
-                        min="10"
-                        max="100"
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                      />
-                    </div>
-                  </div>
                 </div>
               </div>
             </section>
 
-            {/* Tasks and Questions */}
-            <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Lab Tasks & Questions
-                </h2>
-                <button
-                  onClick={addTask}
-                  className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Task
-                </button>
+            {/* Tasks and Questions - Enhanced with Drag & Drop and Metadata */}
+            <section className="bg-card dark:bg-card rounded-xl border border-border p-6 shadow-sm">
+              <div className="mb-6">
+                <div>
+                  <h2 className="text-xl font-bold text-foreground">
+                    Lab Tasks & Questions
+                  </h2>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Create tasks and questions for your lab. Drag and drop to reorder them.
+                  </p>
+                </div>
               </div>
 
-              <div className="space-y-6">
-                {tasks.map((task, taskIndex) => (
-                  <div key={task.id} className="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="font-medium text-gray-900 dark:text-white">
-                        Task {taskIndex + 1}
-                      </h3>
-                      <button
-                        onClick={() => deleteTask(task.id)}
-                        className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                          Task Title
-                        </label>
-                        <input
-                          type="text"
-                          value={task.title}
-                          onChange={(e) => updateTask(task.id, { title: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                          Task Description
-                        </label>
-                        <textarea
-                          value={task.description}
-                          onChange={(e) => updateTask(task.id, { description: e.target.value })}
-                          rows={2}
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                        />
-                      </div>
-
-                      {/* Questions */}
-                      <div>
-                        <div className="flex items-center justify-between mb-3">
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                            Questions
-                          </label>
-                          <button
-                            onClick={() => addQuestion(task.id)}
-                            className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-sm flex items-center"
-                          >
-                            <Plus className="w-3 h-3 mr-1" />
-                            Add Question
-                          </button>
-                        </div>
-
-                        {task.questions.map((question, questionIndex) => (
-                          <div key={question.id} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 mb-3">
-                            <div className="flex items-center justify-between mb-3">
-                              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                Question {questionIndex + 1}
-                              </span>
-                              <div className="flex items-center space-x-2">
-                                <select
-                                  value={question.type}
-                                  onChange={(e) => updateQuestion(task.id, question.id, { type: e.target.value as any })}
-                                  className="text-xs px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
-                                >
-                                  <option value="flag">Flag</option>
-                                  <option value="text">Text Answer</option>
-                                  <option value="multiple-choice">Multiple Choice</option>
-                                  <option value="file-upload">File Upload</option>
-                                </select>
-                                <button
-                                  onClick={() => deleteQuestion(task.id, question.id)}
-                                  className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
-                                >
-                                  <Trash2 className="w-3 h-3" />
-                                </button>
-                              </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                              <div>
-                                <input
-                                  type="text"
-                                  value={question.title}
-                                  onChange={(e) => updateQuestion(task.id, question.id, { title: e.target.value })}
-                                  placeholder="Question title"
-                                  className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
-                                />
-                              </div>
-                              <div className="flex space-x-2">
-                                <input
-                                  type="number"
-                                  value={question.points}
-                                  onChange={(e) => updateQuestion(task.id, question.id, { points: parseInt(e.target.value) || 0 })}
-                                  placeholder="Points"
-                                  min="0"
-                                  className="w-20 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
-                                />
-                                <label className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-                                  <input
-                                    type="checkbox"
-                                    checked={question.isOptional}
-                                    onChange={(e) => updateQuestion(task.id, question.id, { isOptional: e.target.checked })}
-                                    className="mr-1"
-                                  />
-                                  Optional
-                                </label>
-                              </div>
-                            </div>
-
-                            <textarea
-                              value={question.description}
-                              onChange={(e) => updateQuestion(task.id, question.id, { description: e.target.value })}
-                              placeholder="Question description/instructions"
-                              rows={2}
-                              className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-600 text-gray-900 dark:text-white mb-3"
-                            />
-
-                            {/* Media and Attachments */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                              <div>
-                                <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
-                                  Images
-                                </label>
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  multiple
-                                  onChange={(e) => handleImageUpload(task.id, question.id, e.target.files)}
-                                  className="w-full text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
-                                />
-                                {question.images && question.images.length > 0 && (
-                                  <div className="flex flex-wrap gap-1 mt-1">
-                                    {question.images.map((img, idx) => (
-                                      <Image key={idx} src={img} alt="Question" width={48} height={48} className="w-12 h-12 object-cover rounded border" />
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-
-                              <div>
-                                <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
-                                  Attachments
-                                </label>
-                                <input
-                                  type="file"
-                                  multiple
-                                  onChange={(e) => handleAttachmentUpload(task.id, question.id, e.target.files)}
-                                  className="w-full text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
-                                />
-                                {question.attachments && question.attachments.length > 0 && (
-                                  <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                                    {question.attachments.length} file(s) attached
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-
-                            {question.type === 'flag' && (
-                              <div>
-                                <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
-                                  Expected Flag
-                                </label>
-                                <input
-                                  type="text"
-                                  value={question.flag || ''}
-                                  onChange={(e) => updateQuestion(task.id, question.id, { flag: e.target.value })}
-                                  placeholder="MODULUS{example_flag_here}"
-                                  className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
-                                />
-                              </div>
-                            )}
-
-                            {question.type === 'multiple-choice' && (
-                              <div>
-                                <div className="flex items-center justify-between mb-2">
-                                  <label className="block text-xs text-gray-600 dark:text-gray-400">
-                                    Answer Options
-                                  </label>
-                                  <button
-                                    type="button"
-                                    onClick={() => addMultipleChoiceOption(task.id, question.id)}
-                                    className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
-                                  >
-                                    + Add Option
-                                  </button>
-                                </div>
-                                {question.multipleChoiceOptions?.map((option, optionIdx) => (
-                                  <div key={optionIdx} className="flex items-center gap-2 mb-1">
-                                    <input
-                                      type="checkbox"
-                                      checked={option.isCorrect}
-                                      onChange={(e) => {
-                                        const newOptions = [...(question.multipleChoiceOptions || [])]
-                                        newOptions[optionIdx].isCorrect = e.target.checked
-                                        updateQuestion(task.id, question.id, { multipleChoiceOptions: newOptions })
-                                      }}
-                                      className="flex-shrink-0"
-                                    />
-                                    <input
-                                      type="text"
-                                      value={option.option}
-                                      onChange={(e) => {
-                                        const newOptions = [...(question.multipleChoiceOptions || [])]
-                                        newOptions[optionIdx].option = e.target.value
-                                        updateQuestion(task.id, question.id, { multipleChoiceOptions: newOptions })
-                                      }}
-                                      placeholder="Answer option"
-                                      className="flex-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
-                                    />
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <DragDropLabEditor
+                labId={editLabId || 'new-lab'}
+                tasks={dragDropTasks}
+                onTasksUpdate={updateDragDropTasks}
+                onAddTask={addDragDropTask}
+                onImageUpload={handleImageUpload}
+                onAttachmentUpload={handleAttachmentUpload}
+              />
             </section>
           </div>
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Lab Statistics */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Lab Overview</h3>
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Field:</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">
-                    {labData.academicCategory.split('-').map(word =>
-                      word.charAt(0).toUpperCase() + word.slice(1)
-                    ).join(' ')}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Type:</span>
-                  <span className={`text-sm font-medium ${labData.labType === 'mandatory'
-                      ? 'text-blue-600 dark:text-blue-400'
-                      : 'text-purple-600 dark:text-purple-400'
-                    }`}>
-                    {labData.labType.charAt(0).toUpperCase() + labData.labType.slice(1)}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Tasks:</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">{tasks.length}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Questions:</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">
-                    {tasks.reduce((total, task) => total + task.questions.length, 0)}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Total Points:</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">
-                    {tasks.reduce((total, task) =>
-                      total + task.questions.reduce((taskTotal, question) => taskTotal + question.points, 0), 0
-                    )}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Estimated Time:</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">{labData.estimatedTime}min</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Quick Tips */}
-            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6">
-              <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-4 flex items-center">
-                <AlertCircle className="w-4 h-4 mr-2" />
-                Lab Creation Tips
-              </h3>
-              <ul className="space-y-2 text-sm text-blue-800 dark:text-blue-200">
-                <li>• Define clear learning objectives</li>
-                <li>• Use progressive difficulty levels</li>
-                <li>• Include diverse question types</li>
-                <li>• Add visual aids and attachments</li>
-                <li>• Provide helpful hints and feedback</li>
-                <li>• Test thoroughly before publishing</li>
-              </ul>
-            </div>
-
-            {/* Resource Usage */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Resource Requirements</h3>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">CPU:</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">
-                    {labData.vmResources.cpu} cores
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Memory:</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">
-                    {labData.vmResources.memory}GB RAM
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Storage:</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">
-                    {labData.vmResources.storage}GB disk
-                  </span>
-                </div>
-                <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Cost per hour:</span>
-                    <span className="text-sm font-semibold text-green-600 dark:text-green-400">
-                      $0.{(labData.vmResources.cpu * 2 + labData.vmResources.memory * 0.5).toFixed(0).padStart(2, '0')}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>

@@ -1,5 +1,6 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
+const { pool } = require('../db');
 const router = express.Router();
 
 // Middleware to verify JWT token (from auth.js)
@@ -34,12 +35,12 @@ const requireAdmin = (req, res, next) => {
 // GET /api/users - Get all users (admin/staff only)
 router.get('/', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const db = req.app.locals.db;
+    const db = pool;
     const { page = 1, limit = 20, role, search, approvalStatus } = req.query;
-    
+
     let query = `
       SELECT id, email, name, role, is_approved, created_at, last_active,
-             level, level_name, badges, streak_days, total_points
+             level, level_name, badges, streak_days, total_points, course_code
       FROM users 
       WHERE 1=1
     `;
@@ -117,7 +118,7 @@ router.get('/', authenticateToken, requireAdmin, async (req, res) => {
 router.get('/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const db = req.app.locals.db;
+    const db = pool;
 
     // Users can only view their own profile unless they're admin/staff
     if (req.user.userId !== parseInt(id) && req.user.role !== 'admin' && req.user.role !== 'staff') {
@@ -158,7 +159,7 @@ router.put('/:id', [
 
     const { id } = req.params;
     const { name, email } = req.body;
-    const db = req.app.locals.db;
+    const db = pool;
 
     // Users can only update their own profile unless they're admin/staff
     if (req.user.userId !== parseInt(id) && req.user.role !== 'admin' && req.user.role !== 'staff') {
@@ -220,7 +221,7 @@ router.put('/:id', [
 router.put('/:id/approve', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const db = req.app.locals.db;
+    const db = pool;
 
     const result = await db.query(
       `UPDATE users 
@@ -249,7 +250,7 @@ router.put('/:id/approve', authenticateToken, requireAdmin, async (req, res) => 
 router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const db = req.app.locals.db;
+    const db = pool;
 
     // Prevent admin from deleting themselves
     if (req.user.userId === parseInt(id)) {
@@ -279,8 +280,8 @@ router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
 // GET /api/users/pending/instructors - Get pending instructor approvals (admin/staff only)
 router.get('/pending/instructors', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const db = req.app.locals.db;
-    
+    const db = pool;
+
     const result = await db.query(
       `SELECT id, email, name, created_at, last_active
        FROM users 
@@ -295,6 +296,29 @@ router.get('/pending/instructors', authenticateToken, requireAdmin, async (req, 
 
   } catch (error) {
     console.error('Get pending instructors error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// GET /api/users/student-count - Get count of students (accessible to instructors)
+router.get('/student-count', authenticateToken, async (req, res) => {
+  try {
+    const db = pool;
+
+    const result = await db.query(
+      'SELECT COUNT(*) as count FROM users WHERE role = $1',
+      ['student']
+    );
+
+    const studentCount = parseInt(result.rows[0].count);
+
+    res.json({
+      studentCount,
+      success: true
+    });
+
+  } catch (error) {
+    console.error('Get student count error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

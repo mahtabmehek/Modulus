@@ -2,27 +2,26 @@
 
 import { useState, useEffect } from 'react'
 import { useApp } from '@/lib/hooks/use-app'
-import { ArrowLeft, Save, User, Mail, Shield, Settings, Calendar, Award, Camera, Eye, EyeOff, Lock } from 'lucide-react'
+import { ArrowLeft, Save, User, Mail, Shield, Settings, Calendar, Award, Camera, Eye, EyeOff } from 'lucide-react'
 import { User as UserType, UserRole } from '@/types'
 import { getUserPermissions, canEditUserData } from '@/lib/permissions'
+import { apiClient } from '@/lib/api'
+import { achievementsAPI, Achievement, UserAchievementStats, getRarityColor, formatAchievementDate } from '@/lib/api/achievements'
 import toast from 'react-hot-toast'
 
 export function ProfileView() {
-  const { user: currentUser, navigate } = useApp()
+  const { user: currentUser, navigate, logout } = useApp()
   const [isEditing, setIsEditing] = useState(false)
-  const [showPasswordForm, setShowPasswordForm] = useState(false)
-  const [passwordData, setPasswordData] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: ''
-  })
+  const [userAchievements, setUserAchievements] = useState<Achievement[]>([])
+  const [userStats, setUserStats] = useState<UserAchievementStats | null>(null)
+  const [achievementsLoading, setAchievementsLoading] = useState(true)
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     studentId: '',
     department: '',
     preferences: {
-      theme: 'system' as 'light' | 'dark' | 'system',
+      theme: 'dark' as 'light' | 'dark',
       language: 'en',
       notifications: {
         email: true,
@@ -40,10 +39,10 @@ export function ProfileView() {
         email: currentUser.email || '',
         studentId: currentUser.id?.toString() || '',
         department: currentUser.role === 'student' ? 'Computer Science' : 'Faculty',
-        preferences: currentUser.preferences || {
-          theme: 'system' as 'light' | 'dark' | 'system',
-          language: 'en',
-          notifications: {
+        preferences: {
+          theme: (currentUser.preferences?.theme as any) === 'system' ? 'dark' : (currentUser.preferences?.theme || 'dark') as 'light' | 'dark',
+          language: currentUser.preferences?.language || 'en',
+          notifications: currentUser.preferences?.notifications || {
             email: true,
             push: true,
             announcements: true,
@@ -54,13 +53,34 @@ export function ProfileView() {
     }
   }, [currentUser])
 
+  // Load achievements data for students
+  useEffect(() => {
+    if (currentUser?.role === 'student' && currentUser.id) {
+      loadAchievements()
+    }
+  }, [currentUser])
+
+  const loadAchievements = async () => {
+    try {
+      setAchievementsLoading(true)
+      const response = await achievementsAPI.getUserAchievements(Number(currentUser!.id))
+      setUserAchievements(response.data.achievements.filter(a => a.earned_at))
+      setUserStats(response.data.userStats)
+    } catch (error) {
+      console.error('Error loading achievements:', error)
+      toast.error('Failed to load achievements')
+    } finally {
+      setAchievementsLoading(false)
+    }
+  }
+
   // Safety check for user data
   if (!currentUser) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="text-white text-center">
           <p className="text-lg mb-4">Please log in to view your profile</p>
-          <button 
+          <button
             onClick={() => navigate('login')}
             className="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg transition-colors"
           >
@@ -110,7 +130,6 @@ export function ProfileView() {
 
   const permissions = getUserPermissions(currentUser?.role)
   const canEdit = isOwnProfile ? permissions?.canEditOwnProfile : canEditUserData(currentUser?.role, profileUser?.role)
-  const canResetPassword = isOwnProfile ? permissions?.canResetOwnPassword : canEditUserData(currentUser?.role, profileUser?.role)
 
   const handleInputChange = (field: string, value: any) => {
     if (field.includes('.')) {
@@ -134,18 +153,6 @@ export function ProfileView() {
     // Here you would typically make an API call to save the changes
     console.log('Saving profile changes:', formData)
     setIsEditing(false)
-    // Show success message
-  }
-
-  const handlePasswordReset = () => {
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
-      toast.error('Passwords do not match')
-      return
-    }
-    // Here you would typically make an API call to change the password
-    console.log('Changing password for user:', profileUser.id)
-    setShowPasswordForm(false)
-    setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' })
     // Show success message
   }
 
@@ -191,23 +198,14 @@ export function ProfileView() {
             </button>
             <div>
               <h1 className="text-3xl font-bold text-foreground">
-                {isOwnProfile ? 'My Profile' : `${profileUser.name || 'Unknown User'}'s Profile`}
+                {isOwnProfile ? (profileUser.role === 'student' ? 'My Profile and Badges' : 'My Profile') : `${profileUser.name || 'Unknown User'}'s Profile`}
               </h1>
               <p className="text-muted-foreground">
-                {isOwnProfile ? 'Manage your account settings' : 'View user information'}
+                {isOwnProfile ? (profileUser.role === 'student' ? 'Manage your account settings and view achievements' : 'Manage your account settings') : 'View user information'}
               </p>
             </div>
           </div>
           <div className="flex space-x-3">
-            {canResetPassword && (
-              <button
-                onClick={() => setShowPasswordForm(true)}
-                className="flex items-center space-x-2 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors"
-              >
-                <Lock className="w-4 h-4" />
-                <span>Reset Password</span>
-              </button>
-            )}
             {canEdit && (
               <button
                 onClick={() => isEditing ? handleSave() : setIsEditing(true)}
@@ -237,7 +235,7 @@ export function ProfileView() {
                 <div className="w-24 h-24 mx-auto bg-red-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
                   {profileUser.name ? profileUser.name.split(' ').map(n => n[0]).join('') : '?'}
                 </div>
-                {canEdit && isEditing && (
+                {canEdit && isEditing && profileUser.role !== 'admin' && (
                   <button className="absolute bottom-0 right-1/2 transform translate-x-1/2 translate-y-1/2 bg-red-600 hover:bg-red-700 text-white p-2 rounded-full transition-colors">
                     <Camera className="w-4 h-4" />
                   </button>
@@ -249,45 +247,28 @@ export function ProfileView() {
                 <span className="capitalize">{profileUser.role}</span>
               </div>
               <p className="text-muted-foreground mt-2">User ID: {profileUser.id}</p>
-              
-              {/* Stats */}
-              <div className="grid grid-cols-2 gap-4 mt-6 pt-6 border-t border-border">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-red-600">{profileUser.level || 1}</div>
-                  <div className="text-sm text-muted-foreground">Level</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-red-600">{profileUser.badges?.length || 0}</div>
-                  <div className="text-sm text-muted-foreground">Badges</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-red-600">{profileUser.streakDays || 0}</div>
-                  <div className="text-sm text-muted-foreground">Day Streak</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-red-600">{(profileUser.totalPoints || 0).toLocaleString()}</div>
-                  <div className="text-sm text-muted-foreground">Points</div>
-                </div>
-              </div>
-            </div>
 
-            {/* Quick Info */}
-            <div className="bg-card rounded-lg border border-border p-6 mt-6">
-              <h3 className="text-lg font-semibold text-foreground mb-4">Quick Info</h3>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Joined</span>
-                  <span className="text-foreground">{formatDate(profileUser.joinedAt)}</span>
+              {/* Stats - Only show for students */}
+              {profileUser.role === 'student' && (
+                <div className="grid grid-cols-2 gap-4 mt-6 pt-6 border-t border-border">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-red-600">{profileUser.level || 1}</div>
+                    <div className="text-sm text-muted-foreground">Level</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-red-600">{userAchievements.length}</div>
+                    <div className="text-sm text-muted-foreground">Badges</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-red-600">{userStats?.current_streak_days || 0}</div>
+                    <div className="text-sm text-muted-foreground">Day Streak</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-red-600">{(userStats?.total_points_earned || 0).toLocaleString()}</div>
+                    <div className="text-sm text-muted-foreground">Points</div>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Last Active</span>
-                  <span className="text-foreground">{formatDate(profileUser.lastActive)}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Level Name</span>
-                  <span className="text-foreground">{profileUser.levelName || 'Beginner'}</span>
-                </div>
-              </div>
+              )}
             </div>
           </div>
 
@@ -304,7 +285,7 @@ export function ProfileView() {
                   </div>
                 )}
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">
@@ -361,160 +342,94 @@ export function ProfileView() {
                     )}
                   </div>
                 )}
-
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Role
-                  </label>
-                  <div className="w-full px-4 py-3 bg-muted border border-border rounded-lg text-foreground capitalize">
-                    {profileUser.role}
-                  </div>
-                </div>
               </div>
             </div>
 
-            {/* Preferences (only for own profile) */}
-            {isOwnProfile && (
+            {/* Achievements - Only show for students */}
+            {profileUser.role === 'student' && (
               <div className="bg-card rounded-lg border border-border p-6">
-                <h3 className="text-lg font-semibold text-foreground mb-6">Preferences</h3>
-                
-                <div className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      Theme
-                    </label>
-                    <select
-                      value={formData.preferences.theme}
-                      onChange={(e) => handleInputChange('preferences.theme', e.target.value)}
-                      disabled={!isEditing}
-                      className="w-full px-4 py-3 bg-background border border-border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-foreground disabled:bg-muted"
-                    >
-                      <option value="system">System</option>
-                      <option value="light">Light</option>
-                      <option value="dark">Dark</option>
-                    </select>
+                <h3 className="text-lg font-semibold text-foreground mb-6">Badges & Achievements</h3>
+                {achievementsLoading ? (
+                  <div className="flex justify-center items-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                   </div>
+                ) : userAchievements && userAchievements.length > 0 ? (
+                  <div className="space-y-4">
+                    {/* Achievement Stats */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                      <div className="bg-muted rounded-lg p-3 text-center">
+                        <div className="text-xl font-bold text-blue-600">{userAchievements.length}</div>
+                        <div className="text-xs text-muted-foreground">Earned</div>
+                      </div>
+                      <div className="bg-muted rounded-lg p-3 text-center">
+                        <div className="text-xl font-bold text-green-600">{userStats?.current_level || 1}</div>
+                        <div className="text-xs text-muted-foreground">Level</div>
+                      </div>
+                      <div className="bg-muted rounded-lg p-3 text-center">
+                        <div className="text-xl font-bold text-purple-600">{userStats?.current_streak_days || 0}</div>
+                        <div className="text-xs text-muted-foreground">Day Streak</div>
+                      </div>
+                      <div className="bg-muted rounded-lg p-3 text-center">
+                        <div className="text-xl font-bold text-orange-600">{userStats?.total_points_earned || 0}</div>
+                        <div className="text-xs text-muted-foreground">Points</div>
+                      </div>
+                    </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-4">
-                      Notifications
-                    </label>
-                    <div className="space-y-3">
-                      {Object.entries(formData.preferences.notifications).map(([key, value]) => (
-                        <div key={key} className="flex items-center justify-between">
-                          <span className="text-foreground capitalize">
-                            {key.replace(/([A-Z])/g, ' $1').trim()}
-                          </span>
-                          <label className="relative inline-flex items-center cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={value}
-                              onChange={(e) => handleInputChange(`preferences.notifications.${key}`, e.target.checked)}
-                              disabled={!isEditing}
-                              className="sr-only peer"
-                            />
-                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-300 dark:peer-focus:ring-red-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-red-600"></div>
-                          </label>
+                    {/* Achievement Grid */}
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                      {userAchievements.map((achievement) => (
+                        <div
+                          key={achievement.id}
+                          className={`
+                            relative rounded-lg p-4 text-center transition-all duration-200 
+                            hover:scale-105 border-2
+                            ${getRarityColor(achievement.rarity)}
+                          `}
+                        >
+                          <div className="text-2xl mb-2">{achievement.icon}</div>
+                          <div className="text-sm font-medium text-foreground mb-1">
+                            {achievement.name}
+                          </div>
+                          <div className="text-xs text-muted-foreground mb-2 line-clamp-2">
+                            {achievement.description}
+                          </div>
+                          <div className="flex items-center justify-between text-xs">
+                            <span className={`
+                              px-2 py-1 rounded-full text-xs font-medium
+                              ${achievement.rarity === 'legendary' ? 'bg-yellow-500/20 text-yellow-400' :
+                                achievement.rarity === 'epic' ? 'bg-purple-500/20 text-purple-400' :
+                                  achievement.rarity === 'rare' ? 'bg-blue-500/20 text-blue-400' :
+                                    achievement.rarity === 'uncommon' ? 'bg-green-500/20 text-green-400' :
+                                      'bg-gray-500/20 text-gray-400'}
+                            `}>
+                              {achievement.rarity}
+                            </span>
+                            <span className="text-orange-400 font-medium">
+                              +{achievement.points}
+                            </span>
+                          </div>
+                          {achievement.earned_at && (
+                            <div className="text-xs text-muted-foreground mt-2">
+                              {formatAchievementDate(achievement.earned_at)}
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
                   </div>
-                </div>
-              </div>
-            )}
-
-            {/* Badges */}
-            <div className="bg-card rounded-lg border border-border p-6">
-              <h3 className="text-lg font-semibold text-foreground mb-6">Badges & Achievements</h3>
-              {profileUser.badges.length > 0 ? (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {profileUser.badges.map((badge, index) => (
-                    <div key={index} className="bg-muted rounded-lg p-4 text-center">
-                      <div className="text-2xl mb-2">🏆</div>
-                      <div className="text-sm font-medium text-foreground">{badge}</div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-muted-foreground text-center py-8">No badges earned yet</p>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Password Reset Modal */}
-        {showPasswordForm && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-card rounded-lg border border-border p-6 w-full max-w-md">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-foreground">
-                  {isOwnProfile ? 'Change Password' : `Reset Password for ${profileUser.name}`}
-                </h3>
-                <button
-                  onClick={() => setShowPasswordForm(false)}
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  ×
-                </button>
-              </div>
-              
-              <div className="space-y-4">
-                {isOwnProfile && (
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      Current Password
-                    </label>
-                    <input
-                      type="password"
-                      value={passwordData.currentPassword}
-                      onChange={(e) => setPasswordData(prev => ({ ...prev, currentPassword: e.target.value }))}
-                      className="w-full px-4 py-3 bg-background border border-border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-foreground"
-                    />
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="text-4xl mb-4">🏆</div>
+                    <p className="text-muted-foreground mb-2">No achievements earned yet</p>
+                    <p className="text-sm text-muted-foreground">
+                      Complete labs and activities to start earning achievements!
+                    </p>
                   </div>
                 )}
-                
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    New Password
-                  </label>
-                  <input
-                    type="password"
-                    value={passwordData.newPassword}
-                    onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
-                    className="w-full px-4 py-3 bg-background border border-border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-foreground"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Confirm New Password
-                  </label>
-                  <input
-                    type="password"
-                    value={passwordData.confirmPassword}
-                    onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                    className="w-full px-4 py-3 bg-background border border-border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-foreground"
-                  />
-                </div>
               </div>
-              
-              <div className="flex space-x-3 mt-6">
-                <button
-                  onClick={() => setShowPasswordForm(false)}
-                  className="flex-1 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handlePasswordReset}
-                  className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
-                >
-                  Reset Password
-                </button>
-              </div>
-            </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
     </div>
   )

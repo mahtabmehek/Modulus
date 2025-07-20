@@ -61,17 +61,17 @@ export function canUserPerformAction(role: UserRole, action: keyof UserPermissio
 
 export function canEditUserData(currentUserRole: UserRole, targetUserRole: UserRole): boolean {
   const permissions = getUserPermissions(currentUserRole)
-  
+
   // Admin can edit anyone
   if (currentUserRole === 'admin') {
     return true
   }
-  
+
   // Staff can edit instructors and students, but not other staff or admins
   if (currentUserRole === 'staff') {
     return targetUserRole === 'instructor' || targetUserRole === 'student'
   }
-  
+
   // Instructors and students cannot edit any user data
   return false
 }
@@ -93,37 +93,37 @@ export function canViewUserProfile(currentUserRole: UserRole, targetUserRole: Us
   if (currentUserRole === targetUserRole) {
     return true
   }
-  
+
   // Admin can view anyone's profile
   if (currentUserRole === 'admin') {
     return true
   }
-  
+
   // Staff can view instructor and student profiles
   if (currentUserRole === 'staff') {
     return targetUserRole === 'instructor' || targetUserRole === 'student'
   }
-  
+
   // Instructors and students can only view their own profiles
   return false
 }
 
 export function canCreateUser(currentUserRole: UserRole, targetUserRole: UserRole): boolean {
   const permissions = getUserPermissions(currentUserRole)
-  
+
   if (!permissions.canCreateUsers) {
     return false
   }
-  
+
   // Admin can create anyone
   if (currentUserRole === 'admin') {
     return true
   }
-  
+
   // Staff can create instructors and students, but not other staff or admins
   if (currentUserRole === 'staff') {
     return targetUserRole === 'instructor' || targetUserRole === 'student'
   }
-  
+
   return false
 }

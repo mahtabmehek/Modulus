@@ -1,46 +1,38 @@
-﻿const express = require('express');
+const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const { Pool } = require('pg');
-const RDSDataClient = require('./rds-data-client');
 require('dotenv').config();
 
-// Import routes - updated for deployment test
+// Import routes
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
 const healthRoutes = require('./routes/health');
 const adminRoutes = require('./routes/admin');
 const coursesRoutes = require('./routes/courses');
 const labsRoutes = require('./routes/labs');
+const filesRoutes = require('./routes/files');
+const submissionsRoutes = require('./routes/submissions');
+const achievementsRoutes = require('./routes/achievements');
 
-// Conditionally load desktop routes only if not in Lambda environment
+// Load desktop routes for local development
 let desktopRoutes = null;
 try {
-  if (process.env.NODE_ENV !== 'production' && !process.env.AWS_LAMBDA_FUNCTION_NAME) {
-    desktopRoutes = require('./routes/desktop');
-  }
+  desktopRoutes = require('./routes/desktop');
+  console.log('✅ Desktop routes loaded successfully');
 } catch (error) {
-  console.log('Desktop routes not available in this environment:', error.message);
+  console.log('❌ Desktop routes not available:', error.message);
 }
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Trust proxy for API Gateway
-app.set('trust proxy', true);
-
-// Rate limiting - configured for Lambda environment
+// Rate limiting for local development
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP, please try again later.',
-  // Skip rate limiting if IP is undefined (Lambda environment)
-  skip: (req) => !req.ip,
-  // Use a custom key generator for Lambda
-  keyGenerator: (req) => {
-    return req.ip || req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || 'lambda-function';
-  }
+  max: 1000, // limit each IP to 1000 requests per windowMs (increased from 100)
+  message: 'Too many requests from this IP, please try again later.'
 });
 
 // Middleware
@@ -50,11 +42,8 @@ app.use(cors({
     'http://localhost:3000',
     'http://localhost:3001',
     'https://localhost:3000',
-    'https://localhost:3001',
-    'http://modulus-frontend-1370267358.s3-website.eu-west-2.amazonaws.com',
-    process.env.FRONTEND_URL,
-    '*'
-  ].filter(Boolean),
+    'https://localhost:3001'
+  ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -63,78 +52,79 @@ app.use(limiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Request logging middleware - ENHANCED
-app.use((req, res, next) => {
-  console.log(`\n🔥🔥🔥 INCOMING REQUEST 🔥🔥🔥`);
-  console.log(`🌐 ${new Date().toISOString()} - ${req.method} ${req.url}`);
-  console.log(`🌐 Path: ${req.path}`);
-  console.log(`🌐 Original URL: ${req.originalUrl}`);
-  console.log(`🌐 Base URL: ${req.baseUrl}`);
-  console.log(`🌐 Query:`, req.query);
-  console.log(`🌐 Params:`, req.params);
-  console.log('🌐 Headers:', JSON.stringify(req.headers, null, 2));
-  console.log(`🌐 Content-Type: ${req.headers['content-type']}`);
-  console.log(`🌐 User-Agent: ${req.headers['user-agent']}`);
-  console.log(`🌐 IP: ${req.ip || req.connection.remoteAddress}`);
-  if (req.body && Object.keys(req.body).length > 0) {
-    console.log('🌐 Body:', JSON.stringify(req.body, null, 2));
+// Serve static files from uploads directory with proper CORS headers
+app.use('/uploads', (req, res, next) => {
+  // Set comprehensive CORS headers for static files
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Expose-Headers', 'Content-Length, Content-Type');
+  res.header('Cross-Origin-Resource-Policy', 'cross-origin');
+  res.header('Cross-Origin-Embedder-Policy', 'unsafe-none');
+
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
   }
-  console.log(`🔥🔥🔥 END REQUEST LOG 🔥🔥🔥\n`);
+
+  next();
+}, express.static('uploads', {
+  setHeaders: (res, path) => {
+    // Ensure proper content types for images
+    if (path.endsWith('.png')) {
+      res.setHeader('Content-Type', 'image/png');
+    } else if (path.endsWith('.jpg') || path.endsWith('.jpeg')) {
+      res.setHeader('Content-Type', 'image/jpeg');
+    } else if (path.endsWith('.gif')) {
+      res.setHeader('Content-Type', 'image/gif');
+    } else if (path.endsWith('.webp')) {
+      res.setHeader('Content-Type', 'image/webp');
+    }
+  }
+}));
+
+// Request logging middleware
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+  if (req.body && Object.keys(req.body).length > 0) {
+    console.log('Request body:', JSON.stringify(req.body, null, 2));
+  }
   next();
 });
 
-// Database connection
-let pool;
+// Database connection - Local PostgreSQL only
+console.log('🔌 Connecting to local PostgreSQL database');
+const pool = new Pool({
+  host: process.env.DB_HOST || 'localhost',
+  port: process.env.DB_PORT || 5432,
+  database: process.env.DB_NAME || 'modulus',
+  user: process.env.DB_USER || 'postgres',
+  password: process.env.DB_PASSWORD || 'postgres',
+  ssl: false, // No SSL for local development
+  max: 10,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 5000
+});
 
-// Check if we should use RDS Data API (for Lambda or local development with USE_RDS_DATA_API=true)
-const useRDSDataAPI = !!process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.USE_RDS_DATA_API === 'true';
+// Test database connection
+pool.connect()
+  .then(client => {
+    console.log('✅ Connected to database');
+    client.release();
+  })
+  .catch(err => {
+    console.error('❌ Database connection error:', err.message);
+    console.log('🔄 Falling back to mock database for local development');
 
-if (useRDSDataAPI) {
-  // Use RDS Data API (works for both Lambda and local development)
-  console.log('🌟 Using RDS Data API for database connection');
-  pool = new RDSDataClient();
-
-  // Test RDS Data API connection
-  pool.testConnection()
-    .then(() => {
-      console.log('✅ RDS Data API connection successful');
-    })
-    .catch(err => {
-      console.error('❌ RDS Data API connection error:', err.message);
-    });
-} else {
-  // Use real PostgreSQL database (Aurora) for local development
-  console.log('🔌 Local environment detected, using direct PostgreSQL connection');
-  pool = new Pool({
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT || 5432,
-    database: process.env.DB_NAME,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-    max: 5, // Reduced for Aurora Serverless
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 20000, // Increased for Aurora cold starts
-    acquireTimeoutMillis: 20000, // Additional timeout for acquiring connections
-    createTimeoutMillis: 20000, // Timeout for creating connections
-  });
-
-  // Test database connection on startup
-  pool.connect()
-    .then(client => {
-      console.log('✅ Connected to database');
-      if (client.release) client.release();
-    })
-    .catch(err => {
-      console.error('❌ Database connection error:', err.message);
-      console.log('🔄 Falling back to mock database for local development');
-      
-      // Use mock database as fallback
+    // Use mock database as fallback
+    try {
       const MockDatabase = require('./mock-db');
       app.locals.db = new MockDatabase();
       console.log('✅ Mock database initialized');
-    });
-}
+    } catch (mockErr) {
+      console.error('❌ Mock database not available:', mockErr.message);
+    }
+  });
 
 // Make pool available to routes
 app.locals.db = pool;
@@ -146,13 +136,19 @@ app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/courses', coursesRoutes);
 app.use('/api/labs', labsRoutes);
+app.use('/api/files', filesRoutes);
+app.use('/api/submissions', submissionsRoutes);
+app.use('/api/achievements', achievementsRoutes);
 
 // Only use desktop routes if available
 if (desktopRoutes) {
+  console.log('🔗 Registering desktop routes at /api/desktop');
   app.use('/api/desktop', desktopRoutes);
+} else {
+  console.log('⚠️  Desktop routes not registered - desktopRoutes is null');
 }
 
-// Simple health check endpoint for ECS health checks
+// Simple health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'healthy',
@@ -204,14 +200,13 @@ process.on('SIGINT', () => {
   });
 });
 
-// Export the app for Lambda deployment
-module.exports = app;
-
-// Only start the server if running directly (not in Lambda)
+// Start the server
 if (require.main === module) {
   app.listen(PORT, () => {
     console.log(`🚀 Modulus Backend API listening on port ${PORT}`);
     console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`Database: ${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME}`);
+    console.log(`Database: ${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || 5432}/${process.env.DB_NAME || 'modulus'}`);
   });
 }
+
+module.exports = app;

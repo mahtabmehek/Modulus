@@ -9,7 +9,7 @@ export default function DebugApiTest() {
     }
 
     const testHealthEndpoint = async () => {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://2wd44vvcnypx57l3g32zo4dnoy0bkmwi.lambda-url.eu-west-2.on.aws/api'
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
 
         try {
             addResult('Health Check', false, `Testing: ${API_URL}/health`)
@@ -33,7 +33,7 @@ export default function DebugApiTest() {
     }
 
     const testLoginEndpoint = async () => {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://2wd44vvcnypx57l3g32zo4dnoy0bkmwi.lambda-url.eu-west-2.on.aws/api'
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
 
         try {
             addResult('Login Test', false, `Testing: ${API_URL}/auth/login`)
@@ -91,8 +91,8 @@ export default function DebugApiTest() {
                     <div
                         key={index}
                         className={`p-4 rounded-lg border ${result.success
-                                ? 'bg-green-50 border-green-200 text-green-800'
-                                : 'bg-red-50 border-red-200 text-red-800'
+                            ? 'bg-green-50 border-green-200 text-green-800'
+                            : 'bg-red-50 border-red-200 text-red-800'
                             }`}
                     >
                         <div className="flex justify-between items-center mb-2">

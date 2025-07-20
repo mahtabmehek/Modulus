@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS users (
     name VARCHAR(255) NOT NULL,
     role VARCHAR(50) NOT NULL DEFAULT 'student' CHECK (role IN ('student', 'instructor', 'staff', 'admin')),
     is_approved BOOLEAN DEFAULT FALSE,
+    course_code VARCHAR(50), -- Assigned course code for students
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     last_active TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
@@ -130,7 +131,10 @@ CREATE TABLE IF NOT EXISTS labs (
     
     -- Scoring
     points_possible INTEGER DEFAULT 100,
-    auto_grade BOOLEAN DEFAULT FALSE
+    auto_grade BOOLEAN DEFAULT FALSE,
+    
+    -- Icon/Image
+    icon_url TEXT
 );
 
 -- User progress tracking

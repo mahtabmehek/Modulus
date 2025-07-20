@@ -7,14 +7,14 @@ export interface User {
   studentId?: string
   role: UserRole
   avatar?: string
-  level: number
-  levelName: string
-  badges: string[]
-  streakDays: number
-  totalPoints: number
+  level?: number
+  levelName?: string
+  badges?: string[]
+  streakDays?: number
+  totalPoints?: number
   joinedAt: Date
   lastActive: Date
-  preferences: UserPreferences
+  preferences?: UserPreferences
   isApproved?: boolean
   approvalStatus?: 'pending' | 'approved' | 'rejected'
   status: 'pending' | 'approved' | 'rejected' // Add this field
@@ -24,7 +24,7 @@ export interface User {
 }
 
 export interface UserPreferences {
-  theme: 'light' | 'dark' | 'system'
+  theme: 'light' | 'dark'
   language: string
   notifications: {
     email: boolean
@@ -237,7 +237,7 @@ export interface Announcement {
 }
 
 export interface ViewState {
-  type: 'login' | 'register' | 'dashboard' | 'path' | 'module' | 'lab' | 'desktop' | 'profile' | 'lab-creation' | 'course-creation' | 'course-edit' | 'course-overview' | 'user-creation' | 'user-edit' | 'user-overview' | 'user-profile' | 'pending-approval'
+  type: 'login' | 'register' | 'dashboard' | 'path' | 'module' | 'lab' | 'desktop' | 'profile' | 'lab-creation' | 'course-creation' | 'course-edit' | 'course-overview' | 'user-creation' | 'user-edit' | 'user-overview' | 'user-profile' | 'pending-approval' | 'forgot-password' | 'reset-password'
   params?: {
     pathId?: string
     moduleId?: string

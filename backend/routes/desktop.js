@@ -1,61 +1,73 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
+const KaliDesktopService = require('../services/KaliDesktopService');
 
-// Conditionally load HybridDesktopManager only when not in Lambda environment
-let HybridDesktopManager = null;
-try {
-  if (process.env.NODE_ENV !== 'production' && !process.env.AWS_LAMBDA_FUNCTION_NAME) {
-    HybridDesktopManager = require('../services/HybridDesktopManager');
-  }
-} catch (error) {
-  console.log('HybridDesktopManager not available in this environment:', error.message);
-}
+// Initialize Kali Desktop Service
+const kaliService = new KaliDesktopService();
+
+// Cleanup idle sessions every 30 minutes
+setInterval(() => {
+  kaliService.cleanupIdleSessions();
+}, 30 * 60 * 1000);
 
 const router = express.Router();
+
+// Debug middleware to log all requests to desktop routes
+router.use((req, res, next) => {
+  console.log(`🖥️  DESKTOP ROUTE: ${req.method} ${req.path}`);
+  next();
+});
 
 // Inline authentication middleware for Lambda compatibility
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
+  console.log('🔐 DESKTOP AUTH DEBUG: Header present:', !!authHeader);
+  console.log('🔐 DESKTOP AUTH DEBUG: Token extracted:', !!token);
+
   if (!token) {
+    console.log('❌ DESKTOP AUTH DEBUG: No token provided');
     return res.status(401).json({ message: 'Access token required' });
   }
 
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+  const secret = process.env.JWT_SECRET || 'modulus-lms-secret-key-change-in-production';
+  console.log('🔐 DESKTOP AUTH DEBUG: Using JWT secret:', secret.substring(0, 10) + '...');
+
+  jwt.verify(token, secret, (err, user) => {
     if (err) {
+      console.log('❌ DESKTOP AUTH DEBUG: JWT verification failed:', err.message);
+      console.log('❌ DESKTOP AUTH DEBUG: Token preview:', token.substring(0, 20) + '...');
+      console.log('❌ DESKTOP AUTH DEBUG: Error name:', err.name);
       return res.status(403).json({ message: 'Invalid or expired token' });
     }
+    console.log('✅ DESKTOP AUTH DEBUG: JWT verification successful for user:', user.userId || user.id);
     req.user = user;
     next();
   });
 };
 
-// Initialize desktop manager only if available
-let desktopManager = null;
-if (HybridDesktopManager) {
-  desktopManager = new HybridDesktopManager();
-}
-
 // Create desktop session
 router.post('/create', authenticateToken, async (req, res) => {
   try {
-    if (!desktopManager) {
-      return res.status(503).json({ message: 'Desktop service not available in this environment' });
+    const userId = req.user.userId;
+
+    console.log(`🐉 Creating Kali desktop session for user ${userId}`);
+
+    // Create Kali session
+    const session = await kaliService.createKaliSession(userId);
+
+    // Log session creation in database (if db is available)
+    if (req.app.locals.db) {
+      try {
+        await req.app.locals.db.query(
+          'INSERT INTO desktop_sessions (user_id, container_id, vnc_port, web_port, status, session_data, created_at) VALUES ($1, $2, $3, $4, $5, $6, NOW())',
+          [userId, session.containerId, session.port, session.port, 'running', JSON.stringify(session)]
+        );
+      } catch (dbError) {
+        console.log('Database logging failed (continuing anyway):', dbError.message);
+      }
     }
-
-    const { labId } = req.body;
-    const userId = req.user.id;
-
-    console.log(`Creating desktop session for user ${userId}, lab ${labId}`);
-
-    const session = await desktopManager.createUserSession(userId, labId);
-
-    // Log session creation in database
-    await req.app.locals.db.query(
-      'INSERT INTO desktop_sessions (user_id, lab_id, container_id, vnc_port, web_port, status, session_data) VALUES ($1, $2, $3, $4, $5, $6, $7)',
-      [userId, labId, session.sessionId, session.vncPort || 0, session.webPort || 0, 'running', JSON.stringify(session)]
-    );
 
     res.json({
       success: true,
@@ -63,13 +75,15 @@ router.post('/create', authenticateToken, async (req, res) => {
         sessionId: session.sessionId,
         vncUrl: session.vncUrl,
         webUrl: session.webUrl,
+        port: session.port,
         status: session.status,
-        persistenceType: 'hybrid',
-        labId
+        osType: session.osType,
+        ipAddress: session.ipAddress,
+        persistenceType: 'container'
       }
     });
   } catch (error) {
-    console.error('Desktop session creation error:', error);
+    console.error('❌ Desktop session creation error:', error);
     res.status(500).json({
       success: false,
       error: error.message || 'Failed to create desktop session'
@@ -80,41 +94,15 @@ router.post('/create', authenticateToken, async (req, res) => {
 // Get current session
 router.get('/session', authenticateToken, async (req, res) => {
   try {
-    if (!desktopManager) {
-      return res.status(503).json({ message: 'Desktop service not available in this environment' });
-    }
+    const userId = req.user.userId;
 
-    const userId = req.user.id;
+    // Check for active Kali session
+    const session = await kaliService.getSession(userId);
 
-    // Check for active session in database
-    const result = await req.app.locals.db.query(
-      'SELECT * FROM desktop_sessions WHERE user_id = $1 AND status = $2 ORDER BY created_at DESC LIMIT 1',
-      [userId, 'running']
-    );
-
-    if (result.rows.length === 0) {
+    if (!session) {
       return res.status(404).json({
         success: false,
         error: 'No active session found'
-      });
-    }
-
-    const sessionData = result.rows[0];
-    const session = JSON.parse(sessionData.session_data);
-
-    // Verify container is still running
-    const isRunning = await desktopManager.isSessionActive(userId);
-
-    if (!isRunning) {
-      // Update database to reflect terminated status
-      await req.app.locals.db.query(
-        'UPDATE desktop_sessions SET status = $1, terminated_at = NOW() WHERE id = $2',
-        ['terminated', sessionData.id]
-      );
-
-      return res.status(404).json({
-        success: false,
-        error: 'Session no longer active'
       });
     }
 
@@ -124,17 +112,18 @@ router.get('/session', authenticateToken, async (req, res) => {
         sessionId: session.sessionId,
         vncUrl: session.vncUrl,
         webUrl: session.webUrl,
-        status: 'running',
-        persistenceType: 'hybrid',
-        labId: sessionData.lab_id,
-        createdAt: sessionData.created_at
+        port: session.port,
+        status: session.status,
+        osType: session.osType,
+        ipAddress: session.ipAddress,
+        createdAt: session.createdAt
       }
     });
   } catch (error) {
-    console.error('Get session error:', error);
+    console.error('❌ Failed to get desktop session:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to get session information'
+      error: error.message || 'Failed to get session'
     });
   }
 });
@@ -142,112 +131,63 @@ router.get('/session', authenticateToken, async (req, res) => {
 // Terminate session
 router.delete('/terminate', authenticateToken, async (req, res) => {
   try {
-    if (!desktopManager) {
-      return res.status(503).json({ message: 'Desktop service not available in this environment' });
+    const userId = req.user.userId;
+
+    console.log(`🛑 Terminating Kali session for user ${userId}`);
+
+    const result = await kaliService.terminateSession(userId);
+
+    // Update database status if available
+    if (req.app.locals.db) {
+      try {
+        await req.app.locals.db.query(
+          'UPDATE desktop_sessions SET status = $1, ended_at = NOW() WHERE user_id = $2 AND status = $3',
+          ['terminated', userId, 'running']
+        );
+      } catch (dbError) {
+        console.log('Database update failed (continuing anyway):', dbError.message);
+      }
     }
-
-    const userId = req.user.id;
-
-    console.log(`Terminating desktop session for user ${userId}`);
-
-    const result = await desktopManager.terminateUserSession(userId);
-
-    // Update database
-    await req.app.locals.db.query(
-      'UPDATE desktop_sessions SET status = $1, terminated_at = NOW() WHERE user_id = $2 AND status = $3',
-      ['terminated', userId, 'running']
-    );
 
     res.json({
       success: true,
-      result: {
-        status: result.status,
-        dataPersisted: result.dataPersisted,
-        persistenceType: result.persistenceType
+      message: 'Desktop session terminated'
+    });
+  } catch (error) {
+    console.error('❌ Failed to terminate session:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to terminate session'
+    });
+  }
+});
+
+// Get desktop system status (admin only)
+router.get('/status', authenticateToken, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+
+    const allSessions = kaliService.getAllSessions();
+
+    res.json({
+      success: true,
+      status: {
+        totalSessions: allSessions.length,
+        activeSessions: allSessions.filter(s => s.status === 'running').length,
+        sessions: allSessions.map(s => ({
+          userId: s.userId,
+          sessionId: s.sessionId,
+          status: s.status,
+          createdAt: s.createdAt,
+          osType: s.osType
+        }))
       }
     });
   } catch (error) {
-    console.error('Desktop session termination error:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message || 'Failed to terminate desktop session'
-    });
-  }
-});
-
-// Get user's backup history
-router.get('/backups', authenticateToken, async (req, res) => {
-  try {
-    if (!desktopManager) {
-      return res.status(503).json({ message: 'Desktop service not available in this environment' });
-    }
-    const userId = req.user.id;
-
-    const backups = await desktopManager.listUserBackups(userId);
-
-    res.json({
-      success: true,
-      backups
-    });
-  } catch (error) {
-    console.error('Get backups error:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message || 'Failed to get backup history'
-    });
-  }
-});
-
-// Extend session (reset timeout)
-router.post('/extend', authenticateToken, async (req, res) => {
-  try {
-    if (!desktopManager) {
-      return res.status(503).json({ message: 'Desktop service not available in this environment' });
-    }
-
-    const userId = req.user.id;
-
-    const result = await desktopManager.extendUserSession(userId);
-
-    if (result.success) {
-      // Update last accessed time in database
-      await req.app.locals.db.query(
-        'UPDATE desktop_sessions SET last_accessed = NOW() WHERE user_id = $1 AND status = $2',
-        [userId, 'running']
-      );
-    }
-
-    res.json({
-      success: result.success,
-      message: result.message || 'Session extended successfully'
-    });
-  } catch (error) {
-    console.error('Extend session error:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message || 'Failed to extend session'
-    });
-  }
-});
-
-// Get desktop status/health
-router.get('/status', authenticateToken, async (req, res) => {
-  try {
-    if (!desktopManager) {
-      return res.status(503).json({ message: 'Desktop service not available in this environment' });
-    }
-    const userId = req.user.id;
-
-    const status = await desktopManager.getSystemStatus();
-    const userSession = await desktopManager.getUserSessionStatus(userId);
-
-    res.json({
-      success: true,
-      system: status,
-      userSession
-    });
-  } catch (error) {
-    console.error('Get status error:', error);
+    console.error('❌ Failed to get desktop status:', error);
     res.status(500).json({
       success: false,
       error: error.message || 'Failed to get status'

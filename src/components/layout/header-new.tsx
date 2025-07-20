@@ -11,12 +11,10 @@ export function Header() {
   const { theme, setTheme } = useTheme()
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
-  const [showAchievements, setShowAchievements] = useState(false)
 
   // Refs for dropdown menus
   const userMenuRef = useRef<HTMLDivElement>(null)
   const notificationsRef = useRef<HTMLDivElement>(null)
-  const achievementsRef = useRef<HTMLDivElement>(null)
 
   // Handle clicking outside dropdowns
   useEffect(() => {
@@ -26,9 +24,6 @@ export function Header() {
       }
       if (notificationsRef.current && !notificationsRef.current.contains(event.target as Node)) {
         setShowNotifications(false)
-      }
-      if (achievementsRef.current && !achievementsRef.current.contains(event.target as Node)) {
-        setShowAchievements(false)
       }
     }
 
@@ -66,8 +61,12 @@ export function Header() {
               className="flex items-center cursor-pointer"
               onClick={() => navigate('dashboard')}
             >
-              <div className="w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">M</span>
+              <div className="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                <img
+                  src="/logo.svg"
+                  alt="Modulus Logo"
+                  className="w-8 h-8"
+                />
               </div>
               <span className="ml-3 text-xl font-bold text-white">
                 Modulus
@@ -91,55 +90,15 @@ export function Header() {
               <span className="font-medium">{userProgress.currentStreak}</span>
             </div>
 
-            {/* Achievements Dropdown */}
-            <div className="relative" ref={achievementsRef}>
+            {/* Achievements Button */}
+            <div className="relative">
               <button
-                onClick={() => setShowAchievements(!showAchievements)}
+                onClick={() => navigate('profile')}
                 className="flex items-center space-x-1 hover:bg-red-500 px-2 py-1 rounded transition-colors"
               >
                 <Award className="w-4 h-4" />
                 <span className="font-medium">{earnedAchievements.length}</span>
               </button>
-
-              {showAchievements && (
-                <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 text-gray-900 dark:text-gray-100">
-                  <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                    <h3 className="font-semibold">Achievements</h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {earnedAchievements.length} of {achievements.length} unlocked
-                    </p>
-                  </div>
-                  <div className="max-h-64 overflow-y-auto">
-                    {achievements.map((achievement) => (
-                      <div
-                        key={achievement.id}
-                        className={`p-3 border-b border-gray-100 dark:border-gray-600 last:border-b-0 ${achievement.earned ? 'bg-green-50 dark:bg-green-900/20' : 'opacity-50'
-                          }`}
-                      >
-                        <div className="flex items-start space-x-3">
-                          <span className="text-2xl">{achievement.icon}</span>
-                          <div className="flex-1">
-                            <h4 className="font-medium text-sm">{achievement.name}</h4>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                              {achievement.description}
-                            </p>
-                            <div className="flex items-center space-x-2 mt-1">
-                              <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-0.5 rounded">
-                                {achievement.points} XP
-                              </span>
-                              {achievement.earned && achievement.earnedDate && (
-                                <span className="text-xs text-gray-500 dark:text-gray-400">
-                                  {achievement.earnedDate.toLocaleDateString()}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Your Desktop Button (when in lab) */}

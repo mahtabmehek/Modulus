@@ -11,6 +11,14 @@ export const metadata: Metadata = {
   description: 'Advanced Learning Management System with hands-on labs and gamification',
   keywords: ['learning', 'education', 'cybersecurity', 'labs', 'LMS'],
   authors: [{ name: 'mahtabmehek' }],
+  icons: {
+    icon: [
+      { url: '/logo.svg', type: 'image/svg+xml' },
+      { url: '/favicon.svg', type: 'image/svg+xml' }
+    ],
+    shortcut: '/favicon.svg',
+    apple: '/logo.svg',
+  },
 }
 
 export const viewport: Viewport = {
@@ -28,14 +36,14 @@ export default function RootLayout({
       <body className={`${inter.className} min-h-screen`}>
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
+          defaultTheme="dark"
           enableSystem
           disableTransitionOnChange
           storageKey="modulus-theme"
         >
           {children}
-          <Toaster 
-            position="top-right"
+          <Toaster
+            position="bottom-right"
             toastOptions={{
               duration: 4000,
               style: {

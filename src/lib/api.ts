@@ -1,9 +1,5 @@
 // API configuration and utilities
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || (
-  process.env.NODE_ENV === 'production'
-    ? 'https://9yr579qaz1.execute-api.eu-west-2.amazonaws.com/prod/api'
-    : 'http://localhost:3001/api'
-)
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
 
 interface ApiError {
   message: string
@@ -23,7 +19,7 @@ class ApiClient {
     this.baseUrl = baseUrl
     // Load token from localStorage if available
     if (typeof window !== 'undefined') {
-      this.token = localStorage.getItem('auth_token')
+      this.token = localStorage.getItem('modulus_token')
     }
   }
 
@@ -32,19 +28,19 @@ class ApiClient {
       newToken: token ? `${token.substring(0, 30)}...` : 'null',
       oldToken: this.token ? `${this.token.substring(0, 30)}...` : 'null'
     })
-    
+
     this.token = token
     if (typeof window !== 'undefined') {
       if (token) {
-        localStorage.setItem('auth_token', token)
+        localStorage.setItem('modulus_token', token)
         console.log('✅ Token saved to localStorage')
       } else {
-        localStorage.removeItem('auth_token')
+        localStorage.removeItem('modulus_token')
         console.log('🗑️ Token removed from localStorage')
       }
-      
+
       // Verify it was saved
-      const savedToken = localStorage.getItem('auth_token')
+      const savedToken = localStorage.getItem('modulus_token')
       console.log('🔍 Verification - Token in localStorage:', savedToken ? `${savedToken.substring(0, 30)}...` : 'null')
     }
   }
@@ -64,11 +60,14 @@ class ApiClient {
       endpoint,
       method: options.method || 'GET',
       hasToken: !!this.token,
-      tokenPreview: this.token ? `${this.token.substring(0, 20)}...` : 'No token'
+      tokenPreview: this.token ? `${this.token.substring(0, 20)}...` : 'No token',
+      url,
+      bodyPreview: options.body ? JSON.stringify(JSON.parse(options.body as string), null, 2).substring(0, 100) + '...' : 'No body'
     })
 
     if (this.token) {
       (headers as Record<string, string>).Authorization = `Bearer ${this.token}`
+      console.log('🔑 Authorization header set:', `Bearer ${this.token.substring(0, 30)}...`)
     }
 
     const response = await fetch(url, {
@@ -79,16 +78,22 @@ class ApiClient {
     console.log('📡 API Response Debug:', {
       url,
       status: response.status,
-      ok: response.ok
+      statusText: response.statusText,
+      ok: response.ok,
+      headers: Object.fromEntries(response.headers.entries())
     })
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
       console.error('❌ API Error Details:', errorData)
-      // Throw the entire error object so frontend can access errorType and message
-      const error = new Error(errorData.message || `HTTP ${response.status}`)
-      // Attach the error data to the error object
-      Object.assign(error, errorData)
+
+      // Create a custom error that includes response data
+      const error = new Error(errorData.message || `HTTP ${response.status}`) as any
+      error.response = {
+        status: response.status,
+        statusText: response.statusText,
+        data: errorData
+      }
       throw error
     }
 
@@ -123,6 +128,30 @@ class ApiClient {
     return this.request('/auth/login', {
       method: 'POST',
       body: JSON.stringify(credentials),
+    })
+  }
+
+  async changePassword(passwordData: {
+    currentPassword: string
+    newPassword: string
+  }): Promise<{ message: string }> {
+    return this.request('/auth/change-password', {
+      method: 'PUT',
+      body: JSON.stringify(passwordData),
+    })
+  }
+
+  async forgotPassword(email: string): Promise<{ message: string; resetToken?: string; resetLink?: string }> {
+    return this.request('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    })
+  }
+
+  async resetPassword(token: string, password: string): Promise<{ message: string }> {
+    return this.request('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, password }),
     })
   }
 
@@ -281,6 +310,20 @@ class ApiClient {
   async deleteLab(labId: string): Promise<{ message: string }> {
     return this.request(`/labs/${labId}`, {
       method: 'DELETE',
+    })
+  }
+
+  async reorderTasks(labId: string, tasks: { id: string; order_index: number }[]): Promise<{ message: string }> {
+    return this.request(`/labs/${labId}/tasks/reorder`, {
+      method: 'PUT',
+      body: JSON.stringify({ tasks }),
+    })
+  }
+
+  async reorderQuestions(taskId: string, questions: { id: string; order_index: number }[]): Promise<{ message: string }> {
+    return this.request(`/labs/tasks/${taskId}/questions/reorder`, {
+      method: 'PUT',
+      body: JSON.stringify({ questions }),
     })
   }
 

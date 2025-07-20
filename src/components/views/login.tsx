@@ -65,11 +65,13 @@ export function LoginView() {
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
-            <div className="w-12 h-12 bg-red-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-xl">M</span>
-            </div>
+            <img
+              src="/logo.svg"
+              alt="Modulus Logo"
+              className="w-48 h-48"
+            />
           </div>
-          <h1 className="text-3xl font-bold text-white">ModulusLMS</h1>
+          <h1 className="text-3xl font-bold text-white -mt-12">ModulusLMS</h1>
         </div>
 
         {/* Login Form */}
@@ -110,6 +112,16 @@ export function LoginView() {
                 required
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-900 placeholder-gray-500"
               />
+              {/* Forgot Password Link */}
+              <div className="text-right">
+                <button
+                  type="button"
+                  onClick={() => navigate('forgot-password')}
+                  className="text-sm text-red-600 hover:text-red-700 font-medium"
+                >
+                  Forgot your password?
+                </button>
+              </div>
             </div>
 
             {error && (

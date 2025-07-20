@@ -9,15 +9,16 @@
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
-    "labs": "node src/lab-environment/server.js"
+    "labs": "node src/lab-environment/server.js",
+    "cypress:open": "cypress open",
+    "cypress:run": "cypress run",
+    "test:e2e": "cypress run",
+    "test:e2e:open": "cypress open"
   },
   "dependencies": {
-    "@aws-sdk/client-cloudwatch": "^3.841.0",
-    "@aws-sdk/client-ec2": "^3.843.0",
-    "@aws-sdk/client-eks": "^3.840.0",
-    "@aws-sdk/client-elastic-load-balancing-v2": "^3.840.0",
-    "@aws-sdk/client-rds": "^3.841.0",
-    "@aws-sdk/client-s3": "^3.842.0",
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
     "@headlessui/react": "^1.7.15",
     "@heroicons/react": "^2.0.18",
     "@tailwindcss/forms": "^0.5.3",
@@ -48,6 +49,7 @@
     "zustand": "^4.3.8"
   },
   "devDependencies": {
+    "cypress": "^14.5.2",
     "eslint": "^9.12.0",
     "eslint-config-next": "15.3.4"
   }
