@@ -374,7 +374,7 @@ export function ProfileView() {
                         <div className="text-xs text-muted-foreground">Points</div>
                       </div>
                     </div>
-                    
+
                     {/* Achievement Grid */}
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                       {userAchievements.map((achievement) => (
@@ -398,9 +398,9 @@ export function ProfileView() {
                               px-2 py-1 rounded-full text-xs font-medium
                               ${achievement.rarity === 'legendary' ? 'bg-yellow-500/20 text-yellow-400' :
                                 achievement.rarity === 'epic' ? 'bg-purple-500/20 text-purple-400' :
-                                achievement.rarity === 'rare' ? 'bg-blue-500/20 text-blue-400' :
-                                achievement.rarity === 'uncommon' ? 'bg-green-500/20 text-green-400' :
-                                'bg-gray-500/20 text-gray-400'}
+                                  achievement.rarity === 'rare' ? 'bg-blue-500/20 text-blue-400' :
+                                    achievement.rarity === 'uncommon' ? 'bg-green-500/20 text-green-400' :
+                                      'bg-gray-500/20 text-gray-400'}
                             `}>
                               {achievement.rarity}
                             </span>

@@ -282,9 +282,10 @@ export function InstructorDashboard() {
                           <div className="mb-3">
                             {lab.icon_path ? (
                               <img
-                                src={lab.icon_path}
+                                src={lab.icon_path.startsWith('http') ? lab.icon_path : `http://localhost:3001${lab.icon_path}`}
                                 alt={lab.title}
-                                className="w-12 h-12 rounded-lg object-cover border border-gray-200 dark:border-gray-600"
+                                className="w-12 h-12 rounded-lg object-cover bg-transparent"
+                                style={{ backgroundColor: 'transparent' }}
                                 onError={(e) => {
                                   // Show default icon if image fails to load
                                   const target = e.target as HTMLImageElement;
@@ -329,18 +330,11 @@ export function InstructorDashboard() {
                           {/* Action Buttons */}
                           <div className="flex gap-1.5 w-full">
                             <button
-                              onClick={() => handlePreviewLab(lab.id)}
-                              className="flex-1 flex items-center justify-center px-2 py-1.5 bg-purple-100 hover:bg-purple-200 text-purple-700 text-xs rounded-md transition-colors"
-                            >
-                              <Eye className="w-3 h-3 mr-1" />
-                              Preview
-                            </button>
-                            <button
                               onClick={() => handleEditLab(lab.id)}
-                              className="flex-1 flex items-center justify-center px-2 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-700 text-xs rounded-md transition-colors"
+                              className="w-full flex items-center justify-center px-3 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white text-sm rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 font-medium"
                             >
-                              <Edit className="w-3 h-3 mr-1" />
-                              Edit
+                              <Edit className="w-4 h-4 mr-2" />
+                              Edit Lab
                             </button>
                           </div>
                         </div>
@@ -403,15 +397,8 @@ export function InstructorDashboard() {
 
                           <div className="flex items-center space-x-2">
                             <button
-                              onClick={() => handleViewCourse(course.id)}
-                              className="flex items-center justify-center px-3 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 text-sm rounded-lg transition-colors"
-                            >
-                              <Eye className="w-4 h-4 mr-1" />
-                              View
-                            </button>
-                            <button
                               onClick={() => handleEditCourse(course.id)}
-                              className="flex items-center justify-center px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm rounded-lg transition-colors"
+                              className="flex items-center justify-center px-4 py-2 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white text-sm rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 font-medium"
                             >
                               <Edit className="w-4 h-4 mr-1" />
                               Edit

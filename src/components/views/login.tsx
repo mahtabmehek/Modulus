@@ -65,9 +65,9 @@ export function LoginView() {
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
-            <img 
-              src="/logo.svg" 
-              alt="Modulus Logo" 
+            <img
+              src="/logo.svg"
+              alt="Modulus Logo"
               className="w-48 h-48"
             />
           </div>

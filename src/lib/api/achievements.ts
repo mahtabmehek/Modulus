@@ -4,7 +4,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/a
 // Helper function to make API calls with auth token
 const apiCall = async (endpoint: string, options: RequestInit = {}) => {
   const token = localStorage.getItem('modulus_token')
-  
+
   const config: RequestInit = {
     ...options,
     headers: {
@@ -13,14 +13,14 @@ const apiCall = async (endpoint: string, options: RequestInit = {}) => {
       ...options.headers,
     },
   }
-  
+
   const response = await fetch(`${API_BASE_URL}${endpoint}`, config)
-  
+
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
     throw new Error(errorData.error || `HTTP ${response.status}`)
   }
-  
+
   return response.json()
 }
 
@@ -40,11 +40,11 @@ export interface Achievement {
   unlock_order: number
   created_at: string
   updated_at: string
-  
+
   // Joined data
   category_name?: string
   category_icon?: string
-  
+
   // User-specific data (when fetching user achievements)
   earned_at?: string
   progress_value?: number
@@ -52,10 +52,10 @@ export interface Achievement {
 }
 
 export interface AchievementCriteria {
-  type: 'labs_completed' | 'streak_days' | 'perfect_labs' | 'speed_completions' | 
-        'total_points' | 'modules_completed' | 'courses_completed' | 'login_count' |
-        'profile_completion' | 'fast_completion' | 'perfect_completion' |
-        'category_completion' | 'early_login' | 'late_completion' | 'weekend_activity'
+  type: 'labs_completed' | 'streak_days' | 'perfect_labs' | 'speed_completions' |
+  'total_points' | 'modules_completed' | 'courses_completed' | 'login_count' |
+  'profile_completion' | 'fast_completion' | 'perfect_completion' |
+  'category_completion' | 'early_login' | 'late_completion' | 'weekend_activity'
   value: number
   category?: string // for category_completion type
   time_threshold?: number // for time-based achievements
@@ -90,7 +90,7 @@ export interface UserAchievementStats {
   perfect_labs: number
   speed_completions: number
   help_given: number
-  
+
   // From users table
   level: number
   level_name: string
@@ -259,7 +259,7 @@ export const getAchievementProgress = (achievement: Achievement, userStats: User
   const criteria = achievement.criteria
   let current = 0
   const target = criteria.value
-  
+
   switch (criteria.type) {
     case 'labs_completed':
       current = userStats.labs_completed
@@ -285,7 +285,7 @@ export const getAchievementProgress = (achievement: Achievement, userStats: User
     default:
       current = achievement.progress_value || 0
   }
-  
+
   return {
     current,
     target,

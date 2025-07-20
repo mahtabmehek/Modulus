@@ -4,7 +4,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/a
 // Helper function to make API calls with auth token
 const apiCall = async (endpoint: string, options: RequestInit = {}) => {
   const token = localStorage.getItem('modulus_token')
-  
+
   const config: RequestInit = {
     ...options,
     headers: {
@@ -13,14 +13,14 @@ const apiCall = async (endpoint: string, options: RequestInit = {}) => {
       ...options.headers,
     },
   }
-  
+
   const response = await fetch(`${API_BASE_URL}${endpoint}`, config)
-  
+
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
     throw new Error(errorData.error || `HTTP ${response.status}`)
   }
-  
+
   return response.json()
 }
 

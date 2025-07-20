@@ -94,12 +94,12 @@ app.use('/api/achievements', achievementsRouter);
 // Import and use desktop routes for Kali sessions
 let desktopRouter = null;
 try {
-  desktopRouter = require('./routes/desktop');
-  console.log('✅ Desktop routes loaded successfully');
-  app.use('/api/desktop', desktopRouter);
-  console.log('🔗 Desktop routes registered at /api/desktop');
+    desktopRouter = require('./routes/desktop');
+    console.log('✅ Desktop routes loaded successfully');
+    app.use('/api/desktop', desktopRouter);
+    console.log('🔗 Desktop routes registered at /api/desktop');
 } catch (error) {
-  console.log('❌ Desktop routes not available:', error.message);
+    console.log('❌ Desktop routes not available:', error.message);
 }
 
 // Static file serving with enhanced CORS headers
@@ -608,158 +608,158 @@ app.post('/api/labs',
 // Load desktop service
 let KaliDesktopService;
 try {
-  KaliDesktopService = require('./services/KaliDesktopService');
-  console.log('✅ KaliDesktopService loaded');
+    KaliDesktopService = require('./services/KaliDesktopService');
+    console.log('✅ KaliDesktopService loaded');
 } catch (error) {
-  console.log('❌ KaliDesktopService not available:', error.message);
+    console.log('❌ KaliDesktopService not available:', error.message);
 }
 
 // Initialize service if available
 let kaliService = null;
 if (KaliDesktopService) {
-  kaliService = new KaliDesktopService();
-  console.log('🔗 Kali Desktop Service initialized');
+    kaliService = new KaliDesktopService();
+    console.log('🔗 Kali Desktop Service initialized');
 }
 
 // Desktop session creation endpoint
 app.post('/api/desktop/create', authenticateToken, async (req, res) => {
-  console.log('🖥️  DESKTOP CREATE: Request received');
-  console.log('🖥️  DESKTOP CREATE: User from auth:', req.user);
-  
-  if (!kaliService) {
-    console.log('❌ DESKTOP CREATE: Service not available');
-    return res.status(503).json({ 
-      error: 'Desktop service not available',
-      message: 'The desktop service is currently unavailable. Please try again later.'
-    });
-  }
+    console.log('🖥️  DESKTOP CREATE: Request received');
+    console.log('🖥️  DESKTOP CREATE: User from auth:', req.user);
 
-  try {
-    console.log('🖥️  DESKTOP CREATE: Creating session for user:', req.user.userId);
-    
-    const session = await kaliService.createKaliSession(req.user.userId);
-    
-    console.log('✅ DESKTOP CREATE: Session created:', session.sessionId);
-    
-    res.json({
-      sessionId: session.sessionId,
-      vncUrl: session.vncUrl,
-      containerId: session.containerId,
-      port: session.port,
-      password: session.password
-    });
-  } catch (error) {
-    console.error('❌ DESKTOP CREATE: Error creating session:', error);
-    res.status(500).json({ 
-      error: 'Failed to create desktop session',
-      message: error.message
-    });
-  }
+    if (!kaliService) {
+        console.log('❌ DESKTOP CREATE: Service not available');
+        return res.status(503).json({
+            error: 'Desktop service not available',
+            message: 'The desktop service is currently unavailable. Please try again later.'
+        });
+    }
+
+    try {
+        console.log('🖥️  DESKTOP CREATE: Creating session for user:', req.user.userId);
+
+        const session = await kaliService.createKaliSession(req.user.userId);
+
+        console.log('✅ DESKTOP CREATE: Session created:', session.sessionId);
+
+        res.json({
+            sessionId: session.sessionId,
+            vncUrl: session.vncUrl,
+            containerId: session.containerId,
+            port: session.port,
+            password: session.password
+        });
+    } catch (error) {
+        console.error('❌ DESKTOP CREATE: Error creating session:', error);
+        res.status(500).json({
+            error: 'Failed to create desktop session',
+            message: error.message
+        });
+    }
 });
 
 // Get current desktop session
 app.get('/api/desktop/session', authenticateToken, async (req, res) => {
-  console.log('🖥️  DESKTOP SESSION: Request received');
-  console.log('🖥️  DESKTOP SESSION: User from auth:', req.user);
-  
-  if (!kaliService) {
-    console.log('❌ DESKTOP SESSION: Service not available');
-    return res.status(503).json({ 
-      error: 'Desktop service not available'
-    });
-  }
+    console.log('🖥️  DESKTOP SESSION: Request received');
+    console.log('🖥️  DESKTOP SESSION: User from auth:', req.user);
 
-  try {
-    console.log('🖥️  DESKTOP SESSION: Getting session for user:', req.user.userId);
-    
-    const session = await kaliService.getSessionForUser(req.user.userId);
-    
-    if (session) {
-      console.log('✅ DESKTOP SESSION: Found session:', session.sessionId);
-      res.json({
-        sessionId: session.sessionId,
-        vncUrl: session.vncUrl,
-        containerId: session.containerId,
-        port: session.port,
-        password: session.password,
-        status: session.status
-      });
-    } else {
-      console.log('ℹ️  DESKTOP SESSION: No session found');
-      res.status(404).json({ 
-        error: 'No active session found',
-        message: 'No desktop session is currently active for this user.'
-      });
+    if (!kaliService) {
+        console.log('❌ DESKTOP SESSION: Service not available');
+        return res.status(503).json({
+            error: 'Desktop service not available'
+        });
     }
-  } catch (error) {
-    console.error('❌ DESKTOP SESSION: Error getting session:', error);
-    res.status(500).json({ 
-      error: 'Failed to get desktop session',
-      message: error.message
-    });
-  }
+
+    try {
+        console.log('🖥️  DESKTOP SESSION: Getting session for user:', req.user.userId);
+
+        const session = await kaliService.getSessionForUser(req.user.userId);
+
+        if (session) {
+            console.log('✅ DESKTOP SESSION: Found session:', session.sessionId);
+            res.json({
+                sessionId: session.sessionId,
+                vncUrl: session.vncUrl,
+                containerId: session.containerId,
+                port: session.port,
+                password: session.password,
+                status: session.status
+            });
+        } else {
+            console.log('ℹ️  DESKTOP SESSION: No session found');
+            res.status(404).json({
+                error: 'No active session found',
+                message: 'No desktop session is currently active for this user.'
+            });
+        }
+    } catch (error) {
+        console.error('❌ DESKTOP SESSION: Error getting session:', error);
+        res.status(500).json({
+            error: 'Failed to get desktop session',
+            message: error.message
+        });
+    }
 });
 
 // Terminate desktop session
 app.delete('/api/desktop/terminate', authenticateToken, async (req, res) => {
-  console.log('🖥️  DESKTOP TERMINATE: Request received');
-  
-  if (!kaliService) {
-    console.log('❌ DESKTOP TERMINATE: Service not available');
-    return res.status(503).json({ 
-      error: 'Desktop service not available'
-    });
-  }
+    console.log('🖥️  DESKTOP TERMINATE: Request received');
 
-  try {
-    console.log('🖥️  DESKTOP TERMINATE: Terminating session for user:', req.user.userId);
-    
-    const result = await kaliService.terminateSessionForUser(req.user.userId);
-    
-    console.log('✅ DESKTOP TERMINATE: Session terminated');
-    
-    res.json({
-      success: true,
-      message: 'Desktop session terminated successfully'
-    });
-  } catch (error) {
-    console.error('❌ DESKTOP TERMINATE: Error terminating session:', error);
-    res.status(500).json({ 
-      error: 'Failed to terminate desktop session',
-      message: error.message
-    });
-  }
+    if (!kaliService) {
+        console.log('❌ DESKTOP TERMINATE: Service not available');
+        return res.status(503).json({
+            error: 'Desktop service not available'
+        });
+    }
+
+    try {
+        console.log('🖥️  DESKTOP TERMINATE: Terminating session for user:', req.user.userId);
+
+        const result = await kaliService.terminateSessionForUser(req.user.userId);
+
+        console.log('✅ DESKTOP TERMINATE: Session terminated');
+
+        res.json({
+            success: true,
+            message: 'Desktop session terminated successfully'
+        });
+    } catch (error) {
+        console.error('❌ DESKTOP TERMINATE: Error terminating session:', error);
+        res.status(500).json({
+            error: 'Failed to terminate desktop session',
+            message: error.message
+        });
+    }
 });
 
 console.log('🖥️  Desktop routes registered inline');
 
 // Test endpoint to verify new code is loaded
 app.get('/api/test-new-code', (req, res) => {
-  console.log('🧪 TEST: New code endpoint hit!');
-  res.json({ 
-    message: 'New code is working!', 
-    timestamp: new Date().toISOString() 
-  });
+    console.log('🧪 TEST: New code endpoint hit!');
+    res.json({
+        message: 'New code is working!',
+        timestamp: new Date().toISOString()
+    });
 });
 
 // Test desktop authentication without creating session
 app.get('/api/desktop/test-auth', authenticateToken, (req, res) => {
-  console.log('🧪 DESKTOP AUTH TEST: Request received');
-  console.log('🧪 DESKTOP AUTH TEST: User from auth:', req.user);
-  res.json({ 
-    message: 'Desktop authentication working!', 
-    user: req.user,
-    timestamp: new Date().toISOString() 
-  });
+    console.log('🧪 DESKTOP AUTH TEST: Request received');
+    console.log('🧪 DESKTOP AUTH TEST: User from auth:', req.user);
+    res.json({
+        message: 'Desktop authentication working!',
+        user: req.user,
+        timestamp: new Date().toISOString()
+    });
 });
 
 // Force server restart endpoint
 app.get('/api/restart-server', (req, res) => {
-  console.log('🔄 RESTART: Restarting server...');
-  res.json({ message: 'Server restarting...' });
-  setTimeout(() => {
-    process.exit(0);
-  }, 1000);
+    console.log('🔄 RESTART: Restarting server...');
+    res.json({ message: 'Server restarting...' });
+    setTimeout(() => {
+        process.exit(0);
+    }, 1000);
 });
 
 // ========== END DESKTOP ROUTES ==========

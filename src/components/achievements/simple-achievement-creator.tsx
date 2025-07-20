@@ -25,7 +25,7 @@ export function SimpleAchievementCreator({ isOpen, onClose, onAchievementCreated
     icon: '🏆',
     selectedLabs: [] as number[]
   })
-  
+
   const [labs, setLabs] = useState<Lab[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [labsLoading, setLabsLoading] = useState(true)
@@ -70,7 +70,7 @@ export function SimpleAchievementCreator({ isOpen, onClose, onAchievementCreated
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (formData.selectedLabs.length === 0) {
       toast.error('Please select at least one lab')
       return
@@ -81,13 +81,13 @@ export function SimpleAchievementCreator({ isOpen, onClose, onAchievementCreated
     try {
       // Generate achievement key from name
       const achievementKey = formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '')
-      
+
       // Create description based on selected labs
       const selectedLabNames = labs
         .filter(lab => formData.selectedLabs.includes(lab.id))
         .map(lab => lab.title)
-      
-      const description = formData.description || 
+
+      const description = formData.description ||
         `Complete ${selectedLabNames.length === 1 ? 'the lab' : 'all labs'}: ${selectedLabNames.join(', ')}`
 
       const achievementData = {
@@ -96,8 +96,8 @@ export function SimpleAchievementCreator({ isOpen, onClose, onAchievementCreated
         description: description,
         icon: formData.icon,
         category: 'progress',
-        rarity: (formData.selectedLabs.length === 1 ? 'common' : 
-                formData.selectedLabs.length <= 3 ? 'uncommon' : 'rare') as 'common' | 'uncommon' | 'rare',
+        rarity: (formData.selectedLabs.length === 1 ? 'common' :
+          formData.selectedLabs.length <= 3 ? 'uncommon' : 'rare') as 'common' | 'uncommon' | 'rare',
         points: 50,
         criteria: {
           type: 'labs_completed' as const,
@@ -110,7 +110,7 @@ export function SimpleAchievementCreator({ isOpen, onClose, onAchievementCreated
       }
 
       const response = await achievementsAPI.createAchievement(achievementData)
-      
+
       if (response.success) {
         toast.success('Achievement created successfully!')
         onAchievementCreated()
@@ -201,8 +201,8 @@ export function SimpleAchievementCreator({ isOpen, onClose, onAchievementCreated
                   onClick={() => setFormData({ ...formData, icon })}
                   className={`
                     w-10 h-10 rounded-lg text-xl flex items-center justify-center border-2 transition-colors
-                    ${formData.icon === icon 
-                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
+                    ${formData.icon === icon
+                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
                       : 'border-gray-300 dark:border-gray-600 hover:border-gray-400'
                     }
                   `}

@@ -729,13 +729,17 @@ export default function LabCreationView() {
       // Ensure tags are properly formatted as an array of strings
       const cleanTags = labData.tags.filter(tag => tag && tag.trim()).map(tag => tag.trim())
 
-      // Process file uploads first - upload all browser-stored files to server
-      console.log('📤 STEP 1: Uploading all browser-stored files to server...');
-      const uploadResult = await uploadAllPendingFiles(dragDropTasks);
-      const tasksWithUploadedFiles = uploadResult.tasks;
-      const uploadedIconPath = uploadResult.iconPath;
+      let uploadedIconPath = null;
+      let tasksWithUploadedFiles = dragDropTasks;
 
-      console.log('🖼️ Received uploaded icon path:', uploadedIconPath);
+      // For editing existing labs, upload files first
+      if (editLabId) {
+        console.log('📤 EDITING MODE: Uploading files for existing lab...');
+        const uploadResult = await uploadAllPendingFiles(dragDropTasks);
+        tasksWithUploadedFiles = uploadResult.tasks;
+        uploadedIconPath = uploadResult.iconPath;
+        console.log('🖼️ Received uploaded icon path:', uploadedIconPath);
+      }
 
       // Ensure tasks and questions have proper order_index values
       const tasksWithOrderIndex = tasksWithUploadedFiles.map((task, taskIndex) => ({
@@ -768,7 +772,7 @@ export default function LabCreationView() {
         tags: cleanTags,
         points_possible: 0, // Set to 0 since we removed points system
         estimated_minutes: 60, // Default estimated time
-        tasks: tasksWithOrderIndex // Use tasks with proper order_index
+        tasks: tasksWithOrderIndex as any // Cast to avoid TypeScript issues with ID types
       }
 
       console.log('💾 FINAL LAB PAYLOAD with icon_path:', labPayload.icon_path);
@@ -784,9 +788,65 @@ export default function LabCreationView() {
         response = await labAPI.updateLab(editLabId, labPayload)
         toast.success('Lab updated successfully!')
       } else {
-        // Create new lab
+        // Create new lab first
         console.log('Creating new lab');
         response = await labAPI.createLab(labPayload)
+        
+        // Now upload files for the newly created lab
+        if (response && response.id) {
+          console.log('📤 NEW LAB CREATED: Uploading files for lab ID:', response.id);
+          // Update the lab data with the actual lab title for proper directory naming
+          const updatedLabData = { ...labData, title: labPayload.title };
+          
+          // Create a modified upload function that uses the lab title
+          const uploadAllPendingFilesForNewLab = async (tasks: any[]) => {
+            const safeLabelName = labPayload.title.replace(/[^a-zA-Z0-9\-_]/g, '_').toLowerCase();
+            console.log('📤 Using lab title for directory:', safeLabelName);
+            
+            let uploadedIconPath = null;
+            
+            // Upload lab icon if it's a File object
+            if (labData.icon instanceof File) {
+              console.log('🖼️ UPLOADING: Lab icon for new lab -', labData.icon.name);
+              
+              try {
+                const formData = new FormData();
+                formData.append('icon', labData.icon);
+                formData.append('labName', safeLabelName);
+                
+                const uploadResponse = await fetch('http://localhost:3001/api/files/upload-lab-files', {
+                  method: 'POST',
+                  body: formData,
+                });
+                
+                if (uploadResponse.ok) {
+                  const result = await uploadResponse.json();
+                  if (result.success && result.data.icon) {
+                    uploadedIconPath = result.data.icon;
+                    console.log('🖼️ SUCCESS: New lab icon uploaded -', uploadedIconPath);
+                  }
+                }
+              } catch (error) {
+                console.error('🖼️ ERROR: Failed to upload icon for new lab:', error);
+              }
+            }
+            
+            return { tasks, iconPath: uploadedIconPath };
+          };
+          
+          const newLabUploadResult = await uploadAllPendingFilesForNewLab(tasksWithUploadedFiles);
+          if (newLabUploadResult.iconPath) {
+            // Update the lab with the uploaded icon path
+            console.log('📤 UPDATING LAB with uploaded icon path:', newLabUploadResult.iconPath);
+            try {
+              await labAPI.updateLab(response.id, { icon_path: newLabUploadResult.iconPath });
+              console.log('✅ Lab icon path updated successfully');
+            } catch (iconUpdateError) {
+              console.error('❌ Failed to update lab with icon path:', iconUpdateError);
+            }
+          }
+        }
+        
         toast.success('Lab created successfully!')
       }
 

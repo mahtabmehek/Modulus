@@ -5,18 +5,18 @@ const path = require('path');
 async function runMigration() {
     try {
         console.log('🚀 Running submissions table migration...');
-        
+
         // Read the migration SQL file
         const migrationSQL = fs.readFileSync(
-            path.join(__dirname, 'migrations', 'add-submissions-table.sql'), 
+            path.join(__dirname, 'migrations', 'add-submissions-table.sql'),
             'utf8'
         );
-        
+
         // Execute the migration
         await pool.query(migrationSQL);
-        
+
         console.log('✅ Migration completed successfully!');
-        
+
         // Verify tables were created
         const tableCheck = await pool.query(`
             SELECT table_name 
@@ -25,14 +25,14 @@ async function runMigration() {
             AND table_name IN ('user_submissions', 'lab_completions')
             ORDER BY table_name
         `);
-        
+
         console.log('📊 Created tables:');
         tableCheck.rows.forEach(row => {
             console.log(`  ✓ ${row.table_name}`);
         });
-        
+
         process.exit(0);
-        
+
     } catch (error) {
         console.error('❌ Migration failed:', error);
         process.exit(1);

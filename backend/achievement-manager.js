@@ -64,7 +64,7 @@ async function checkAllAchievements(userId) {
   try {
     // Update user streak first
     await pool.query('SELECT update_user_streak($1)', [userId]);
-    
+
     // Check and award achievements
     const result = await pool.query('SELECT * FROM check_and_award_achievements($1)', [userId]);
     const newAchievements = result.rows;
@@ -163,7 +163,7 @@ async function main() {
   // Award a specific achievement to student3 (user ID 1002)
   const userId = 1002;
   console.log(`\n🎯 Testing with user ${userId}:`);
-  
+
   // Check current achievements
   await getUserAchievements(userId);
 

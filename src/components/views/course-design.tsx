@@ -18,6 +18,7 @@ interface Lab {
     title: string
     description?: string
     icon_url?: string
+    icon_path?: string
     tags?: string[]
 }
 
@@ -519,11 +520,12 @@ export default function CourseDesignView() {
                                                     className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
                                                 >
                                                     <div className="flex items-center space-x-3">
-                                                        {lab.icon_url ? (
+                                                        {(lab.icon_url || lab.icon_path) ? (
                                                             <img
-                                                                src={lab.icon_url}
+                                                                src={(lab.icon_url || lab.icon_path)?.startsWith('http') ? (lab.icon_url || lab.icon_path) : `http://localhost:3001${lab.icon_url || lab.icon_path}`}
                                                                 alt={lab.title}
-                                                                className="w-8 h-8 rounded object-cover"
+                                                                className="w-8 h-8 rounded object-cover bg-transparent"
+                                                                style={{ backgroundColor: 'transparent' }}
                                                             />
                                                         ) : (
                                                             <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded flex items-center justify-center">
@@ -603,11 +605,12 @@ export default function CourseDesignView() {
                                                             onClick={() => addLabToModule(module.id, lab)}
                                                             className="flex items-center space-x-3 p-2 text-left bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg hover:border-blue-300 dark:hover:border-blue-600 transition-colors"
                                                         >
-                                                            {lab.icon_url ? (
+                                                            {(lab.icon_url || lab.icon_path) ? (
                                                                 <img
-                                                                    src={lab.icon_url}
+                                                                    src={(lab.icon_url || lab.icon_path)?.startsWith('http') ? (lab.icon_url || lab.icon_path) : `http://localhost:3001${lab.icon_url || lab.icon_path}`}
                                                                     alt={lab.title}
-                                                                    className="w-6 h-6 rounded object-cover"
+                                                                    className="w-6 h-6 rounded object-cover bg-transparent"
+                                                                    style={{ backgroundColor: 'transparent' }}
                                                                 />
                                                             ) : (
                                                                 <div className="w-6 h-6 bg-blue-100 dark:bg-blue-900 rounded flex items-center justify-center">

@@ -718,12 +718,6 @@ export default function LabView() {
                                     </div>
                                   )}
                                 </div>
-
-                                {question.type === 'flag' && (
-                                  <div className="mt-4 text-base text-gray-600 dark:text-gray-400">
-                                    <p>Expected format: <code className="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-2 py-1 rounded text-sm font-mono">flag{'{answer}'}</code></p>
-                                  </div>
-                                )}
                               </div>
                             ))}
                           </div>

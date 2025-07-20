@@ -3,19 +3,19 @@
 import { useState, useEffect } from 'react'
 import { useApp } from '@/lib/hooks/use-app'
 import { apiClient } from '@/lib/api'
-import { 
-  Monitor, 
-  Maximize2, 
-  Minimize2, 
-  Power, 
-  Settings, 
-  Upload, 
-  Download, 
-  Terminal, 
-  FolderOpen, 
-  Clock, 
-  Wifi, 
-  Volume2, 
+import {
+  Monitor,
+  Maximize2,
+  Minimize2,
+  Power,
+  Settings,
+  Upload,
+  Download,
+  Terminal,
+  FolderOpen,
+  Clock,
+  Wifi,
+  Volume2,
   User,
   ArrowLeft,
   ExternalLink,
@@ -76,11 +76,11 @@ export function DesktopView() {
       // Create new session
       console.log('🐉 Creating new Kali desktop session...')
       const newSession = await apiClient.desktop.createSession('')
-      
+
       if (newSession.success) {
         console.log('✅ Kali session created:', newSession.session)
         setSession(newSession.session)
-        
+
         // Wait a bit for container to be ready
         setTimeout(() => {
           setIsConnected(true)
@@ -99,7 +99,7 @@ export function DesktopView() {
 
   const terminateSession = async () => {
     if (!session) return
-    
+
     try {
       console.log('🛑 Terminating Kali session...')
       await apiClient.desktop.terminateSession()
@@ -139,14 +139,14 @@ export function DesktopView() {
       {/* Sidebar Navigation */}
       <div className="w-16 bg-gray-800 flex flex-col items-center py-3 space-y-3 border-r border-gray-700">
         {/* Logo */}
-        <div 
+        <div
           onClick={() => navigate('dashboard')}
           className="w-10 h-10 bg-red-600 rounded flex items-center justify-center mb-4 cursor-pointer hover:bg-red-500 transition-colors"
           title="Back to Dashboard"
         >
           <span className="text-white font-bold text-lg">M</span>
         </div>
-        
+
         {/* Navigation Icons */}
         {menuItems.map((item) => {
           const IconComponent = item.icon
@@ -154,20 +154,19 @@ export function DesktopView() {
             <div
               key={item.id}
               onClick={() => setActiveMenu(item.id)}
-              className={`w-10 h-10 rounded flex items-center justify-center cursor-pointer transition-all duration-200 ${
-                activeMenu === item.id 
-                  ? 'bg-red-600 text-white shadow-lg' 
+              className={`w-10 h-10 rounded flex items-center justify-center cursor-pointer transition-all duration-200 ${activeMenu === item.id
+                  ? 'bg-red-600 text-white shadow-lg'
                   : 'bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white'
-              }`}
+                }`}
               title={item.name}
             >
               <IconComponent className="w-5 h-5" />
             </div>
           )
         })}
-        
+
         <div className="flex-1" />
-        
+
         {/* Back to Dashboard */}
         <button
           onClick={() => navigate('dashboard')}
@@ -190,14 +189,14 @@ export function DesktopView() {
               {session?.osType || 'Kali Linux'} • {session?.ipAddress || 'localhost'}:{session?.port || 'N/A'}
             </div>
           </div>
-          
+
           <div className="flex items-center space-x-4">
             {/* Session Timer */}
             <div className="flex items-center space-x-2 text-xs text-gray-300">
               <Clock className="w-4 h-4" />
               <span>{formatTime(sessionTime)}</span>
             </div>
-            
+
             {/* Action Buttons */}
             <div className="flex items-center space-x-1">
               <button className="p-1 hover:bg-gray-700 rounded transition-colors text-gray-400 hover:text-white" title="Share">
@@ -209,16 +208,16 @@ export function DesktopView() {
               <button className="p-1 hover:bg-gray-700 rounded transition-colors text-gray-400 hover:text-white" title="Download">
                 <Download className="w-4 h-4" />
               </button>
-              <button 
+              <button
                 onClick={() => setIsFullscreen(!isFullscreen)}
-                className="p-1 hover:bg-gray-700 rounded transition-colors text-gray-400 hover:text-white" 
+                className="p-1 hover:bg-gray-700 rounded transition-colors text-gray-400 hover:text-white"
                 title="Toggle Fullscreen"
               >
                 {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
               </button>
-              <button 
+              <button
                 onClick={terminateSession}
-                className="p-1 hover:bg-red-700 rounded transition-colors text-red-400 hover:text-red-300" 
+                className="p-1 hover:bg-red-700 rounded transition-colors text-red-400 hover:text-red-300"
                 title="Terminate Session"
               >
                 <Power className="w-4 h-4" />

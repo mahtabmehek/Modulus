@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Image from 'next/image'
 import { useApp } from '@/lib/hooks/use-app'
 import { apiClient } from '@/lib/api'
 import toast from 'react-hot-toast'
@@ -837,8 +838,36 @@ export function AdminDashboard() {
                   .map((lab) => (
                     <div key={lab.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 text-center">
                       {/* Lab Icon */}
-                      <div className="w-16 h-16 bg-blue-600 rounded-xl flex items-center justify-center mx-auto mb-6">
-                        <BookOpen className="w-8 h-8 text-white" />
+                      <div className="w-16 h-16 rounded-xl flex items-center justify-center mx-auto mb-6 relative">
+                        {(lab.icon_path || lab.icon_url) ? (
+                          <Image
+                            src={lab.icon_path?.startsWith('/') ? `http://localhost:3001${lab.icon_path}` : lab.icon_path || lab.icon_url}
+                            alt={lab.title || lab.name || 'Lab icon'}
+                            width={64}
+                            height={64}
+                            className="w-16 h-16 object-contain"
+                            style={{ 
+                              background: 'transparent',
+                              filter: 'drop-shadow(0 0 0 transparent)'
+                            }}
+                            onError={(e) => {
+                              // Fallback to BookOpen icon if image fails to load
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                              const fallback = target.parentElement?.querySelector('.fallback-icon') as HTMLElement;
+                              if (fallback) {
+                                fallback.classList.remove('hidden');
+                                // Add blue background back for fallback icon
+                                target.parentElement!.classList.add('bg-blue-600');
+                              }
+                            }}
+                          />
+                        ) : (
+                          <div className="w-16 h-16 bg-blue-600 rounded-xl flex items-center justify-center">
+                            <BookOpen className="w-8 h-8 text-white" />
+                          </div>
+                        )}
+                        <BookOpen className="w-8 h-8 text-white fallback-icon hidden" />
                       </div>
 
                       {/* Lab Name */}
@@ -913,13 +942,6 @@ export function AdminDashboard() {
                   <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                   Refresh
                 </button>
-                <button
-                  onClick={() => setShowCourseModal(true)}
-                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
-                >
-                  <BookOpen className="w-4 h-4" />
-                  Create Course
-                </button>
                 <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
                   <Download className="w-4 h-4" />
                   Export
@@ -941,7 +963,6 @@ export function AdminDashboard() {
                       <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Code</th>
                       <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Level</th>
                       <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Credits</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Students</th>
                       <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Actions</th>
                     </tr>
                   </thead>
@@ -968,9 +989,6 @@ export function AdminDashboard() {
                           </span>
                         </td>
                         <td className="py-3 px-4 text-gray-600 dark:text-gray-400">{course.totalCredits}</td>
-                        <td className="py-3 px-4 text-gray-600 dark:text-gray-400">
-                          {course.enrolledStudents || 0}
-                        </td>
                         <td className="py-3 px-4">
                           <button
                             onClick={() => deleteCourse(course.id, course.title)}
@@ -983,7 +1001,7 @@ export function AdminDashboard() {
                       </tr>
                     )) : (
                       <tr>
-                        <td colSpan={6} className="py-8 text-center text-gray-500 dark:text-gray-400">
+                        <td colSpan={5} className="py-8 text-center text-gray-500 dark:text-gray-400">
                           No courses found. Click refresh to load courses from the API.
                         </td>
                       </tr>

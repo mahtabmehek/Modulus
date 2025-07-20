@@ -28,14 +28,14 @@ export function AchievementsModal({ isOpen, onClose, userId }: AchievementsModal
     try {
       setLoading(true)
       setError(null)
-      
+
       let response: UserAchievementsResponse
       if (userId) {
         response = await achievementsAPI.getUserAchievements(userId)
       } else {
         response = await achievementsAPI.getMyAchievements()
       }
-      
+
       if (response.success) {
         setAchievements(response.data.achievements)
         setUserStats(response.data.userStats)
@@ -60,7 +60,7 @@ export function AchievementsModal({ isOpen, onClose, userId }: AchievementsModal
     { key: 'special', name: 'Special', icon: '⭐' }
   ]
 
-  const filteredAchievements = achievements.filter(achievement => 
+  const filteredAchievements = achievements.filter(achievement =>
     selectedCategory === 'all' || achievement.category === selectedCategory
   )
 
@@ -126,11 +126,10 @@ export function AchievementsModal({ isOpen, onClose, userId }: AchievementsModal
                 <button
                   key={category.key}
                   onClick={() => setSelectedCategory(category.key)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    selectedCategory === category.key
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${selectedCategory === category.key
                       ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
                       : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-                  }`}
+                    }`}
                 >
                   <span>{category.icon}</span>
                   <span>{category.name}</span>

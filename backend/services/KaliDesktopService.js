@@ -29,7 +29,7 @@ class KaliDesktopService {
 
       // Start Kali container with noVNC and 3GB memory limit
       const dockerCommand = `docker run -d --name ${containerName} -p ${port}:6901 -e VNC_PW=kali123 --cap-add=NET_ADMIN --cap-add=SYS_ADMIN --memory=3g --memory-swap=3g kasmweb/kali-rolling-desktop:1.14.0`;
-      
+
       const { stdout } = await execPromise(dockerCommand);
       const containerId = stdout.trim();
 
@@ -112,7 +112,7 @@ class KaliDesktopService {
 
   async waitForContainerReady(containerName, maxWaitTime = 30000) {
     const startTime = Date.now();
-    
+
     while (Date.now() - startTime < maxWaitTime) {
       try {
         const { stdout } = await execPromise(`docker logs ${containerName} --tail 50`);
@@ -122,10 +122,10 @@ class KaliDesktopService {
       } catch (error) {
         // Container might not be ready yet
       }
-      
+
       await new Promise(resolve => setTimeout(resolve, 2000));
     }
-    
+
     // Even if we don't see the ready message, assume it's ready after max wait time
     console.log(`⏰ Container ${containerName} assumed ready after ${maxWaitTime}ms`);
     return true;
@@ -133,11 +133,11 @@ class KaliDesktopService {
 
   async cleanupIdleSessions() {
     console.log('🧹 Cleaning up idle Kali sessions...');
-    
+
     for (const [userId, session] of this.activeContainers.entries()) {
       const age = Date.now() - session.createdAt.getTime();
       const maxAge = 2 * 60 * 60 * 1000; // 2 hours
-      
+
       if (age > maxAge) {
         console.log(`🕒 Session for user ${userId} exceeded max age, terminating...`);
         await this.terminateSession(userId);

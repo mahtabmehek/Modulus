@@ -152,7 +152,7 @@ export function Header() {
       'Newbie', 'Apprentice', 'Explorer', 'Practitioner', 'Specialist',
       'Expert', 'Master', 'Elite', 'Champion', 'Legend'
     ]
-    
+
     return {
       title: titles[Math.min(level - 1, titles.length - 1)] || 'Legend',
       color: level >= 8 ? 'text-purple-600' : level >= 5 ? 'text-blue-600' : 'text-green-600'

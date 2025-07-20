@@ -25,11 +25,11 @@ const authenticateToken = (req, res, next) => {
 };
 
 // POST /api/submissions - Submit an answer for a question
-router.post('/', 
+router.post('/',
   authenticateToken,
   [
     body('labId').isInt().withMessage('Lab ID must be an integer'),
-    body('taskId').isInt().withMessage('Task ID must be an integer'), 
+    body('taskId').isInt().withMessage('Task ID must be an integer'),
     body('questionId').isInt().withMessage('Question ID must be an integer'),
     body('submittedAnswer').trim().notEmpty().withMessage('Answer cannot be empty')
   ],
@@ -37,7 +37,7 @@ router.post('/',
     try {
       const db = pool;
       const errors = validationResult(req);
-      
+
       if (!errors.isEmpty()) {
         return res.status(400).json({
           error: 'Validation failed',
@@ -55,16 +55,16 @@ router.post('/',
         JOIN tasks t ON q.task_id = t.id
         WHERE q.id = $1 AND t.id = $2 AND t.lab_id = $3
       `;
-      
+
       const questionResult = await db.query(questionQuery, [questionId, taskId, labId]);
-      
+
       if (questionResult.rows.length === 0) {
         return res.status(404).json({ error: 'Question not found' });
       }
 
       const question = questionResult.rows[0];
       const expectedAnswer = question.expected_answer;
-      
+
       // Check if answer is correct (case-insensitive comparison)
       const isCorrect = submittedAnswer.trim().toLowerCase() === expectedAnswer.toLowerCase();
       const pointsEarned = isCorrect ? (question.points || 0) : 0;
@@ -94,7 +94,7 @@ router.post('/',
         try {
           // Update user streak
           await db.query('SELECT update_user_streak($1)', [userId]);
-          
+
           // Check and award achievements
           const achievementResult = await db.query('SELECT * FROM check_and_award_achievements($1)', [userId]);
           newAchievements = achievementResult.rows;
@@ -112,8 +112,8 @@ router.post('/',
           isCorrect,
           pointsEarned,
           submittedAt: submission.submitted_at,
-          feedback: isCorrect ? 
-            'Correct! Well done.' : 
+          feedback: isCorrect ?
+            'Correct! Well done.' :
             'Incorrect answer. Please try again.',
           newAchievements: newAchievements || []
         }
