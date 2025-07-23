@@ -1,6 +1,6 @@
 describe('Current Frontend Element Discovery', () => {
     it('should login and discover available elements for student', () => {
-        cy.visit('/auth/login')
+        cy.visit('/?view=login')
 
         // Log in as student
         cy.get('input[type="email"]').type('student@test.com')
@@ -8,7 +8,7 @@ describe('Current Frontend Element Discovery', () => {
         cy.get('button[type="submit"]').click()
 
         // Wait for redirect to dashboard or main page
-        cy.url().should('not.include', '/auth/login')
+        cy.url().should('not.include', 'view=login')
 
         // Discover and log all buttons, links, and navigation elements
         cy.get('button').then($buttons => {
@@ -40,7 +40,7 @@ describe('Current Frontend Element Discovery', () => {
     })
 
     it('should login and discover available elements for admin', () => {
-        cy.visit('/auth/login')
+        cy.visit('/?view=login')
 
         // Log in as admin
         cy.get('input[type="email"]').type('admin@test.com')
@@ -48,7 +48,7 @@ describe('Current Frontend Element Discovery', () => {
         cy.get('button[type="submit"]').click()
 
         // Wait for redirect to dashboard or main page
-        cy.url().should('not.include', '/auth/login')
+        cy.url().should('not.include', 'view=login')
 
         // Take screenshot for visual reference
         cy.screenshot('admin-dashboard')

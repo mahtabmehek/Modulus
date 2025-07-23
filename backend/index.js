@@ -11,15 +11,15 @@ const app = express();
 
 console.log('🚀 Server starting with desktop routes support...');
 
-// Rate limiting for development
-const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 1000, // limit each IP to 1000 requests per windowMs
-    message: 'Too many requests from this IP, please try again later.'
-});
+// Rate limiting for development - DISABLED
+// const limiter = rateLimit({
+//     windowMs: 15 * 60 * 1000, // 15 minutes
+//     max: 1000, // limit each IP to 1000 requests per windowMs
+//     message: 'Too many requests from this IP, please try again later.'
+// });
 
 // Middleware
-app.use(limiter);
+// app.use(limiter); // Rate limiting disabled
 app.use(cors({
     origin: ['http://localhost:3000', 'http://localhost:3002', 'http://localhost:3003'],
     credentials: true,
@@ -48,7 +48,8 @@ app.use((req, res, next) => {
 app.options('*', (req, res) => {
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    res.header('Access-Control-Allow-Headers',
+        'Origin, X-Requested-With, Content-Type, Accept, Authorization');
     res.status(200).end();
 });
 
@@ -107,7 +108,8 @@ app.use('/uploads', (req, res, next) => {
     // Set CORS headers for static files
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    res.header('Access-Control-Allow-Headers',
+        'Origin, X-Requested-With, Content-Type, Accept, Authorization');
     res.header('Cross-Origin-Resource-Policy', 'cross-origin');
     res.header('Cross-Origin-Embedder-Policy', 'unsafe-none');
     res.header('Cache-Control', 'public, max-age=31536000');

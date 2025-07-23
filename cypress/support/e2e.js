@@ -1,9 +1,10 @@
 // Cypress E2E support file
 import './commands'
+import './firefox-commands'
 
 // Custom commands for user login
 Cypress.Commands.add('login', (email, password) => {
-    cy.visit('/auth/login')
+    cy.visit('/?view=login')
     cy.get('input[type="email"]').type(email)
     cy.get('input[type="password"]').type(password)
     cy.get('button[type="submit"]').click()

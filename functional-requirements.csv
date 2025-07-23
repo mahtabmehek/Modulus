@@ -1,0 +1,54 @@
+Category,User Story
+Authentication and Profiles,As a user I want to securely log in and out of the system
+Authentication and Profiles,As a user I want to create and manage a profile so that I can personalise my experience
+Authentication and Profiles,As an admin I want to assign user roles and permissions so access is restricted appropriately based on responsibility
+Authentication and Profiles,As an admin I want access of ex team members to be automatically revoked from the system
+Course Management,As an instructor I want to create courses so that I can structure learning paths for students
+Course Management,As an instructor I want to edit courses so that I can update content and requirements
+Course Management,As a student I want to view my assigned course so that I can access my learning materials
+Course Management,As a staff member I want to monitor course activity so that I can oversee educational progress
+Lab Environment,As a student I want to launch Kali Linux desktop environments so that I can perform cybersecurity exercises
+Lab Environment,As an instructor I want to create lab exercises so that students can practice cybersecurity skills
+Lab Environment,As a user I want to manage lab sessions (start stop reset) so I can control my learning environment
+Lab Environment,As a user I want persistent file storage in labs so that my work is saved between sessions
+Progress Tracking,As a student I want to track my lab completion progress so that I can monitor my advancement
+Progress Tracking,As a student I want to submit task answers and receive validation so that I can confirm my understanding
+Progress Tracking,As an instructor I want to view student progress so that I can identify students needing support
+Achievement System,As a student I want to earn achievements and badges so that I can be motivated and track milestones
+Achievement System,As an instructor I want to create custom achievements so that I can reward specific learning outcomes
+Achievement System,As a user I want to see my earned badges displayed so that I can showcase my accomplishments
+User Management,As an admin I want to manage user accounts (create edit delete) so that I can maintain system integrity
+User Management,As a staff member I want to approve pending user registrations so that access is properly controlled
+User Management,As an admin I want cascade deletion capabilities so that removing users cleans up all associated data
+File Management,As a user I want to upload files to labs so that I can submit evidence and screenshots
+File Management,As a user I want to download lab resources so that I can access necessary materials
+File Management,As an instructor I want to upload lab resources so that students can access required materials
+Reports and Analytics,As a user I want to view dashboards with progress charts so that I can visualize my learning journey
+Reports and Analytics,As an instructor I want to see student completion analytics so that I can assess course effectiveness
+Reports and Analytics,As an admin I want system usage analytics so that I can monitor platform performance
+Security and Access Control,As a system I want role-based access control so that users only see appropriate content
+Security and Access Control,As a system I want JWT token authentication so that user sessions are secure
+Security and Access Control,As a system I want CORS protection so that cross-origin requests are properly managed
+API Integration,As a developer I want REST API endpoints so that the system supports programmatic access
+API Integration,As a developer I want rate limiting so that the system is protected from abuse
+API Integration,As a developer I want API documentation so that integration is straightforward
+Container Management,As a system I want Docker container orchestration so that lab environments are isolated and scalable
+Container Management,As a system I want automatic container cleanup so that resources are efficiently managed
+Container Management,As a user I want container resource limits so that my lab session performs consistently
+Database Operations,As a system I want data persistence so that all user progress and content is maintained
+Database Operations,As a system I want referential integrity so that data relationships are properly maintained
+Database Operations,As an admin I want database backup capabilities so that data can be recovered if needed
+Module Management,As an instructor I want to organize labs into modules so that learning is properly structured
+Module Management,As an instructor I want to reorder labs within modules so that learning progression is optimized
+Module Management,As a student I want to navigate through modules sequentially so that I follow the intended learning path
+Session Management,As a user I want my login session to persist so that I don't need to re-authenticate frequently
+Session Management,As a user I want automatic logout for security so that my account is protected when inactive
+Session Management,As a user I want secure logout so that my session is properly terminated
+Password Management,As a user I want to change my password so that I can maintain account security
+Password Management,As a user I want password reset functionality so that I can regain access if I forget credentials
+Password Management,As a system I want password strength enforcement so that user accounts are properly secured
+Notification System,As a user I want to receive notifications about course updates so that I stay informed
+Notification System,As an instructor I want to send announcements to students so that important information is communicated
+System Monitoring,As an admin I want system health monitoring so that I can ensure platform availability
+System Monitoring,As an admin I want error logging and tracking so that issues can be identified and resolved
+System Monitoring,As an admin I want performance metrics so that system optimization can be guided by data

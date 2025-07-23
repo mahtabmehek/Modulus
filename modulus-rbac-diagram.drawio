@@ -1,0 +1,264 @@
+<mxfile host="app.diagrams.net" modified="2025-07-20T12:00:00.000Z" agent="5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" etag="modulus-rbac-v1" version="21.6.5" type="device">
+  <diagram name="Modulus-RBAC-System" id="modulus-rbac-roles">
+    <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        
+        <!-- Title -->
+        <mxCell id="title" value="Modulus LMS - Role-Based Access Control (RBAC)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=24;fontStyle=1;fontColor=#2c3e50;" vertex="1" parent="1">
+          <mxGeometry x="500" y="20" width="600" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- User Registration/Authentication -->
+        <mxCell id="user-reg" value="👤 User Registration" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="50" y="100" width="150" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="auth-system" value="🔐 Authentication System&#xa;&#xa;• Email/Password&#xa;• JWT Token Generation&#xa;• Session Management" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;align=left;" vertex="1" parent="1">
+          <mxGeometry x="300" y="80" width="200" height="100" as="geometry" />
+        </mxCell>
+
+        <mxCell id="role-assignment" value="👔 Role Assignment&#xa;&#xa;• Default: Student&#xa;• Admin Approval: Instructor&#xa;• System Admin: Staff/Admin" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;align=left;" vertex="1" parent="1">
+          <mxGeometry x="600" y="80" width="200" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- Role Hierarchy -->
+        <mxCell id="hierarchy-title" value="Role Hierarchy (Ascending Permissions)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1;fontColor=#2c3e50;" vertex="1" parent="1">
+          <mxGeometry x="200" y="220" width="300" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Student Role -->
+        <mxCell id="student-role" value="🎓 STUDENT" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=16;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="100" y="280" width="120" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="student-perms" value="Student Permissions:&#xa;&#xa;✅ View enrolled courses&#xa;✅ Access lab exercises&#xa;✅ Submit assignments&#xa;✅ Track progress&#xa;✅ View achievements&#xa;✅ Access virtual desktops&#xa;❌ Cannot create content&#xa;❌ Cannot manage users" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;align=left;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="50" y="350" width="220" height="160" as="geometry" />
+        </mxCell>
+
+        <!-- Instructor Role -->
+        <mxCell id="instructor-role" value="👨‍🏫 INSTRUCTOR" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=16;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="340" y="280" width="120" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="instructor-perms" value="Instructor Permissions:&#xa;&#xa;✅ All Student permissions&#xa;✅ Create/edit labs&#xa;✅ Manage course content&#xa;✅ Review submissions&#xa;✅ Grade assignments&#xa;✅ View student analytics&#xa;✅ Course design&#xa;❌ Cannot manage all users&#xa;❌ Cannot access system settings" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;align=left;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="290" y="350" width="220" height="180" as="geometry" />
+        </mxCell>
+
+        <!-- Staff Role -->
+        <mxCell id="staff-role" value="👔 STAFF" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=16;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="580" y="280" width="120" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="staff-perms" value="Staff Permissions:&#xa;&#xa;✅ All Instructor permissions&#xa;✅ User oversight&#xa;✅ Course monitoring&#xa;✅ System reports&#xa;✅ Limited user management&#xa;✅ Content approval&#xa;❌ Cannot delete users&#xa;❌ Cannot modify system config" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;align=left;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="530" y="350" width="220" height="160" as="geometry" />
+        </mxCell>
+
+        <!-- Admin Role -->
+        <mxCell id="admin-role" value="👑 ADMIN" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=16;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="820" y="280" width="120" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="admin-perms" value="Admin Permissions:&#xa;&#xa;✅ All Staff permissions&#xa;✅ Full user management&#xa;✅ System configuration&#xa;✅ Course administration&#xa;✅ Lab management&#xa;✅ Global analytics&#xa;✅ Database access&#xa;✅ Security settings&#xa;✅ Role assignment" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;align=left;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="770" y="350" width="220" height="180" as="geometry" />
+        </mxCell>
+
+        <!-- Permission Flow -->
+        <mxCell id="flow-title" value="Authentication & Authorization Flow" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1;fontColor=#2c3e50;" vertex="1" parent="1">
+          <mxGeometry x="200" y="570" width="300" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Flow Steps -->
+        <mxCell id="step1" value="1️⃣ User Login&#xa;Email + Password" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="50" y="620" width="120" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="step2" value="2️⃣ Credential Check&#xa;Database Validation" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="220" y="620" width="120" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="step3" value="3️⃣ Role Retrieval&#xa;User Role Assignment" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="390" y="620" width="120" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="step4" value="4️⃣ JWT Token&#xa;With Role Claims" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="560" y="620" width="120" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="step5" value="5️⃣ Dashboard Route&#xa;Role-Based UI" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="730" y="620" width="120" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Resource Access Control -->
+        <mxCell id="access-title" value="Resource Access Control Matrix" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1;fontColor=#2c3e50;" vertex="1" parent="1">
+          <mxGeometry x="200" y="720" width="300" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Access Matrix -->
+        <mxCell id="matrix-header" value="Resource" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#34495e;strokeColor=#2c3e50;fontSize=12;fontStyle=1;fontColor=white;" vertex="1" parent="1">
+          <mxGeometry x="50" y="770" width="100" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="matrix-student" value="Student" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="150" y="770" width="80" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="matrix-instructor" value="Instructor" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="230" y="770" width="80" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="matrix-staff" value="Staff" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="310" y="770" width="80" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="matrix-admin" value="Admin" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="390" y="770" width="80" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Resource Rows -->
+        <mxCell id="courses-resource" value="Courses" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ecf0f1;strokeColor=#bdc3c7;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="50" y="800" width="100" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="courses-student" value="📖 View" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="150" y="800" width="80" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="courses-instructor" value="📝 Create/Edit" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="230" y="800" width="80" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="courses-staff" value="👀 Monitor" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="310" y="800" width="80" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="courses-admin" value="🔧 Full Control" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="390" y="800" width="80" height="25" as="geometry" />
+        </mxCell>
+
+        <mxCell id="labs-resource" value="Labs" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ecf0f1;strokeColor=#bdc3c7;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="50" y="825" width="100" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="labs-student" value="🧪 Execute" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="150" y="825" width="80" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="labs-instructor" value="🔬 Create/Edit" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="230" y="825" width="80" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="labs-staff" value="📊 Analyze" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="310" y="825" width="80" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="labs-admin" value="🛠️ Manage All" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="390" y="825" width="80" height="25" as="geometry" />
+        </mxCell>
+
+        <mxCell id="users-resource" value="Users" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ecf0f1;strokeColor=#bdc3c7;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="50" y="850" width="100" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="users-student" value="❌ No Access" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8d7da;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="150" y="850" width="80" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="users-instructor" value="👀 View Only" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="230" y="850" width="80" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="users-staff" value="👥 Limited Edit" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="310" y="850" width="80" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="users-admin" value="🔐 Full CRUD" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="390" y="850" width="80" height="25" as="geometry" />
+        </mxCell>
+
+        <mxCell id="system-resource" value="System" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ecf0f1;strokeColor=#bdc3c7;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="50" y="875" width="100" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="system-student" value="❌ No Access" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8d7da;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="150" y="875" width="80" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="system-instructor" value="❌ No Access" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8d7da;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="230" y="875" width="80" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="system-staff" value="📋 Reports" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="310" y="875" width="80" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="system-admin" value="⚙️ Full Config" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="390" y="875" width="80" height="25" as="geometry" />
+        </mxCell>
+
+        <!-- Key Features Box -->
+        <mxCell id="features-box" value="🔐 Key RBAC Features:&#xa;&#xa;• JWT-based authentication&#xa;• Role inheritance model&#xa;• Route-level protection&#xa;• API endpoint authorization&#xa;• Dynamic UI rendering&#xa;• Session management&#xa;• Token expiration handling&#xa;• Approval workflow for instructors" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f39c12;strokeColor=#e67e22;fontSize=11;align=left;verticalAlign=top;fontColor=white;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="550" y="770" width="250" height="150" as="geometry" />
+        </mxCell>
+
+        <!-- Security Model Box -->
+        <mxCell id="security-box" value="🛡️ Security Implementation:&#xa;&#xa;• Password hashing (bcrypt)&#xa;• JWT token signing&#xa;• Role-based middleware&#xa;• Protected API routes&#xa;• CORS configuration&#xa;• Input validation&#xa;• SQL injection prevention&#xa;• XSS protection" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#8e44ad;strokeColor=#732d91;fontSize=11;align=left;verticalAlign=top;fontColor=white;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="850" y="770" width="250" height="150" as="geometry" />
+        </mxCell>
+
+        <!-- Arrows for Role Hierarchy -->
+        <mxCell id="student-to-instructor" style="endArrow=classic;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=3;strokeColor=#27ae60;" edge="1" parent="1" source="student-role" target="instructor-role">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="400" y="350" as="sourcePoint" />
+            <mxPoint x="450" y="300" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="instructor-to-staff" style="endArrow=classic;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=3;strokeColor=#27ae60;" edge="1" parent="1" source="instructor-role" target="staff-role">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="400" y="350" as="sourcePoint" />
+            <mxPoint x="450" y="300" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="staff-to-admin" style="endArrow=classic;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=3;strokeColor=#27ae60;" edge="1" parent="1" source="staff-role" target="admin-role">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="400" y="350" as="sourcePoint" />
+            <mxPoint x="450" y="300" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Flow Arrows -->
+        <mxCell id="flow1" style="endArrow=classic;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=2;strokeColor=#3498db;" edge="1" parent="1" source="step1" target="step2">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="400" y="700" as="sourcePoint" />
+            <mxPoint x="450" y="650" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="flow2" style="endArrow=classic;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=2;strokeColor=#3498db;" edge="1" parent="1" source="step2" target="step3">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="400" y="700" as="sourcePoint" />
+            <mxPoint x="450" y="650" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="flow3" style="endArrow=classic;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=2;strokeColor=#3498db;" edge="1" parent="1" source="step3" target="step4">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="400" y="700" as="sourcePoint" />
+            <mxPoint x="450" y="650" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="flow4" style="endArrow=classic;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=2;strokeColor=#3498db;" edge="1" parent="1" source="step4" target="step5">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="400" y="700" as="sourcePoint" />
+            <mxPoint x="450" y="650" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Registration Flow Arrows -->
+        <mxCell id="reg-to-auth" style="endArrow=classic;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=2;strokeColor=#e74c3c;" edge="1" parent="1" source="user-reg" target="auth-system">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="400" y="200" as="sourcePoint" />
+            <mxPoint x="450" y="150" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="auth-to-role" style="endArrow=classic;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=2;strokeColor=#e74c3c;" edge="1" parent="1" source="auth-system" target="role-assignment">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="400" y="200" as="sourcePoint" />
+            <mxPoint x="450" y="150" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Inheritance Labels -->
+        <mxCell id="inherit1" value="Inherits +" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;fontColor=#27ae60;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="250" y="260" width="60" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="inherit2" value="Inherits +" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;fontColor=#27ae60;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="490" y="260" width="60" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="inherit3" value="Inherits +" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;fontColor=#27ae60;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="730" y="260" width="60" height="20" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

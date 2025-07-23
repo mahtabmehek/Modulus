@@ -9,11 +9,11 @@ describe('Actual CRUD Operations Available', () => {
     users.forEach(user => {
         describe(`${user.role.toUpperCase()} User Capabilities`, () => {
             beforeEach(() => {
-                cy.visit('/auth/login')
+                cy.visit('/?view=login')
                 cy.get('input[type="email"]').type(user.email)
                 cy.get('input[type="password"]').type(user.password)
                 cy.get('button[type="submit"]').click()
-                cy.url().should('not.include', '/auth/login')
+                cy.url().should('not.include', 'view=login')
             })
 
             it(`should identify available buttons and actions for ${user.role}`, () => {
