@@ -1,55 +1,4 @@
-# Gitleaks
-
-```
-┌─○───┐
-│ │╲  │
-│ │ ○ │
-│ ○ ░ │
-└─░───┘
-```
-
-<p align="left">
-  <p align="left">
-	  <a href="https://github.com/gitleaks/gitleaks/actions/workflows/test.yml">
-		  <img alt="Github Test" src="https://github.com/gitleaks/gitleaks/actions/workflows/test.yml/badge.svg">
-	  </a>
-	  <a href="https://hub.docker.com/r/zricethezav/gitleaks">
-		  <img src="https://img.shields.io/docker/pulls/zricethezav/gitleaks.svg" />
-	  </a>
-	  <a href="https://github.com/gitleaks/gitleaks-action">
-        	<img alt="gitleaks badge" src="https://img.shields.io/badge/protected%20by-gitleaks-blue">
-    	 </a>
-	  <a href="https://twitter.com/intent/follow?screen_name=zricethezav">
-		  <img src="https://img.shields.io/twitter/follow/zricethezav?label=Follow%20zricethezav&style=social&color=blue" alt="Follow @zricethezav" />
-	  </a>
-  </p>
-</p>
-
-### Join our Discord! [![Discord](https://img.shields.io/discord/1102689410522284044.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/8Hzbrnkr7E)
-
-Gitleaks is a SAST tool for **detecting** and **preventing** hardcoded secrets like passwords, API keys, and tokens in git repos. Gitleaks is an **easy-to-use, all-in-one solution** for detecting secrets, past or present, in your code.
-
-```
-➜  ~/code(master) gitleaks git -v
-
-    ○
-    │╲
-    │ ○
-    ○ ░
-    ░    gitleaks
-
-
-Finding:     "export BUNDLE_ENTERPRISE__CONTRIBSYS__COM=cafebabe:deadbeef",
-Secret:      cafebabe:deadbeef
-RuleID:      sidekiq-secret
-Entropy:     2.609850
-File:        cmd/generate/config/rules/sidekiq.go
-Line:        23
-Commit:      cd5226711335c68be1e720b318b7bc3135a30eb2
-Author:      John
-Email:       john@users.noreply.github.com
-Date:        2022-08-03T12:31:40Z
-Fingerprint: cd5226711335c68be1e720b318b7bc3135a30eb2:cmd/generate/config/rules/sidekiq.go:sidekiq-secret:23
+Final Year Project
 ```
 
 ## Getting Started
@@ -417,3 +366,6 @@ You can always set the exit code when leaks are encountered with the --exit-code
 1 - leaks or error encountered
 126 - unknown flag
 ```
+=======
+Final Year Project
+>>>>>>> eabed2f38b81a431738b3a5faadf11699c29cf22
