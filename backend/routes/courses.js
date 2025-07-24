@@ -91,23 +91,19 @@ router.get('/my-course', authenticateToken, async (req, res) => {
   try {
     console.log('=== MY COURSE DEBUG START ===');
     console.log('GET MY COURSE - User:', req.user.userId, req.user.email);
-
     const db = pool;
     console.log('Database connection:', !!db);
-
     // Get the user's assigned course_code
     console.log('Querying user course_code...');
-    const userResult = await db.query('SELECT course_code FROM users WHERE id = $1', [req.user.userId]);
+    const userResult = await db.query(
+      'SELECT course_code FROM users WHERE id = $1', [req.user.userId]);
     console.log('User query result:', userResult.rows);
     const user = userResult.rows[0];
-
     if (!user || !user.course_code) {
       console.log('MY COURSE - No course assigned to user');
       return res.json({
         success: true,
-        course: null
-      });
-    }
+        course: null});}
 
     console.log('MY COURSE - User course code:', user.course_code);
 

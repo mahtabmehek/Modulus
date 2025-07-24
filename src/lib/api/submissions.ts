@@ -109,17 +109,14 @@ export const submissionsAPI = {
   }): Promise<SubmissionResponse> => {
     return apiCall('/submissions', {
       method: 'POST',
-      body: JSON.stringify(data)
-    })
-  },
-
+      body: JSON.stringify(data)})},
   // Get user's submissions for a specific lab
-  getLabSubmissions: async (labId: number): Promise<LabSubmissionsResponse> => {
-    return apiCall(`/submissions/lab/${labId}`)
-  },
-
+  getLabSubmissions: async (labId: number): Promise
+  <LabSubmissionsResponse> => {
+    return apiCall(`/submissions/lab/${labId}`)},
   // Check if user has submitted for a specific question
-  getQuestionSubmission: async (questionId: number): Promise<QuestionSubmissionResponse> => {
+  getQuestionSubmission: async (questionId: number): Promise
+  <QuestionSubmissionResponse> => {
     return apiCall(`/submissions/question/${questionId}`)
   },
 

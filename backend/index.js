@@ -607,20 +607,23 @@ app.post('/api/labs',
 
 // ========== DESKTOP ROUTES for Kali Linux Sessions ==========
 
-// Load desktop service
+// Load desktop service - DISABLED
 let KaliDesktopService;
 try {
-    KaliDesktopService = require('./services/KaliDesktopService');
-    console.log('✅ KaliDesktopService loaded');
+    // KaliDesktopService = require('./services/KaliDesktopService');
+    // console.log('✅ KaliDesktopService loaded');
+    console.log('🚫 KaliDesktopService disabled by configuration');
 } catch (error) {
     console.log('❌ KaliDesktopService not available:', error.message);
 }
 
-// Initialize service if available
+// Initialize service if available - DISABLED
 let kaliService = null;
 if (KaliDesktopService) {
     kaliService = new KaliDesktopService();
     console.log('🔗 Kali Desktop Service initialized');
+} else {
+    console.log('🚫 Kali Desktop Service disabled - containers will not be created');
 }
 
 // Desktop session creation endpoint
